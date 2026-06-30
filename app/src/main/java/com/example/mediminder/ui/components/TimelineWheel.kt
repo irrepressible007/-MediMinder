@@ -34,6 +34,7 @@ import kotlin.math.sin
 
 data class WheelItem(
     val id: Long,
+    val medicationId: Long,
     val timeOfDayMillis: Long, // milliseconds since midnight
     val label: String,
     val color: Color

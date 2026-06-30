@@ -14,6 +14,10 @@ interface MedicationDao {
     @Query("SELECT * FROM medications")
     fun getAllMedications(): Flow<List<Medication>>
 
+    @androidx.room.Transaction
+    @Query("SELECT * FROM medications")
+    fun getMedicationsWithSchedules(): Flow<List<com.example.mediminder.data.local.entity.MedicationWithSchedules>>
+
     @Query("SELECT * FROM medications WHERE id = :id")
     suspend fun getMedicationById(id: Long): Medication?
 

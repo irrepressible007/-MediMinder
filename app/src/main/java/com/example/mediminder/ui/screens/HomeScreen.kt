@@ -1,47 +1,36 @@
 package com.example.mediminder.ui.screens
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.hilt.navigation.compose.hiltViewModel
-import kotlinx.coroutines.launch
-import android.widget.Toast
-import com.example.mediminder.updater.UpdateManager
-import com.example.mediminder.updater.UpdateResult
-import com.example.mediminder.ui.viewmodel.HomeViewModel
 import com.example.mediminder.ui.components.TimelineWheel
 import com.example.mediminder.ui.components.WheelItem
-import com.example.mediminder.ui.theme.GreenPrimaryDark
-import com.example.mediminder.ui.theme.BlueSecondaryDark
+import com.example.mediminder.ui.viewmodel.HomeViewModel
+import com.example.mediminder.updater.UpdateManager
+import com.example.mediminder.updater.UpdateResult
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,8 +40,13 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val gamificationState by viewModel.gamificationState.collectAsState()
+    val wheelItems by viewModel.wheelItems.collectAsState()
+    
+    var selectedItem by remember { mutableStateOf<WheelItem?>(null) }
+    
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    
     Scaffold(
         topBar = {
             TopAppBar(
@@ -113,35 +107,88 @@ fun HomeScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding),
+                .padding(padding)
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.background,
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                        )
+                    )
+                ),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Mock data representing pills at different times of the day
-            val mockItems = listOf(
-                WheelItem(1, 8 * 3600000L, "Vitamin C", GreenPrimaryDark), // 8:00 AM
-                WheelItem(2, 13 * 3600000L, "Aspirin", Color(0xFFEF4444)), // 1:00 PM
-                WheelItem(3, 20 * 3600000L, "Melatonin", BlueSecondaryDark) // 8:00 PM
-            )
-
-            TimelineWheel(
-                items = mockItems,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                onItemClick = { item ->
-                    // Handle micro-animation expanding and selection
+            
+            if (wheelItems.isEmpty()) {
+                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                    Text("No medications scheduled for today.", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))
                 }
-            )
-            
-            Text(
-                text = "Next: Aspirin at 1:00 PM",
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(bottom = 32.dp)
-            )
-            
-            Button(onClick = { viewModel.simulateTakingMedication() }) {
-                Text("Simulate Take Medication (+10 Pts)")
+            } else {
+                TimelineWheel(
+                    items = wheelItems,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    onItemClick = { item ->
+                        selectedItem = item
+                    }
+                )
+                
+                AnimatedVisibility(
+                    visible = selectedItem != null,
+                    enter = expandVertically(animationSpec = tween(300)),
+                    exit = shrinkVertically(animationSpec = tween(300))
+                ) {
+                    selectedItem?.let { item ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 24.dp, vertical = 16.dp),
+                            shape = RoundedCornerShape(24.dp),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                val timeFormat = SimpleDateFormat("h:mm a", Locale.getDefault())
+                                // Assuming timeOfDayMillis is relative to start of day for this demo
+                                // If it's absolute, formatting works as is. Let's assume it's just time of day millis.
+                                val calendar = Calendar.getInstance().apply {
+                                    set(Calendar.HOUR_OF_DAY, 0)
+                                    set(Calendar.MINUTE, 0)
+                                    set(Calendar.SECOND, 0)
+                                    set(Calendar.MILLISECOND, 0)
+                                    add(Calendar.MILLISECOND, item.timeOfDayMillis.toInt())
+                                }
+                                
+                                Text(
+                                    text = "${item.label} at ${timeFormat.format(calendar.time)}",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Button(
+                                    onClick = {
+                                        viewModel.takeMedication(item)
+                                        Toast.makeText(context, "Medication Taken! +10 Points", Toast.LENGTH_SHORT).show()
+                                        selectedItem = null
+                                    },
+                                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                                ) {
+                                    Icon(Icons.Default.CheckCircle, contentDescription = "Take")
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Take Medication", style = MaterialTheme.typography.titleMedium)
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
