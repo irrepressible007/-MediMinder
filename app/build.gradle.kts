@@ -14,13 +14,23 @@ android {
         applicationId = "com.example.mediminder"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 7
+        versionName = "1.0.7"
+    }
+
+    signingConfigs {
+        create("release") {
+            storeFile = file(System.getenv("KEYSTORE_PATH") ?: rootProject.file("mediminder-release.jks").absolutePath)
+            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "mediminder123"
+            keyAlias = System.getenv("KEY_ALIAS") ?: "mediminder"
+            keyPassword = System.getenv("KEY_PASSWORD") ?: "mediminder123"
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
@@ -31,7 +41,7 @@ android {
     buildFeatures {
       compose = true
       aidl = false
-      buildConfig = false
+      buildConfig = true
       shaders = false
     }
 
