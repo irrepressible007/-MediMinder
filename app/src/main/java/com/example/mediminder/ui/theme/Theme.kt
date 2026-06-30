@@ -23,8 +23,8 @@ private val DarkColorScheme = darkColorScheme(
     surface = SurfaceDark,
     error = ErrorDark,
     onPrimary = OnPrimaryDark,
-    onBackground = Color(0xFFE2E8F0),
-    onSurface = Color(0xFFE2E8F0)
+    onBackground = TextPrimaryDark,
+    onSurface = TextPrimaryDark
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -34,8 +34,8 @@ private val LightColorScheme = lightColorScheme(
     surface = SurfaceLight,
     error = ErrorLight,
     onPrimary = OnPrimaryLight,
-    onBackground = Color(0xFF0F172A),
-    onSurface = Color(0xFF0F172A)
+    onBackground = TextPrimaryLight,
+    onSurface = TextPrimaryLight
 )
 
 @Composable

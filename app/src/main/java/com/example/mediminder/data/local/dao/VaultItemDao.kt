@@ -14,4 +14,7 @@ interface VaultItemDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(vaultItem: VaultItem): Long
+    
+    @androidx.room.Delete
+    suspend fun delete(vaultItem: VaultItem)
 }
