@@ -25,4 +25,19 @@ object AppModule {
         .createFromAsset("database/mediminder_dataset.db")
         .build()
     }
+
+    @Provides
+    fun provideMedicineDictionaryDao(db: MediMinderDatabase) = db.medicineDictionaryDao()
+
+    @Provides
+    fun provideMedicationDao(db: MediMinderDatabase) = db.medicationDao()
+
+    @Provides
+    fun provideScheduleDao(db: MediMinderDatabase) = db.scheduleDao()
+
+    @Provides
+    fun provideLogDao(db: MediMinderDatabase) = db.logDao()
+
+    @Provides
+    fun provideVaultItemDao(db: MediMinderDatabase) = db.vaultItemDao()
 }

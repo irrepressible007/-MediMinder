@@ -6,6 +6,7 @@ import com.example.mediminder.data.local.entity.Log
 import com.example.mediminder.data.local.entity.Medication
 import com.example.mediminder.data.local.entity.MedicineDictionary
 import com.example.mediminder.data.local.entity.VaultItem
+import com.example.mediminder.data.local.entity.Schedule
 import com.example.mediminder.data.local.dao.MedicationDao
 import com.example.mediminder.data.local.dao.ScheduleDao
 import com.example.mediminder.data.local.dao.LogDao
