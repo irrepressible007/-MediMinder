@@ -56,6 +56,7 @@ class HomeViewModel @Inject constructor(
                 symptoms = null
             )
             logDao.insertLog(log)
+            medicationDao.decrementInventory(wheelItem.medicationId)
             gamificationManager.logInteraction()
             gamificationManager.awardPoints(10)
         }

@@ -46,6 +46,11 @@
             </intent-filter>
         </receiver>
 
+        <!-- Override CropImageActivity's theme: requires Theme.AppCompat, not Material3 -->
+        <activity
+            android:name="com.canhub.cropper.CropImageActivity"
+            android:theme="@style/Theme.MediMinder.AppCompat" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"

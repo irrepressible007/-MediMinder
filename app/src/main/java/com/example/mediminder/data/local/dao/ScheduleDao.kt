@@ -20,6 +20,9 @@ interface ScheduleDao {
     @Update
     suspend fun updateSchedule(schedule: Schedule): Int
 
+    @Query("SELECT * FROM schedules WHERE isActive = 1")
+    suspend fun getAllActiveSchedules(): List<Schedule>
+
     @Delete
     suspend fun deleteSchedule(schedule: Schedule): Int
 }
