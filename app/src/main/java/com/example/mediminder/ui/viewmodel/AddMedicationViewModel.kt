@@ -99,26 +99,16 @@ class AddMedicationViewModel @Inject constructor(
             
             if (!isPrn.value) {
                 _schedules.value.forEach { time ->
-                    val millis = (time.hour * 60 * 60 * 1000L) + (time.minute * 60 * 1000L)
-                    val scheduleId = scheduleDao.insertSchedule(
+                    val timeOfDayMillis = (time.hour * 3_600_000L) + (time.minute * 60_000L)
+                    scheduleDao.insertSchedule(
                         Schedule(
                             medicationId = medId,
-                            timeOfDayMillis = millis,
+                            timeOfDayMillis = timeOfDayMillis,
                             isActive = true
                         )
                     )
-                    
-                    // Schedule with Android AlarmManager
-                    val calendar = java.util.Calendar.getInstance().apply {
-                        set(java.util.Calendar.HOUR_OF_DAY, time.hour)
-                        set(java.util.Calendar.MINUTE, time.minute)
-                        set(java.util.Calendar.SECOND, 0)
-                        set(java.util.Calendar.MILLISECOND, 0)
-                        if (before(java.util.Calendar.getInstance())) {
-                            add(java.util.Calendar.DATE, 1)
-                        }
-                    }
-                    alarmScheduler.schedule(medId, calendar.timeInMillis)
+                    // Schedule a daily repeating alarm via AlarmManager
+                    alarmScheduler.scheduleDaily(medId, time.hour, time.minute)
                 }
             }
             

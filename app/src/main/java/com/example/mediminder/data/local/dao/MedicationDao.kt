@@ -27,6 +27,9 @@ interface MedicationDao {
     @Update
     suspend fun updateMedication(medication: Medication): Int
 
+    @Query("UPDATE medications SET inventoryCount = MAX(0, inventoryCount - 1) WHERE id = :medicationId")
+    suspend fun decrementInventory(medicationId: Long)
+
     @Delete
     suspend fun deleteMedication(medication: Medication): Int
 }
