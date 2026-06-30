@@ -33,7 +33,7 @@ object UpdateManager {
                 val json = JSONObject(response)
                 
                 val tagName = json.getString("tag_name")
-                val currentVersion = "v" + context.packageManager.getPackageInfo(context.packageName, 0).versionName
+                val currentVersion = "v" + com.example.mediminder.BuildConfig.VERSION_NAME
 
                 if (tagName != currentVersion) {
                     val assets = json.getJSONArray("assets")
