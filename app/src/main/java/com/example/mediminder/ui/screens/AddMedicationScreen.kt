@@ -17,9 +17,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -58,6 +60,7 @@ import com.example.mediminder.ui.theme.GreenPrimaryDark
 fun AddMedicationScreen(
     onBack: () -> Unit,
     onSave: () -> Unit,
+    onLaunchScanner: () -> Unit = {},
     viewModel: AddMedicationViewModel = hiltViewModel()
 ) {
     val searchQuery by viewModel.searchQuery.collectAsState()
@@ -108,7 +111,12 @@ fun AddMedicationScreen(
                     label = { Text("Medication Name") },
                     modifier = Modifier.fillMaxWidth().menuAnchor(),
                     singleLine = true,
-                    colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
+                    colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                    trailingIcon = {
+                        IconButton(onClick = onLaunchScanner) {
+                            Icon(Icons.Default.CameraAlt, contentDescription = "Scan with Camera")
+                        }
+                    }
                 )
                 
                 ExposedDropdownMenu(

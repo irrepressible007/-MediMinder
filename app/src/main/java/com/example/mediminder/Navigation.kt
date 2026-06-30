@@ -11,6 +11,8 @@ import androidx.navigation3.ui.NavDisplay
 import com.example.mediminder.ui.screens.AddMedicationScreen
 import com.example.mediminder.ui.screens.HomeScreen
 
+import com.example.mediminder.ui.screens.CameraScannerScreen
+
 @Composable
 fun MainNavigation() {
   val backStack = rememberNavBackStack(Main)
@@ -26,7 +28,18 @@ fun MainNavigation() {
         entry<AddMedication> {
           AddMedicationScreen(
             onBack = { backStack.removeLast() },
-            onSave = { backStack.removeLast() }
+            onSave = { backStack.removeLast() },
+            onLaunchScanner = { backStack.add(CameraScanner) }
+          )
+        }
+        entry<CameraScanner> {
+          CameraScannerScreen(
+            onBack = { backStack.removeLast() },
+            onTextFound = { scannedText ->
+                // In a real app we would pass this text back to the AddMedicationViewModel 
+                // to populate the search query. For now, we pop back.
+                backStack.removeLast()
+            }
           )
         }
       },
