@@ -13,6 +13,8 @@ import com.example.mediminder.ui.screens.HomeScreen
 
 import com.example.mediminder.ui.screens.CameraScannerScreen
 
+import com.example.mediminder.ui.screens.MedicalVaultScreen
+
 @Composable
 fun MainNavigation() {
   val backStack = rememberNavBackStack(Main)
@@ -23,7 +25,10 @@ fun MainNavigation() {
     entryProvider =
       entryProvider {
         entry<Main> {
-          HomeScreen(onAddMedication = { backStack.add(AddMedication) })
+          HomeScreen(
+              onAddMedication = { backStack.add(AddMedication) },
+              onOpenVault = { backStack.add(MedicalVault) }
+          )
         }
         entry<AddMedication> {
           AddMedicationScreen(
@@ -36,10 +41,13 @@ fun MainNavigation() {
           CameraScannerScreen(
             onBack = { backStack.removeLast() },
             onTextFound = { scannedText ->
-                // In a real app we would pass this text back to the AddMedicationViewModel 
-                // to populate the search query. For now, we pop back.
                 backStack.removeLast()
             }
+          )
+        }
+        entry<MedicalVault> {
+          MedicalVaultScreen(
+            onBack = { backStack.removeLast() }
           )
         }
       },

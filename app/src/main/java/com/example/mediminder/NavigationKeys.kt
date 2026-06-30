@@ -5,4 +5,5 @@ import kotlinx.serialization.Serializable
 
 @Serializable data object Main
 @Serializable data object AddMedication
-@Serializable data object CameraScanner : NavKey
+@Serializable data object CameraScanner
+@Serializable data object MedicalVault : NavKey

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -28,7 +29,10 @@ import com.example.mediminder.ui.theme.BlueSecondaryDark
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(onAddMedication: () -> Unit = {}) {
+fun HomeScreen(
+    onAddMedication: () -> Unit = {},
+    onOpenVault: () -> Unit = {}
+) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -38,6 +42,11 @@ fun HomeScreen(onAddMedication: () -> Unit = {}) {
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold
                     ) 
+                },
+                actions = {
+                    IconButton(onClick = onOpenVault) {
+                        Icon(Icons.Default.Lock, contentDescription = "Medical Vault")
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent
