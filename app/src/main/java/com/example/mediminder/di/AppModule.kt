@@ -28,6 +28,7 @@ object AppModule {
             "mediminder.db"
         )
         .createFromAsset("database/mediminder_dataset.db")
+        .fallbackToDestructiveMigration()
         .build()
     }
 

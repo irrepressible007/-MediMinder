@@ -6,7 +6,7 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "medicine_dictionary")
 data class MedicineDictionary(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    @PrimaryKey val id: Int?,
     @ColumnInfo(name = "brand_id") val brandId: String?,
     @ColumnInfo(name = "brand_name") val brandName: String?,
     @ColumnInfo(name = "type") val type: String?,
