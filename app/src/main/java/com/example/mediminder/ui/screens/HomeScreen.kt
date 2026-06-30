@@ -28,7 +28,7 @@ import com.example.mediminder.ui.theme.BlueSecondaryDark
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen() {
+fun HomeScreen(onAddMedication: () -> Unit = {}) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -46,7 +46,7 @@ fun HomeScreen() {
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { /* TODO: Navigate to Add Medication */ },
+                onClick = onAddMedication,
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             ) {

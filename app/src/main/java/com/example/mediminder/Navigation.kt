@@ -8,6 +8,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
+import com.example.mediminder.ui.screens.AddMedicationScreen
 import com.example.mediminder.ui.screens.HomeScreen
 
 @Composable
@@ -20,7 +21,13 @@ fun MainNavigation() {
     entryProvider =
       entryProvider {
         entry<Main> {
-          HomeScreen()
+          HomeScreen(onAddMedication = { backStack.add(AddMedication) })
+        }
+        entry<AddMedication> {
+          AddMedicationScreen(
+            onBack = { backStack.removeLast() },
+            onSave = { backStack.removeLast() }
+          )
         }
       },
   )
