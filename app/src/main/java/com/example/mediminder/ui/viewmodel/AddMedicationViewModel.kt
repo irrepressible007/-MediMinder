@@ -26,7 +26,8 @@ import javax.inject.Inject
 class AddMedicationViewModel @Inject constructor(
     private val dictionaryDao: MedicineDictionaryDao,
     private val medicationDao: MedicationDao,
-    private val scheduleDao: ScheduleDao
+    private val scheduleDao: ScheduleDao,
+    private val alarmScheduler: com.example.mediminder.alarm.AlarmScheduler
 ) : ViewModel() {
 
     // Search state
@@ -99,13 +100,25 @@ class AddMedicationViewModel @Inject constructor(
             if (!isPrn.value) {
                 _schedules.value.forEach { time ->
                     val millis = (time.hour * 60 * 60 * 1000L) + (time.minute * 60 * 1000L)
-                    scheduleDao.insertSchedule(
+                    val scheduleId = scheduleDao.insertSchedule(
                         Schedule(
                             medicationId = medId,
                             timeOfDayMillis = millis,
                             isActive = true
                         )
                     )
+                    
+                    // Schedule with Android AlarmManager
+                    val calendar = java.util.Calendar.getInstance().apply {
+                        set(java.util.Calendar.HOUR_OF_DAY, time.hour)
+                        set(java.util.Calendar.MINUTE, time.minute)
+                        set(java.util.Calendar.SECOND, 0)
+                        set(java.util.Calendar.MILLISECOND, 0)
+                        if (before(java.util.Calendar.getInstance())) {
+                            add(java.util.Calendar.DATE, 1)
+                        }
+                    }
+                    alarmScheduler.schedule(medId, calendar.timeInMillis)
                 }
             }
             

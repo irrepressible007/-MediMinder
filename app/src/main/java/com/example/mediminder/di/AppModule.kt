@@ -46,4 +46,10 @@ object AppModule {
 
     @Provides
     fun provideVaultItemDao(db: MediMinderDatabase): VaultItemDao = db.vaultItemDao()
+
+    @Provides
+    @Singleton
+    fun provideAlarmScheduler(@ApplicationContext context: Context): com.example.mediminder.alarm.AlarmScheduler {
+        return com.example.mediminder.alarm.AlarmScheduler(context)
+    }
 }

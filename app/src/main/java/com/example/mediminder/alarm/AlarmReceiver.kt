@@ -8,52 +8,48 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
+import com.example.mediminder.MainActivity
 import com.example.mediminder.R
 
 class AlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        val medicationId = intent.getLongExtra("MEDICATION_ID", -1L)
+        val medicationId = intent.getLongExtra("MEDICATION_ID", -1)
         if (medicationId == -1L) return
-
-        showFullScreenNotification(context, medicationId)
-    }
-
-    private fun showFullScreenNotification(context: Context, medicationId: Long) {
+        
+        // Show notification
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val channelId = "mediminder_alarms"
-
+        
+        // Create channel for Android O+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
-                channelId,
-                "Medication Alarms",
+                "mediminder_alarms",
+                "Medication Reminders",
                 NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = "Full screen alarms for medication reminders"
-            }
+            )
             notificationManager.createNotificationChannel(channel)
         }
-
-        val fullScreenIntent = Intent(context, FullScreenAlarmActivity::class.java).apply {
-            putExtra("MEDICATION_ID", medicationId)
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_USER_ACTION
+        
+        val contentIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
-        val fullScreenPendingIntent = PendingIntent.getActivity(
+        
+        val pendingIntent = PendingIntent.getActivity(
             context,
             medicationId.hashCode(),
-            fullScreenIntent,
+            contentIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-
-        val notification = NotificationCompat.Builder(context, channelId)
+        
+        // Use a generic icon or actual app icon. For now just use an internal android one if we don't have one, or the app icon.
+        // Assuming R.mipmap.ic_launcher exists based on manifest
+        val builder = NotificationCompat.Builder(context, "mediminder_alarms")
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle("Time for your medication")
-            .setContentText("Tap to view details")
+            .setContentTitle("Medication Reminder")
+            .setContentText("It's time to take your medication! Tap to open MediMinder.")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_ALARM)
-            .setFullScreenIntent(fullScreenPendingIntent, true)
             .setAutoCancel(true)
-            .build()
-
-        notificationManager.notify(medicationId.hashCode(), notification)
+            .setContentIntent(pendingIntent)
+            
+        notificationManager.notify(medicationId.hashCode(), builder.build())
     }
 }
