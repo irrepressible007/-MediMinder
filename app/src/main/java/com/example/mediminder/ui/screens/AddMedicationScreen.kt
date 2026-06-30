@@ -1,5 +1,6 @@
 package com.example.mediminder.ui.screens
 
+import android.app.TimePickerDialog
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -21,19 +22,26 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,17 +50,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.runtime.collectAsState
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.mediminder.ui.viewmodel.AddMedicationViewModel
 import com.example.mediminder.ui.theme.BlueSecondaryDark
 import com.example.mediminder.ui.theme.GreenPrimaryDark
+import com.example.mediminder.ui.viewmodel.AddMedicationViewModel
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,15 +71,29 @@ fun AddMedicationScreen(
 ) {
     val searchQuery by viewModel.searchQuery.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
+    
+    val dosage by viewModel.dosage.collectAsState()
+    val selectedShape by viewModel.shape.collectAsState()
+    val selectedColor by viewModel.color.collectAsState()
+    val inventory by viewModel.inventory.collectAsState()
+    val isPrn by viewModel.isPrn.collectAsState()
+    val maxDaily by viewModel.maxDaily.collectAsState()
+    val schedules by viewModel.schedules.collectAsState()
+    val isSaved by viewModel.isSaved.collectAsState()
+
     var expanded by remember { mutableStateOf(false) }
-    var dosage by remember { mutableStateOf("") }
-    var selectedShape by remember { mutableStateOf("Round") }
+    
     val shapes = listOf("Round", "Capsule", "Oblong", "Square")
-    var selectedColor by remember { mutableStateOf(GreenPrimaryDark) }
     val colors = listOf(GreenPrimaryDark, BlueSecondaryDark, Color(0xFFEF4444), Color(0xFFF59E0B), Color(0xFF8B5CF6))
-    var inventory by remember { mutableStateOf("") }
-    var isPrn by remember { mutableStateOf(false) }
-    var maxDaily by remember { mutableStateOf("") }
+    
+    val context = LocalContext.current
+    val timeFormatter = DateTimeFormatter.ofPattern("hh:mm a")
+
+    LaunchedEffect(isSaved) {
+        if (isSaved) {
+            onSave()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -108,7 +129,9 @@ fun AddMedicationScreen(
                         expanded = true 
                     },
                     label = { Text("Medication Name") },
-                    modifier = Modifier.fillMaxWidth().menuAnchor(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(),
                     singleLine = true,
                     colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
                     trailingIcon = {
@@ -127,13 +150,13 @@ fun AddMedicationScreen(
                             text = { Text(medicine.brandName ?: "") },
                             onClick = {
                                 viewModel.onSearchQueryChanged(medicine.brandName ?: "")
-                                dosage = medicine.strength ?: ""
+                                viewModel.dosage.value = medicine.strength ?: ""
                                 
                                 // Attempt to guess shape
                                 val form = medicine.dosageForm?.lowercase() ?: ""
-                                if (form.contains("capsule")) selectedShape = "Capsule"
-                                else if (form.contains("tablet")) selectedShape = "Round"
-                                else if (form.contains("syrup") || form.contains("suspension")) selectedShape = "Square"
+                                if (form.contains("capsule")) viewModel.shape.value = "Capsule"
+                                else if (form.contains("tablet")) viewModel.shape.value = "Round"
+                                else if (form.contains("syrup") || form.contains("suspension")) viewModel.shape.value = "Square"
                                 
                                 expanded = false
                             },
@@ -147,7 +170,7 @@ fun AddMedicationScreen(
 
             OutlinedTextField(
                 value = dosage,
-                onValueChange = { dosage = it },
+                onValueChange = { viewModel.dosage.value = it },
                 label = { Text("Dosage (e.g., 500mg)") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
@@ -161,7 +184,7 @@ fun AddMedicationScreen(
                 shapes.forEach { shape ->
                     FilterChip(
                         selected = selectedShape == shape,
-                        onClick = { selectedShape = shape },
+                        onClick = { viewModel.shape.value = shape },
                         label = { Text(shape) }
                     )
                 }
@@ -179,7 +202,7 @@ fun AddMedicationScreen(
                             .size(40.dp)
                             .clip(CircleShape)
                             .background(color)
-                            .clickable { selectedColor = color }
+                            .clickable { viewModel.color.value = color }
                             .border(
                                 width = if (isSelected) 3.dp else 0.dp,
                                 color = if (isSelected) MaterialTheme.colorScheme.onSurface else Color.Transparent,
@@ -191,7 +214,7 @@ fun AddMedicationScreen(
 
             OutlinedTextField(
                 value = inventory,
-                onValueChange = { inventory = it },
+                onValueChange = { viewModel.inventory.value = it },
                 label = { Text("Current Inventory Count") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth(),
@@ -207,28 +230,65 @@ fun AddMedicationScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text("As Needed (PRN)", fontWeight = FontWeight.SemiBold)
                     Text("Only take when symptoms occur", style = MaterialTheme.typography.bodyMedium)
                 }
-                Switch(checked = isPrn, onCheckedChange = { isPrn = it })
+                Switch(checked = isPrn, onCheckedChange = { viewModel.isPrn.value = it })
             }
 
             if (isPrn) {
                 OutlinedTextField(
                     value = maxDaily,
-                    onValueChange = { maxDaily = it },
+                    onValueChange = { viewModel.maxDaily.value = it },
                     label = { Text("Max Daily Doses (Safety Limit)") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
+            } else {
+                Text("Schedules (Times per day)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                
+                schedules.forEach { time ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(time.format(timeFormatter), fontWeight = FontWeight.Bold)
+                        IconButton(
+                            onClick = { viewModel.removeSchedule(time) },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(Icons.Default.Close, contentDescription = "Remove time")
+                        }
+                    }
+                }
+                
+                Button(
+                    onClick = {
+                        TimePickerDialog(
+                            context,
+                            { _, hour, minute ->
+                                viewModel.addSchedule(LocalTime.of(hour, minute))
+                            },
+                            8, 0, false
+                        ).show()
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Add Time")
+                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
             Button(
-                onClick = onSave,
+                onClick = { viewModel.saveMedication() },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
