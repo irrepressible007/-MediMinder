@@ -2,8 +2,11 @@ package com.example.mediminder.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -11,6 +14,8 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -22,6 +27,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.mediminder.ui.viewmodel.HomeViewModel
 import com.example.mediminder.ui.components.TimelineWheel
 import com.example.mediminder.ui.components.WheelItem
 import com.example.mediminder.ui.theme.GreenPrimaryDark
@@ -31,17 +40,28 @@ import com.example.mediminder.ui.theme.BlueSecondaryDark
 @Composable
 fun HomeScreen(
     onAddMedication: () -> Unit = {},
-    onOpenVault: () -> Unit = {}
+    onOpenVault: () -> Unit = {},
+    viewModel: HomeViewModel = hiltViewModel()
 ) {
+    val gamificationState by viewModel.gamificationState.collectAsState()
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { 
-                    Text(
-                        "Today's Schedule",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold
-                    ) 
+                    Column {
+                        Text(
+                            "Today's Schedule",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text("🔥 ${gamificationState.currentStreak} Days", style = MaterialTheme.typography.bodySmall, color = Color(0xFFF59E0B))
+                            Text("🏆 ${gamificationState.totalPoints} Pts", style = MaterialTheme.typography.bodySmall, color = Color(0xFF8B5CF6))
+                        }
+                    }
                 },
                 actions = {
                     IconButton(onClick = onOpenVault) {
@@ -90,8 +110,12 @@ fun HomeScreen(
             Text(
                 text = "Next: Aspirin at 1:00 PM",
                 style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(bottom = 64.dp)
+                modifier = Modifier.padding(bottom = 32.dp)
             )
+            
+            Button(onClick = { viewModel.simulateTakingMedication() }) {
+                Text("Simulate Take Medication (+10 Pts)")
+            }
         }
     }
 }
