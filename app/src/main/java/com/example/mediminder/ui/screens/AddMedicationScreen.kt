@@ -44,6 +44,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.runtime.collectAsState
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.mediminder.ui.viewmodel.AddMedicationViewModel
 import com.example.mediminder.ui.theme.BlueSecondaryDark
 import com.example.mediminder.ui.theme.GreenPrimaryDark
 
@@ -51,9 +57,12 @@ import com.example.mediminder.ui.theme.GreenPrimaryDark
 @Composable
 fun AddMedicationScreen(
     onBack: () -> Unit,
-    onSave: () -> Unit
+    onSave: () -> Unit,
+    viewModel: AddMedicationViewModel = hiltViewModel()
 ) {
-    var name by remember { mutableStateOf("") }
+    val searchQuery by viewModel.searchQuery.collectAsState()
+    val searchResults by viewModel.searchResults.collectAsState()
+    var expanded by remember { mutableStateOf(false) }
     var dosage by remember { mutableStateOf("") }
     var selectedShape by remember { mutableStateOf("Round") }
     val shapes = listOf("Round", "Capsule", "Oblong", "Square")
@@ -86,13 +95,48 @@ fun AddMedicationScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text("Medication Name") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
+            ExposedDropdownMenuBox(
+                expanded = expanded && searchResults.isNotEmpty(),
+                onExpandedChange = { expanded = it }
+            ) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { 
+                        viewModel.onSearchQueryChanged(it)
+                        expanded = true 
+                    },
+                    label = { Text("Medication Name") },
+                    modifier = Modifier.fillMaxWidth().menuAnchor(),
+                    singleLine = true,
+                    colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
+                )
+                
+                ExposedDropdownMenu(
+                    expanded = expanded && searchResults.isNotEmpty(),
+                    onDismissRequest = { expanded = false }
+                ) {
+                    searchResults.forEach { medicine ->
+                        DropdownMenuItem(
+                            text = { Text(medicine.brandName ?: "") },
+                            onClick = {
+                                viewModel.onSearchQueryChanged(medicine.brandName ?: "")
+                                dosage = medicine.strength ?: ""
+                                
+                                // Attempt to guess shape
+                                val form = medicine.dosageForm?.lowercase() ?: ""
+                                if (form.contains("capsule")) selectedShape = "Capsule"
+                                else if (form.contains("tablet")) selectedShape = "Round"
+                                else if (form.contains("syrup") || form.contains("suspension")) selectedShape = "Square"
+                                
+                                expanded = false
+                            },
+                            trailingIcon = {
+                                Text(medicine.genericName ?: "", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                            }
+                        )
+                    }
+                }
+            }
 
             OutlinedTextField(
                 value = dosage,
