@@ -21,8 +21,8 @@ interface MedicationDao {
     suspend fun insertMedication(medication: Medication): Long
 
     @Update
-    suspend fun updateMedication(medication: Medication)
+    suspend fun updateMedication(medication: Medication): Int
 
     @Delete
-    suspend fun deleteMedication(medication: Medication)
+    suspend fun deleteMedication(medication: Medication): Int
 }

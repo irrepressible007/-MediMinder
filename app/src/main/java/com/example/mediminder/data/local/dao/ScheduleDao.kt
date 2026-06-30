@@ -18,8 +18,8 @@ interface ScheduleDao {
     suspend fun insertSchedule(schedule: Schedule): Long
 
     @Update
-    suspend fun updateSchedule(schedule: Schedule)
+    suspend fun updateSchedule(schedule: Schedule): Int
 
     @Delete
-    suspend fun deleteSchedule(schedule: Schedule)
+    suspend fun deleteSchedule(schedule: Schedule): Int
 }

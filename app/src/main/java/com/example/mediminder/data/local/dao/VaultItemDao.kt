@@ -2,6 +2,7 @@ package com.example.mediminder.data.local.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.example.mediminder.data.local.entity.VaultItem
 import kotlinx.coroutines.flow.Flow
@@ -11,6 +12,6 @@ interface VaultItemDao {
     @Query("SELECT * FROM vault_items ORDER BY dateAdded DESC")
     fun getAllVaultItems(): Flow<List<VaultItem>>
 
-    @Insert
-    suspend fun insert(vaultItem: VaultItem)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(vaultItem: VaultItem): Long
 }

@@ -3,6 +3,11 @@ package com.example.mediminder.di
 import android.content.Context
 import androidx.room.Room
 import com.example.mediminder.data.local.MediMinderDatabase
+import com.example.mediminder.data.local.dao.MedicineDictionaryDao
+import com.example.mediminder.data.local.dao.MedicationDao
+import com.example.mediminder.data.local.dao.ScheduleDao
+import com.example.mediminder.data.local.dao.LogDao
+import com.example.mediminder.data.local.dao.VaultItemDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -27,17 +32,17 @@ object AppModule {
     }
 
     @Provides
-    fun provideMedicineDictionaryDao(db: MediMinderDatabase) = db.medicineDictionaryDao()
+    fun provideMedicineDictionaryDao(db: MediMinderDatabase): MedicineDictionaryDao = db.medicineDictionaryDao()
 
     @Provides
-    fun provideMedicationDao(db: MediMinderDatabase) = db.medicationDao()
+    fun provideMedicationDao(db: MediMinderDatabase): MedicationDao = db.medicationDao()
 
     @Provides
-    fun provideScheduleDao(db: MediMinderDatabase) = db.scheduleDao()
+    fun provideScheduleDao(db: MediMinderDatabase): ScheduleDao = db.scheduleDao()
 
     @Provides
-    fun provideLogDao(db: MediMinderDatabase) = db.logDao()
+    fun provideLogDao(db: MediMinderDatabase): LogDao = db.logDao()
 
     @Provides
-    fun provideVaultItemDao(db: MediMinderDatabase) = db.vaultItemDao()
+    fun provideVaultItemDao(db: MediMinderDatabase): VaultItemDao = db.vaultItemDao()
 }

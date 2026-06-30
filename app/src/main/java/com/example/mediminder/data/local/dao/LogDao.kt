@@ -21,8 +21,8 @@ interface LogDao {
     suspend fun insertLog(log: Log): Long
 
     @Update
-    suspend fun updateLog(log: Log)
+    suspend fun updateLog(log: Log): Int
 
     @Delete
-    suspend fun deleteLog(log: Log)
+    suspend fun deleteLog(log: Log): Int
 }
