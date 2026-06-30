@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -68,23 +69,35 @@ fun TimelineWheel(
                 label = "icon_scale"
             )
             
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .scale(scale)
-                    .clip(CircleShape)
-                    .background(item.color)
-                    .clickable { 
-                        isExpanded = !isExpanded
-                        onItemClick(item) 
-                    },
-                contentAlignment = Alignment.Center
+            androidx.compose.foundation.layout.Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.scale(scale)
             ) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(item.color)
+                        .clickable { 
+                            isExpanded = !isExpanded
+                            onItemClick(item) 
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = item.label.take(1).uppercase(),
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                }
+                Spacer(modifier = Modifier.padding(top = 4.dp))
                 Text(
-                    text = item.label.take(1).uppercase(),
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.titleLarge
+                    text = item.label,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1
                 )
             }
         }
