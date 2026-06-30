@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -27,9 +28,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.hilt.navigation.compose.hiltViewModel
+import kotlinx.coroutines.launch
+import android.widget.Toast
+import com.example.mediminder.updater.UpdateManager
+import com.example.mediminder.updater.UpdateResult
 import com.example.mediminder.ui.viewmodel.HomeViewModel
 import com.example.mediminder.ui.components.TimelineWheel
 import com.example.mediminder.ui.components.WheelItem
@@ -44,6 +51,8 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val gamificationState by viewModel.gamificationState.collectAsState()
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     Scaffold(
         topBar = {
             TopAppBar(
@@ -64,6 +73,24 @@ fun HomeScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = {
+                        scope.launch {
+                            Toast.makeText(context, "Checking for updates...", Toast.LENGTH_SHORT).show()
+                            when (val result = UpdateManager.checkForUpdates(context)) {
+                                is UpdateResult.UpdateAvailable -> {
+                                    UpdateManager.downloadAndInstallUpdate(context, result.downloadUrl, result.version)
+                                }
+                                is UpdateResult.UpToDate -> {
+                                    Toast.makeText(context, "You are on the latest version!", Toast.LENGTH_SHORT).show()
+                                }
+                                is UpdateResult.Error -> {
+                                    Toast.makeText(context, "Error: ${result.message}", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        }
+                    }) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Check for Updates")
+                    }
                     IconButton(onClick = onOpenVault) {
                         Icon(Icons.Default.Lock, contentDescription = "Medical Vault")
                     }
