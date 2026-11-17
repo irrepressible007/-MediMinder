@@ -11,6 +11,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import com.example.mediminder.R
+import com.example.mediminder.util.AppLocale
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
@@ -29,9 +31,9 @@ class MedicalVaultViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun addVaultItem(uri: Uri) {
-        viewModelScope.launch {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
             try {
-                // Copy to internal storage
+                // Copy to internal storage (off the main thread)
                 val inputStream: InputStream? = context.contentResolver.openInputStream(uri)
                 if (inputStream != null) {
                     val fileName = "vault_${System.currentTimeMillis()}.jpg"
@@ -48,7 +50,7 @@ class MedicalVaultViewModel @Inject constructor(
 
                     // Save to DB
                     val newItem = VaultItem(
-                        title = "Document on $dateStr",
+                        title = AppLocale.localized(context).getString(R.string.vault_item_title, dateStr),
                         dateAdded = System.currentTimeMillis(),
                         localImagePath = file.absolutePath
                     )

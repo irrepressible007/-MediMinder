@@ -10,7 +10,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,7 +21,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.mediminder.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.example.mediminder.data.local.entity.VaultItem
@@ -51,10 +53,10 @@ fun MedicalVaultScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Medical Vault", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.vault_title), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -78,13 +80,13 @@ fun MedicalVaultScreen(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Document")
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.vault_add))
             }
         }
     ) { padding ->
         if (vaultItems.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Text("Your vault is empty. Add a document!", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
+                Text(stringResource(R.string.vault_empty), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f), modifier = Modifier.padding(32.dp))
             }
         } else {
             LazyVerticalGrid(
@@ -117,7 +119,7 @@ fun VaultItemCard(item: VaultItem, onDelete: () -> Unit) {
         Box(modifier = Modifier.fillMaxSize()) {
             AsyncImage(
                 model = File(item.localImagePath),
-                contentDescription = "Document Preview",
+                contentDescription = item.title,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
@@ -141,7 +143,7 @@ fun VaultItemCard(item: VaultItem, onDelete: () -> Unit) {
             ) {
                 Icon(
                     Icons.Default.Delete,
-                    contentDescription = "Delete",
+                    contentDescription = stringResource(R.string.action_delete),
                     tint = Color.White,
                     modifier = Modifier.background(Color.Black.copy(alpha = 0.4f), shape = RoundedCornerShape(50))
                         .padding(4.dp)

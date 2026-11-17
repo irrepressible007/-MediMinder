@@ -19,3 +19,12 @@ val SurfaceLight = Color(0xFFFFFFFF)
 val ErrorLight = Color(0xFFEF4444)
 val OnPrimaryLight = Color(0xFFFFFFFF)
 val TextPrimaryLight = Color(0xFF0F172A)
+
+// Status colours
+val AmberLight = Color(0xFFF59E0B)
+val AmberDark = Color(0xFFFBBF24)
+val TakenGreen = Color(0xFF10B981)
+val MissedRed = Color(0xFFEF4444)
+val DueAmber = Color(0xFFF59E0B)
+val SkippedGrey = Color(0xFF94A3B8)
+val SnoozedBlue = Color(0xFF60A5FA)

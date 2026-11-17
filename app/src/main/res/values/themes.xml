@@ -1,13 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.MediMinder" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- AppCompat base so the in-app language switch works on Android 7–12; Compose draws the UI -->
+    <style name="Theme.MediMinder" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/brand</item>
+        <item name="colorPrimaryDark">@color/brand_dark</item>
+        <item name="colorAccent">@color/brand</item>
+        <item name="android:windowBackground">@color/background_light</item>
+    </style>
 
     <!-- AppCompat bridge required by CropImageActivity from canhub library -->
     <style name="Theme.MediMinder.AppCompat" parent="Theme.AppCompat.Light.NoActionBar">
-        <item name="colorPrimary">@color/teal_700</item>
-        <item name="colorPrimaryDark">@color/teal_200</item>
-        <item name="colorAccent">@color/teal_700</item>
+        <item name="colorPrimary">@color/brand</item>
+        <item name="colorPrimaryDark">@color/brand_dark</item>
+        <item name="colorAccent">@color/brand</item>
         <item name="windowNoTitle">true</item>
         <item name="windowActionBar">false</item>
     </style>

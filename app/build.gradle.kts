@@ -14,8 +14,9 @@ android {
         applicationId = "com.example.mediminder"
         minSdk = 24
         targetSdk = 36
-        versionCode = 7
-        versionName = "1.0.7"
+        versionCode = 20
+        versionName = "2.0.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     signingConfigs {
@@ -50,6 +51,23 @@ android {
         excludes += "/META-INF/{AL2.0,LGPL2.1}"
       }
     }
+
+    // The medicine catalogue is a SQLite file; keep it uncompressed so Room can copy it quickly
+    androidResources {
+        noCompress += "db"
+        // Per-app language picker (Android 13+ system settings)
+        generateLocaleConfig = true
+    }
+
+    testOptions {
+        // Robolectric tests open the real databases (including the bundled catalogue asset)
+        unitTests.isIncludeAndroidResources = true
+    }
+}
+
+ksp {
+    // Room writes its schema here; the migration test and the catalogue builder rely on it
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 kotlin {
@@ -63,6 +81,7 @@ dependencies {
 
   // Core Android dependencies
   implementation(libs.androidx.core.ktx)
+  implementation(libs.androidx.appcompat) // per-app language on Android 7–12
   implementation(libs.androidx.lifecycle.runtime.ktx)
   implementation(libs.androidx.activity.compose)
 
@@ -81,9 +100,17 @@ dependencies {
   androidTestImplementation(libs.androidx.compose.ui.test.junit4)
   debugImplementation(libs.androidx.compose.ui.test.manifest)
 
-  // Local tests: jUnit, coroutines, Android runner
+  // Local tests: jUnit, coroutines, Robolectric (real SQLite on the JVM)
   testImplementation(libs.junit)
   testImplementation(libs.kotlinx.coroutines.test)
+  testImplementation(libs.robolectric)
+  testImplementation(libs.androidx.test.core)
+  testImplementation(libs.androidx.test.ext.junit)
+  testImplementation(libs.room.testing)
+  // Robolectric UI smoke test of the real app (Compose + Hilt)
+  testImplementation(libs.androidx.compose.ui.test.junit4)
+  testImplementation(libs.hilt.android.testing)
+  kspTest(libs.hilt.compiler)
 
   // Instrumented tests: jUnit rules and runners
   androidTestImplementation(libs.androidx.test.core)
@@ -106,18 +133,24 @@ dependencies {
   ksp(libs.hilt.compiler)
   implementation(libs.hilt.navigation.compose)
 
+  // Background safety net that re-arms alarms (OEM battery savers can drop them)
+  implementation(libs.androidx.work.runtime)
+
+  // Backup / restore file format
+  implementation(libs.kotlinx.serialization.json)
+
   // ML Kit
   implementation(libs.mlkit.text.recognition)
-  
+
   // CameraX
   implementation(libs.androidx.camera.core)
   implementation(libs.androidx.camera.camera2)
   implementation(libs.androidx.camera.lifecycle)
   implementation(libs.androidx.camera.view)
-  
+
   // Image Cropper
   implementation(libs.android.image.cropper)
-  
+
   // Coil
   implementation("io.coil-kt:coil-compose:2.6.0")
 }

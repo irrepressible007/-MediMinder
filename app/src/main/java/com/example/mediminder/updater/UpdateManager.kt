@@ -26,6 +26,8 @@ object UpdateManager {
             val url = URL(REPO_URL)
             val connection = url.openConnection() as HttpURLConnection
             connection.requestMethod = "GET"
+            connection.connectTimeout = 10_000
+            connection.readTimeout = 10_000
             connection.setRequestProperty("Accept", "application/vnd.github.v3+json")
 
             if (connection.responseCode == HttpURLConnection.HTTP_OK) {
@@ -35,7 +37,7 @@ object UpdateManager {
                 val tagName = json.getString("tag_name")
                 val currentVersion = "v" + com.example.mediminder.BuildConfig.VERSION_NAME
 
-                if (tagName != currentVersion) {
+                if (isNewer(tagName, currentVersion)) {
                     val assets = json.getJSONArray("assets")
                     for (i in 0 until assets.length()) {
                         val asset = assets.getJSONObject(i)
@@ -112,6 +114,19 @@ object UpdateManager {
             Toast.makeText(context, "Failed to install update.", Toast.LENGTH_LONG).show()
         }
     }
+}
+
+/** "v2.1.0" > "v2.0.10"? Compares numeric parts, so an older release is never offered as an update. */
+internal fun isNewer(candidate: String, current: String): Boolean {
+    fun parts(v: String) = v.trimStart('v', 'V').split('.', '-').map { it.toIntOrNull() ?: 0 }
+    val a = parts(candidate)
+    val b = parts(current)
+    for (i in 0 until maxOf(a.size, b.size)) {
+        val x = a.getOrElse(i) { 0 }
+        val y = b.getOrElse(i) { 0 }
+        if (x != y) return x > y
+    }
+    return false
 }
 
 sealed class UpdateResult {

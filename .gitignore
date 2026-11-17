@@ -13,3 +13,9 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Kotlin compiler daemon state
+.kotlin/
+
+# Python
+__pycache__/

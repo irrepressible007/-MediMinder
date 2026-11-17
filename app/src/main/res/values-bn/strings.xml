@@ -1,0 +1,466 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tabs -->
+    <string name="tab_today">আজ</string>
+    <string name="tab_medicines">ওষুধ</string>
+    <string name="tab_appointments">ডাক্তার</string>
+    <string name="tab_more">আরও</string>
+
+    <!-- Common actions -->
+    <string name="action_add_medicine">ওষুধ যোগ করুন</string>
+    <string name="action_add_doctor">ডাক্তার যোগ করুন</string>
+    <string name="action_add_stock">স্টক যোগ করুন</string>
+    <string name="action_add_time">সময় যোগ করুন</string>
+    <string name="action_allow">অনুমতি দিন</string>
+    <string name="action_back">পেছনে</string>
+    <string name="action_back_to_today">আজকের দিনে ফিরুন</string>
+    <string name="action_backup">ব্যাকআপ নিন</string>
+    <string name="action_book">বুক করুন</string>
+    <string name="action_bought">কিনেছি</string>
+    <string name="action_call_chamber">চেম্বারে ফোন করুন</string>
+    <string name="action_call_short">ফোন</string>
+    <string name="action_cancel">বাতিল</string>
+    <string name="action_cancel_appointment">বাতিল হয়েছে</string>
+    <string name="action_change">বদলান</string>
+    <string name="action_delete">মুছে ফেলুন</string>
+    <string name="action_dismiss">বন্ধ করুন</string>
+    <string name="action_done">সম্পন্ন</string>
+    <string name="action_edit">সম্পাদনা</string>
+    <string name="action_fix">ঠিক করুন</string>
+    <string name="action_get_started">শুরু করুন</string>
+    <string name="action_map">ম্যাপ</string>
+    <string name="action_new_appointment">নতুন অ্যাপয়েন্টমেন্ট</string>
+    <string name="action_next">পরবর্তী</string>
+    <string name="action_open">খুলুন</string>
+    <string name="action_reopen">আসন্ন হিসেবে চিহ্নিত করুন</string>
+    <string name="action_restock">স্টক বাড়ান</string>
+    <string name="action_restore">রিস্টোর করুন</string>
+    <string name="action_resume_medicine">ওষুধটি আবার চালু করুন</string>
+    <string name="action_save">সংরক্ষণ</string>
+    <string name="action_save_appointment">অ্যাপয়েন্টমেন্ট সংরক্ষণ</string>
+    <string name="action_save_medicine">ওষুধ সংরক্ষণ</string>
+    <string name="action_set_count">সংখ্যা ঠিক করুন</string>
+    <string name="action_share">শেয়ার</string>
+    <string name="action_skip">বাদ দিন</string>
+    <string name="action_snooze">%1$s মিনিট পরে</string>
+    <string name="action_snooze_short">পরে মনে করান</string>
+    <string name="action_stop_medicine">ওষুধটি বন্ধ করুন</string>
+    <string name="action_take_all">সব খেয়েছি</string>
+    <string name="action_take_now">এখন খেলাম</string>
+    <string name="action_taken">খেয়েছি</string>
+    <string name="action_test_alarm">অ্যালার্ম পরীক্ষা</string>
+    <string name="action_test_reminder">রিমাইন্ডার পরীক্ষা</string>
+    <string name="action_undo">ফিরিয়ে নিন</string>
+    <string name="action_view">দেখুন</string>
+
+    <!-- Accessibility -->
+    <string name="cd_alarm">অ্যালার্ম</string>
+    <string name="cd_back">পেছনে</string>
+    <string name="cd_close">বন্ধ</string>
+    <string name="cd_decrease">কমান</string>
+    <string name="cd_increase">বাড়ান</string>
+    <string name="cd_more">আরও অপশন</string>
+    <string name="cd_next_day">পরের দিন</string>
+    <string name="cd_previous_day">আগের দিন</string>
+    <string name="cd_remove">সরান</string>
+    <string name="cd_scan">ওষুধের বাক্স স্ক্যান করুন</string>
+
+    <!-- Alerts -->
+    <string name="alert_alarm">অ্যালার্ম</string>
+    <string name="alert_reminder">রিমাইন্ডার</string>
+    <string name="alarm_title">ওষুধ খাওয়ার সময় হয়েছে</string>
+    <string name="alarm_appointment_title">ডাক্তারের অ্যাপয়েন্টমেন্ট</string>
+    <string name="alarm_test_body">আপনার অ্যালার্ম কাজ করছে। “অ্যালার্ম” হিসেবে সেট করা ওষুধ এভাবেই বাজবে, ফোন লক থাকলেও।</string>
+
+    <!-- Notification channels -->
+    <string name="channel_doses">ওষুধের রিমাইন্ডার</string>
+    <string name="channel_doses_desc">ওষুধের সময় হলে নোটিফিকেশন — খেয়েছি / পরে / বাদ বোতামসহ।</string>
+    <string name="channel_alarms">ওষুধের অ্যালার্ম</string>
+    <string name="channel_alarms_desc">জোরে বাজে এবং পুরো স্ক্রিনে দেখায়, উত্তর না দেওয়া পর্যন্ত।</string>
+    <string name="channel_refills">ওষুধ কেনা</string>
+    <string name="channel_refills_desc">কোনো ওষুধ শেষ হয়ে এলে।</string>
+    <string name="channel_appointments">ডাক্তারের অ্যাপয়েন্টমেন্ট</string>
+    <string name="channel_appointments_desc">ডাক্তার দেখানোর আগে রিমাইন্ডার।</string>
+
+    <!-- Notifications -->
+    <string name="notif_dose_title">%1$s খাওয়ার সময়</string>
+    <string name="notif_dose_take">%1$s খান</string>
+    <string name="notif_dose_repeat">আবার মনে করানো হচ্ছে</string>
+    <string name="notif_alarm_many">%1$sটি ওষুধ খাওয়ার সময়</string>
+    <string name="notif_low_stock_title">শেষ হয়ে আসছে: %1$s</string>
+    <string name="notif_low_stock_days">%1$s বাকি — প্রায় %2$s দিনের। শীঘ্রই কিনে নিন।</string>
+    <string name="notif_low_stock_units">মাত্র %1$s বাকি। শীঘ্রই কিনে নিন।</string>
+    <string name="notif_refill_summary_title">%1$sটি ওষুধ শেষ হয়ে আসছে</string>
+    <string name="notif_refill_summary_text">কতটুকু কিনতে হবে দেখতে কেনার তালিকা খুলুন।</string>
+    <string name="notif_appt_title">অ্যাপয়েন্টমেন্ট: %1$s</string>
+    <string name="notif_appt_tomorrow">আগামীকাল: %1$s-এর সাথে অ্যাপয়েন্টমেন্ট</string>
+    <string name="notif_test_title">MediMinder পরীক্ষা</string>
+    <string name="notif_test_text">এই ফোনে রিমাইন্ডার কাজ করছে।</string>
+
+    <!-- Time words used in Bangla times: "সকাল ৮:০০" -->
+    <string name="daypart_morning">সকাল</string>
+    <string name="daypart_noon">দুপুর</string>
+    <string name="daypart_afternoon">বিকাল</string>
+    <string name="daypart_evening">সন্ধ্যা</string>
+    <string name="daypart_night">রাত</string>
+
+    <string name="part_morning">সকাল</string>
+    <string name="part_afternoon">দুপুর</string>
+    <string name="part_evening">সন্ধ্যা</string>
+    <string name="part_night">রাত</string>
+
+    <string name="greeting_morning">শুভ সকাল</string>
+    <string name="greeting_afternoon">শুভ দুপুর</string>
+    <string name="greeting_evening">শুভ সন্ধ্যা</string>
+    <string name="greeting_night">শুভ রাত্রি</string>
+
+    <!-- Dose states -->
+    <string name="state_taken">খেয়েছেন</string>
+    <string name="state_missed">বাদ পড়েছে</string>
+    <string name="state_due">এখন খান</string>
+    <string name="state_skipped">বাদ দিয়েছেন</string>
+    <string name="state_snoozed">পরে</string>
+    <string name="state_snoozed_until">পরে · %1$s</string>
+    <string name="state_upcoming">আসছে</string>
+
+    <!-- Today -->
+    <string name="today_label">আজ · %1$s</string>
+    <string name="today_taken_label">খাওয়া হয়েছে</string>
+    <string name="today_streak">টানা %1$s দিন</string>
+    <string name="today_points">%1$s পয়েন্ট</string>
+    <string name="today_next_dose">পরের ডোজ: %1$s</string>
+    <string name="today_all_done">আজকের সব ওষুধ খাওয়া শেষ!</string>
+    <string name="today_taken_at">%1$s-এ খেয়েছেন</string>
+    <string name="today_empty_title">এখনো কোনো ওষুধ নেই</string>
+    <string name="today_empty_body">আপনার ওষুধগুলো যোগ করুন — MediMinder ঠিক সময়ে মনে করিয়ে দেবে, হালকা রিমাইন্ডার অথবা জোরালো অ্যালার্মে।</string>
+    <string name="today_nothing_scheduled">এই দিনে কোনো ওষুধ নেই।</string>
+    <string name="today_reliability_banner">এই ফোনে রিমাইন্ডার সময়মতো নাও বাজতে পারে।</string>
+    <string name="today_low_stock_banner">%1$sটি ওষুধ শেষ হয়ে আসছে</string>
+    <string name="today_next_appointment">%1$s · %2$s</string>
+    <string name="today_as_needed">প্রয়োজন হলে</string>
+    <string name="today_prn_count">আজ খেয়েছেন: %1$s বার</string>
+    <string name="today_prn_count_limit">আজ খেয়েছেন: %2$s বারের মধ্যে %1$s বার</string>
+    <string name="today_prn_logged">%1$s লেখা হয়েছে</string>
+    <string name="today_prn_limit_title">আজকের সীমা পূর্ণ</string>
+    <string name="today_prn_limit_body">আজ %1$s %2$s বার খেয়েছেন। আপনার ঠিক করা নিরাপদ সীমা দিনে %3$s বার।</string>
+    <string name="today_prn_limit_take_anyway">তবুও লিখুন</string>
+
+    <!-- Medicines -->
+    <string name="medicines_empty_title">আপনার ওষুধের তালিকা খালি</string>
+    <string name="medicines_empty_body">“ওষুধ যোগ করুন” চাপুন এবং বাংলাদেশে বিক্রি হওয়া ৫০,০০০-এর বেশি ওষুধ থেকে খুঁজুন।</string>
+    <string name="medicines_stopped">বন্ধ করা ওষুধ (%1$d)</string>
+    <string name="medicine_stopped">বন্ধ</string>
+    <string name="schedule_as_needed">প্রয়োজন হলে</string>
+    <string name="schedule_none">কোনো সময় দেওয়া নেই</string>
+    <string name="course_days_left">আর %1$s দিন</string>
+    <string name="course_finished">কোর্স শেষ</string>
+    <string name="stock_left">%1$s বাকি</string>
+    <string name="stock_left_days">%1$s বাকি · %2$s দিন</string>
+    <plurals name="times_a_day">
+        <item quantity="one">দিনে %d বার</item>
+        <item quantity="other">দিনে %d বার</item>
+    </plurals>
+    <plurals name="days_count">
+        <item quantity="one">%d দিন</item>
+        <item quantity="other">%d দিন</item>
+    </plurals>
+
+    <!-- Units -->
+    <string name="unit_tablet">ট্যাবলেট</string>
+    <string name="unit_tablet_plural">ট্যাবলেট</string>
+    <string name="unit_capsule">ক্যাপসুল</string>
+    <string name="unit_capsule_plural">ক্যাপসুল</string>
+    <string name="unit_ml">মি.লি.</string>
+    <string name="unit_spoon">চামচ</string>
+    <string name="unit_spoon_plural">চামচ</string>
+    <string name="unit_drop">ফোঁটা</string>
+    <string name="unit_drop_plural">ফোঁটা</string>
+    <string name="unit_puff">পাফ</string>
+    <string name="unit_puff_plural">পাফ</string>
+    <string name="unit_injection">ইনজেকশন</string>
+    <string name="unit_injection_plural">ইনজেকশন</string>
+    <string name="unit_sachet">স্যাশে</string>
+    <string name="unit_sachet_plural">স্যাশে</string>
+    <string name="unit_suppository">সাপোজিটরি</string>
+    <string name="unit_suppository_plural">সাপোজিটরি</string>
+    <string name="unit_application">বার লাগানো</string>
+    <string name="unit_application_plural">বার লাগানো</string>
+
+    <!-- Meals -->
+    <string name="meal_any">যেকোনো সময়</string>
+    <string name="meal_before">খাবারের আগে</string>
+    <string name="meal_after">খাবারের পরে</string>
+    <string name="meal_with">খাবারের সাথে</string>
+    <string name="meal_empty_stomach">খালি পেটে</string>
+    <string name="meal_bedtime">ঘুমানোর আগে</string>
+    <string name="meal_breakfast">সকালের নাস্তা</string>
+    <string name="meal_lunch">দুপুরের খাবার</string>
+    <string name="meal_evening">বিকালের নাস্তা</string>
+    <string name="meal_dinner">রাতের খাবার</string>
+
+    <!-- Medicine editor -->
+    <string name="editor_title_new">ওষুধ যোগ করুন</string>
+    <string name="editor_title_edit">ওষুধ সম্পাদনা</string>
+    <string name="editor_search_label">ওষুধের নাম</string>
+    <string name="editor_search_hint">ব্র্যান্ড বা জেনেরিক, যেমন Napa, Seclo, Paracetamol</string>
+    <string name="editor_catalogue_hint">বাংলাদেশে বিক্রি হওয়া ৫৪,০০০+ ওষুধ থেকে খুঁজুন, অথবা বাক্স স্ক্যান করুন।</string>
+    <string name="editor_not_found_use">তালিকায় নেই? “%1$s” ব্যবহার করুন</string>
+    <string name="editor_use_typed">যেমন লিখেছেন “%1$s” ব্যবহার করুন</string>
+    <string name="editor_from_catalogue">ওষুধের তালিকা থেকে</string>
+    <string name="editor_custom_medicine">আপনার নিজের লেখা ওষুধ</string>
+    <string name="editor_name">নাম</string>
+    <string name="editor_strength">মাত্রা (স্ট্রেংথ)</string>
+    <string name="editor_generic">জেনেরিক নাম</string>
+    <string name="editor_unit">ডোজ মাপা হয়</string>
+    <string name="editor_section_schedule">কখন খাবেন</string>
+    <string name="mode_pattern">প্রেসক্রিপশন</string>
+    <string name="mode_custom">নিজের সময়</string>
+    <string name="mode_as_needed">প্রয়োজন হলে</string>
+    <string name="editor_pattern_hint">প্রেসক্রিপশনের মতো: সকাল + দুপুর + রাত।</string>
+    <string name="editor_pattern_label">ডোজের নিয়ম</string>
+    <string name="editor_pattern_support">যেমন ১+০+১, ½+০+½, অথবা ১+১+১+১ (বিকালসহ)</string>
+    <string name="editor_meal_timing">খাবার</string>
+    <string name="editor_alert_style">কীভাবে মনে করাবে?</string>
+    <string name="editor_reminder_explain">রিমাইন্ডার: খেয়েছি / পরে / বাদ বোতামসহ একটি নোটিফিকেশন।</string>
+    <string name="editor_alarm_explain">অ্যালার্ম: জোরে বাজবে এবং লক স্ক্রিনে দেখাবে, উত্তর না দেওয়া পর্যন্ত।</string>
+    <string name="editor_days">দিন</string>
+    <string name="days_every_day">প্রতিদিন</string>
+    <string name="days_selected">কিছু দিন</string>
+    <string name="editor_as_needed_hint">নির্দিষ্ট সময় নেই — খেলে “আজ” স্ক্রিন থেকে লিখে রাখুন।</string>
+    <string name="editor_max_daily">দিনে সর্বোচ্চ কতবার (ঐচ্ছিক)</string>
+    <string name="editor_section_course">কতদিন</string>
+    <string name="course_ongoing">চলবে</string>
+    <string name="course_starts">শুরু</string>
+    <string name="course_ends">শেষ দিন: %1$s</string>
+    <string name="editor_section_stock">স্টক</string>
+    <string name="editor_stock_off_hint">চালু করলে কতগুলো আছে গুনে রাখবে, কতদিন চলবে দেখাবে এবং কেনার সময় মনে করাবে।</string>
+    <string name="editor_stock_count">আপনার কাছে কয়টি %1$s আছে?</string>
+    <string name="editor_refill_when_days">এত দিনের ওষুধ বাকি থাকলে জানাবে</string>
+    <string name="editor_refill_when_units">এতগুলো বাকি থাকলে জানাবে</string>
+    <string name="editor_refill_reminders">কেনার রিমাইন্ডার</string>
+    <string name="editor_section_looks">রং ও আকার</string>
+    <string name="editor_notes">নোট</string>
+    <string name="editor_notes_hint">যেমন: প্রেশারের জন্য ডা. রহমান দিয়েছেন</string>
+    <string name="editor_error_name">অনুগ্রহ করে ওষুধের নাম লিখুন।</string>
+    <string name="editor_error_pattern">ডোজের নিয়মটি ঠিক নেই — ১+০+১ এর মতো লিখুন।</string>
+    <string name="editor_error_times">অন্তত একটি সময় দিন, অথবা “প্রয়োজন হলে” বেছে নিন।</string>
+    <string name="editor_error_days">অন্তত একটি দিন বেছে নিন।</string>
+    <string name="price_per_unit">প্রতিটি %1$s</string>
+    <string name="shape_round">গোল</string>
+    <string name="shape_oval">ডিম্বাকার</string>
+    <string name="shape_capsule">ক্যাপসুল</string>
+    <string name="shape_liquid">তরল</string>
+    <string name="shape_other">অন্যান্য</string>
+
+    <!-- Safety -->
+    <string name="safety_title">অনুগ্রহ করে ডাক্তারের সাথে মিলিয়ে নিন</string>
+    <string name="safety_allergy">আপনি “%1$s”-এ অ্যালার্জি লিখে রেখেছেন।</string>
+    <string name="safety_allergy_class">এটি একটি %1$s জাতীয় ওষুধ, আর আপনি “%2$s”-এ অ্যালার্জি লিখে রেখেছেন।</string>
+    <string name="safety_duplicate">আপনি ইতিমধ্যে %1$s খাচ্ছেন, যাতেও %2$s আছে। দুটো একসাথে খেলে মাত্রা বেশি হয়ে যেতে পারে।</string>
+    <string name="safety_footer">আপনি তবুও সংরক্ষণ করতে পারেন — MediMinder শুধু সতর্ক করে।</string>
+
+    <!-- Medicine detail -->
+    <string name="detail_form">ধরন</string>
+    <string name="detail_manufacturer">কোম্পানি</string>
+    <string name="detail_price">দাম</string>
+    <string name="detail_times">ডোজের সময়</string>
+    <string name="detail_days_left">আর প্রায় %1$s দিন চলবে</string>
+    <string name="detail_low_stock">শেষ হয়ে আসছে — কিনে নেওয়ার সময়।</string>
+    <string name="detail_stock_not_tracked">স্টক গোনা হচ্ছে না। শুরু করতে “স্টক বাড়ান” বা “সংখ্যা ঠিক করুন” চাপুন।</string>
+    <string name="detail_purchases">কেনাকাটা</string>
+    <string name="detail_alternatives">একই ওষুধের অন্য ব্র্যান্ড</string>
+    <string name="detail_alternatives_hint">একই জেনেরিক ও মাত্রা — ফার্মেসিতে না পেলে কাজে লাগে। বদলানোর আগে ডাক্তার বা ফার্মাসিস্টকে জিজ্ঞেস করুন।</string>
+    <string name="detail_cheaper">%1$s কম</string>
+    <string name="detail_adherence">গত ৩০ দিন</string>
+    <string name="detail_adherence_value">%1$s%% খেয়েছেন (%3$sটির মধ্যে %2$sটি ডোজ)</string>
+    <string name="detail_history">ইতিহাস</string>
+    <string name="delete_medicine_title">%1$s মুছে ফেলবেন?</string>
+    <string name="delete_medicine_body">এর সব ইতিহাসও মুছে যাবে। ইতিহাস রাখতে চাইলে “ওষুধটি বন্ধ করুন” ব্যবহার করুন।</string>
+    <string name="count_title">কতগুলো বাকি আছে?</string>
+    <string name="count_label">এখনকার সংখ্যা</string>
+
+    <!-- Restock -->
+    <string name="restock_title">%1$s কিনেছেন</string>
+    <string name="restock_quantity">কয়টি %1$s কিনেছেন?</string>
+    <string name="restock_price">দাম দিয়েছেন (ঐচ্ছিক)</string>
+    <string name="restock_pharmacy">ফার্মেসি (ঐচ্ছিক)</string>
+    <string name="restock_hint">দাম লিখলে ওষুধে কত খরচ হচ্ছে বুঝতে পারবেন।</string>
+    <string name="refill_title">কেনার তালিকা</string>
+    <string name="refill_summary">%1$sটি ওষুধ শেষ হয়ে আসছে। %2$s দিনের জন্য কিনুন:</string>
+    <string name="refill_all_good">কোনো ওষুধ শেষ হয়ে আসছে না। 👍</string>
+    <string name="refill_estimated_total">আনুমানিক মোট: %1$s</string>
+    <string name="refill_running_low">শেষ হয়ে আসছে</string>
+    <string name="refill_others">বাকি সব</string>
+    <string name="refill_buy">কিনুন %1$s</string>
+    <string name="refill_none_tracked_title">এখনো কোনো স্টক গোনা হচ্ছে না</string>
+    <string name="refill_none_tracked_body">কোনো ওষুধের “স্টক” চালু করলে কবে শেষ হবে দেখতে পাবেন।</string>
+    <string name="refill_share_header">আমার যে ওষুধগুলো লাগবে:</string>
+    <string name="refill_share_footer">— MediMinder থেকে পাঠানো</string>
+
+    <!-- Appointments -->
+    <string name="doctors_title">আমার ডাক্তার</string>
+    <string name="doctors_empty">ডাক্তার ও চেম্বারের নম্বর সংরক্ষণ করুন, দ্রুত সিরিয়াল নিতে পারবেন।</string>
+    <string name="doctor_new">নতুন ডাক্তার</string>
+    <string name="doctor_edit">ডাক্তারের তথ্য সম্পাদনা</string>
+    <string name="doctor_name">ডাক্তারের নাম</string>
+    <string name="doctor_specialty">বিশেষজ্ঞতা (যেমন মেডিসিন, হৃদরোগ)</string>
+    <string name="doctor_hospital">হাসপাতাল / চেম্বার</string>
+    <string name="doctor_address">ঠিকানা</string>
+    <string name="doctor_phone">ফোন</string>
+    <string name="doctor_phone_serial">ফোন (সিরিয়ালের জন্য)</string>
+    <string name="doctor_hours">রোগী দেখার সময় (যেমন শনি–বৃহঃ বিকাল ৫–রাত ৯)</string>
+    <string name="appt_upcoming">আসন্ন (%1$d)</string>
+    <string name="appt_past">আগের (%1$d)</string>
+    <string name="appt_empty_title">কোনো আসন্ন অ্যাপয়েন্টমেন্ট নেই</string>
+    <string name="appt_empty_past">আগের কোনো অ্যাপয়েন্টমেন্ট নেই</string>
+    <string name="appt_empty_body">ডাক্তার দেখানোর তারিখ যোগ করুন — MediMinder আগে এবং আগের সন্ধ্যায় মনে করিয়ে দেবে।</string>
+    <string name="appt_new">নতুন অ্যাপয়েন্টমেন্ট</string>
+    <string name="appt_edit">অ্যাপয়েন্টমেন্ট সম্পাদনা</string>
+    <string name="appt_section_doctor">ডাক্তার</string>
+    <string name="appt_section_when">কখন</string>
+    <string name="appt_section_reminder">রিমাইন্ডার</string>
+    <string name="appt_save_doctor">“আমার ডাক্তার”-এ সংরক্ষণ করুন</string>
+    <string name="appt_serial">সিরিয়াল নং</string>
+    <string name="appt_serial_value">সিরিয়াল %1$s</string>
+    <string name="appt_fee">ফি</string>
+    <string name="appt_fee_value">ফি %1$s</string>
+    <string name="appt_purpose">দেখানোর কারণ</string>
+    <string name="appt_notes">নোট</string>
+    <string name="appt_notes_hint">ডাক্তারকে যা জিজ্ঞেস করবেন, যে রিপোর্ট নিয়ে যাবেন…</string>
+    <string name="appt_remind_evening">আগের সন্ধ্যায়ও মনে করাবে (রাত ৮টা)</string>
+    <string name="appt_serial_tip">পরামর্শ: চেম্বারে ফোন করে সিরিয়াল নিন, তারপর সিরিয়াল নম্বরটি এখানে লিখে রাখুন।</string>
+    <string name="appt_status_done">দেখানো হয়েছে</string>
+    <string name="appt_status_cancelled">বাতিল</string>
+    <string name="appt_delete_title">অ্যাপয়েন্টমেন্ট মুছবেন?</string>
+    <string name="appt_delete_body">%1$s-এর সাথে অ্যাপয়েন্টমেন্টটি মুছে যাবে।</string>
+    <string name="reminder_none">রিমাইন্ডার নেই</string>
+    <string name="reminder_minutes_before">%1$s মিনিট আগে</string>
+    <string name="reminder_hours_before">%1$s ঘণ্টা আগে</string>
+    <string name="reminder_day_before">১ দিন আগে</string>
+
+    <!-- More -->
+    <string name="more_refill_sub">কী কিনবেন, কতটুকু, কত খরচ</string>
+    <string name="more_stats_sub">নিয়মিত কতটা খাচ্ছেন</string>
+    <string name="more_medical_id_sub">রক্তের গ্রুপ, অ্যালার্জি, জরুরি যোগাযোগ</string>
+    <string name="more_vault_sub">প্রেসক্রিপশন ও রিপোর্ট, এই ফোনেই সংরক্ষিত</string>
+    <string name="more_reliability_ok">রিমাইন্ডার ঠিকভাবে সেট করা আছে</string>
+    <string name="more_reliability_problem">কিছু রিমাইন্ডার আটকাতে পারে — ঠিক করতে চাপুন</string>
+    <string name="more_settings_sub">ভাষা, খাবারের সময়, স্নুজ, ব্যাকআপ</string>
+    <string name="more_updates">আপডেট দেখুন</string>
+    <string name="more_version">ভার্সন %1$s</string>
+    <string name="update_checking">আপডেট খোঁজা হচ্ছে…</string>
+    <string name="update_latest">আপনার কাছে সর্বশেষ ভার্সন আছে।</string>
+    <string name="update_failed">আপডেট দেখা গেল না: %1$s</string>
+
+    <!-- Statistics -->
+    <string name="stats_title">পরিসংখ্যান</string>
+    <string name="stats_rate_label">ডোজ খাওয়া হয়েছে</string>
+    <string name="stats_streak">টানা দিন</string>
+    <string name="stats_by_day">দিন অনুযায়ী</string>
+    <string name="stats_by_medicine">ওষুধ অনুযায়ী</string>
+    <string name="stats_empty">এই সময়ে কোনো ডোজ ছিল না।</string>
+    <string name="stats_report_header">%1$s — ওষুধের রিপোর্ট, গত %2$s দিন</string>
+    <string name="stats_report_rate">খেয়েছেন: %1$s (%3$sটির মধ্যে %2$sটি ডোজ)</string>
+    <string name="stats_report_missed">বাদ পড়েছে: %1$sটি</string>
+    <string name="stats_report_footer">— MediMinder থেকে</string>
+
+    <!-- Medical ID -->
+    <string name="medical_id_title">মেডিক্যাল আইডি</string>
+    <string name="medical_id_intro">জরুরি অবস্থায় ডাক্তার বা পরিবারের যা জানা দরকার। শুধু এই ফোনেই সংরক্ষিত থাকে।</string>
+    <string name="medical_id_blood">রক্তের গ্রুপ</string>
+    <string name="medical_id_allergies">অ্যালার্জি</string>
+    <string name="medical_id_allergies_hint">যেমন পেনিসিলিন, সালফা, বাদাম</string>
+    <string name="medical_id_allergy_note">যে ওষুধে অ্যালার্জি লিখেছেন সেটি যোগ করলে MediMinder সতর্ক করবে।</string>
+    <string name="medical_id_conditions">রোগ</string>
+    <string name="medical_id_conditions_hint">যেমন ডায়াবেটিস, উচ্চ রক্তচাপ, হাঁপানি</string>
+    <string name="medical_id_birth_year">জন্মসাল</string>
+    <string name="medical_id_emergency">জরুরি যোগাযোগ</string>
+    <string name="medical_id_contact_name">নাম ও সম্পর্ক</string>
+    <string name="medical_id_contact_phone">ফোন নম্বর</string>
+    <string name="medical_id_current_meds">চলমান ওষুধ</string>
+    <string name="medical_id_no_meds">কোনো ওষুধ যোগ করা নেই।</string>
+    <string name="medical_id_none">জানা নেই</string>
+    <string name="medical_id_share_header">মেডিক্যাল আইডি — %1$s</string>
+    <string name="medical_id_share_blood">রক্তের গ্রুপ: %1$s</string>
+    <string name="medical_id_share_birth">জন্ম: %1$s</string>
+    <string name="medical_id_share_allergies">অ্যালার্জি: %1$s</string>
+    <string name="medical_id_share_conditions">রোগ: %1$s</string>
+    <string name="medical_id_share_contact">জরুরি যোগাযোগ: %1$s</string>
+
+    <!-- Vault -->
+    <string name="vault_title">মেডিক্যাল ভল্ট</string>
+    <string name="vault_add">ডকুমেন্ট যোগ করুন</string>
+    <string name="vault_empty">প্রেসক্রিপশন, টেস্ট রিপোর্ট ও কার্ডের ছবি এখানে রাখুন — এগুলো এই ফোনেই থাকে।</string>
+    <string name="vault_item_title">ডকুমেন্ট, %1$s</string>
+
+    <!-- Settings -->
+    <string name="settings_title">সেটিংস</string>
+    <string name="settings_language">ভাষা</string>
+    <string name="settings_language_system">ফোনের ভাষা</string>
+    <string name="settings_name">আপনার নাম</string>
+    <string name="settings_meal_times">খাবারের সময়</string>
+    <string name="settings_meal_times_hint">“খাবারের পরে” ও “খাবারের আগে” ওষুধের সময় এগুলো থেকে ঠিক হয়।</string>
+    <string name="settings_before_meal">“খাবারের আগে” মানে</string>
+    <string name="settings_after_meal">“খাবারের পরে” মানে</string>
+    <string name="settings_apply_meal_times">আমার ওষুধের সময় সেই অনুযায়ী বদলান</string>
+    <string name="settings_meal_applied">%1$dটি ডোজের সময় বদলানো হয়েছে</string>
+    <string name="settings_reminders">রিমাইন্ডার ও অ্যালার্ম</string>
+    <string name="settings_default_alert">নতুন ওষুধে মনে করাবে</string>
+    <string name="settings_snooze">স্নুজ করবে</string>
+    <string name="settings_repeat">উত্তর না দিলে আবার মনে করাবে</string>
+    <string name="settings_repeat_hint">“খেয়েছি”, “পরে” বা “বাদ” না চাপা পর্যন্ত মনে করাতে থাকবে।</string>
+    <string name="settings_repeat_every">প্রতি</string>
+    <string name="settings_repeat_times">সর্বোচ্চ (বার)</string>
+    <string name="settings_ring_minutes">অ্যালার্ম বাজবে</string>
+    <string name="settings_refills">ওষুধ কেনা</string>
+    <string name="settings_refill_check_time">প্রতিদিন স্টক দেখার সময়</string>
+    <string name="settings_refill_days">কেনার তালিকা হিসাব করবে</string>
+    <string name="settings_backup">ব্যাকআপ</string>
+    <string name="settings_about">MediMinder %1$s</string>
+    <string name="settings_disclaimer">MediMinder মনে করায় ও হিসাব রাখে; এটি ডাক্তারের পরামর্শের বিকল্প নয়। ওষুধের তথ্য DGDA ও প্রকাশ্য তালিকা থেকে নেওয়া, অসম্পূর্ণ হতে পারে।</string>
+    <string name="minutes_short">%1$s মিনিট</string>
+    <string name="test_scheduled">১০ সেকেন্ড পরে একটি পরীক্ষা বাজবে — দেখতে ফোন লক করুন।</string>
+    <string name="backup_done">ব্যাকআপ সংরক্ষিত: %1$dটি ওষুধ, %2$dটি ডোজের তথ্য।</string>
+    <string name="backup_failed">ব্যাকআপ সংরক্ষণ করা গেল না।</string>
+    <string name="backup_last">শেষ ব্যাকআপ: %1$s</string>
+    <string name="backup_never">এখনো ব্যাকআপ নেওয়া হয়নি।</string>
+    <string name="backup_hint">ফাইলটি Google Drive-এ রাখুন বা হোয়াটসঅ্যাপে নিজেকে পাঠিয়ে রাখুন, নতুন ফোনে রিস্টোর করতে পারবেন।</string>
+    <string name="restore_title">ব্যাকআপ রিস্টোর করবেন?</string>
+    <string name="restore_body">এই ফোনের সবকিছু (ওষুধ, ইতিহাস, অ্যাপয়েন্টমেন্ট) ব্যাকআপ দিয়ে বদলে যাবে।</string>
+    <string name="restore_done">%1$dটি ওষুধ ও %2$dটি অ্যাপয়েন্টমেন্ট রিস্টোর হয়েছে।</string>
+    <string name="restore_failed">এই ফাইলটি রিস্টোর করা গেল না।</string>
+
+    <!-- Reliability -->
+    <string name="reliability_title">রিমাইন্ডার নির্ভরযোগ্যতা</string>
+    <string name="reliability_intro">ব্যাটারি বাঁচাতে ফোন প্রায়ই রিমাইন্ডার আটকে দেয়। লাল চিহ্নিত সব ঠিক করুন, যাতে ওষুধের রিমাইন্ডার সময়মতো বাজে।</string>
+    <string name="reliability_manufacturer">আপনার ফোন: %1$s। বিশেষ করে Xiaomi, Oppo, Realme, Vivo, Infinix ও Tecno ফোনে MediMinder-এর জন্য “Autostart” এবং “No battery restrictions” চালু করতে হয়।</string>
+    <string name="reliability_test_title">পরীক্ষা করুন</string>
+    <string name="reliability_test_body">১০ সেকেন্ড পরে একটি পরীক্ষা বাজবে। ফোন লক করে অপেক্ষা করুন — বাজলে সব ঠিক আছে।</string>
+    <string name="check_notifications">নোটিফিকেশন</string>
+    <string name="check_notifications_body">প্রতিটি রিমাইন্ডারের জন্য দরকার।</string>
+    <string name="check_exact">অ্যালার্ম ও রিমাইন্ডার</string>
+    <string name="check_exact_body">ঠিক মিনিটে রিমাইন্ডার বাজাতে দেয়।</string>
+    <string name="check_full_screen">পুরো স্ক্রিনে অ্যালার্ম</string>
+    <string name="check_full_screen_body">লক স্ক্রিনের ওপর অ্যালার্ম দেখাতে দেয়।</string>
+    <string name="check_battery">ব্যাটারি: কোনো বাধা নেই</string>
+    <string name="check_battery_body">ফোন যেন MediMinder-কে ঘুম পাড়িয়ে না দেয়।</string>
+    <string name="check_channel">অ্যালার্মের শব্দ</string>
+    <string name="check_channel_body">“ওষুধের অ্যালার্ম” নোটিফিকেশন যেন মিউট করা না থাকে।</string>
+    <string name="check_autostart">অটোস্টার্ট</string>
+    <string name="check_autostart_body">এই ফোনে MediMinder-এর জন্য Autostart / ব্যাকগ্রাউন্ড চালু করুন।</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_welcome">MediMinder-এ স্বাগতম</string>
+    <string name="onboarding_welcome_body">আর কোনো ওষুধ বাদ পড়বে না। প্রতিটি ডোজে রিমাইন্ডার বা অ্যালার্ম, ওষুধ কেনার সতর্কতা, আর ডাক্তার দেখানোর তারিখ — বাংলাদেশের জন্য তৈরি।</string>
+    <string name="onboarding_meals_title">আপনি কখন খান?</string>
+    <string name="onboarding_meals_body">প্রেসক্রিপশনে লেখা থাকে “খাবারের পরে” বা “খাবারের আগে”। আপনার সাধারণ খাবারের সময় দিন, MediMinder সেই অনুযায়ী ওষুধের সময় ঠিক করবে।</string>
+    <string name="onboarding_permissions_title">রিমাইন্ডার যেন ঠিকমতো বাজে</string>
+    <string name="onboarding_permissions_body">এগুলোর অনুমতি দিন, যাতে ফোন MediMinder-কে চুপ করিয়ে না দেয়।</string>
+    <string name="onboarding_permissions_later">পরে “আরও → রিমাইন্ডার নির্ভরযোগ্যতা” থেকেও করতে পারবেন।</string>
+
+    <!-- Scanner -->
+    <string name="scanner_title">ওষুধের বাক্স স্ক্যান</string>
+    <string name="scanner_hint">বাক্স বা পাতার ওপর ব্র্যান্ডের নামের দিকে ক্যামেরা ধরুন।</string>
+    <string name="scanner_pick">আপনার ওষুধটি বেছে নিন:</string>
+    <string name="scanner_permission">স্ক্যান করতে ক্যামেরার অনুমতি দরকার।</string>
+</resources>

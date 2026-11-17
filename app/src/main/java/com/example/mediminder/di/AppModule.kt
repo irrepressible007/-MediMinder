@@ -1,12 +1,14 @@
 package com.example.mediminder.di
 
 import android.content.Context
-import androidx.room.Room
+import com.example.mediminder.data.catalogue.CatalogueDao
+import com.example.mediminder.data.catalogue.CatalogueDatabase
 import com.example.mediminder.data.local.MediMinderDatabase
-import com.example.mediminder.data.local.dao.MedicineDictionaryDao
+import com.example.mediminder.data.local.dao.ActiveAlertDao
+import com.example.mediminder.data.local.dao.AppointmentDao
+import com.example.mediminder.data.local.dao.DoseLogDao
 import com.example.mediminder.data.local.dao.MedicationDao
 import com.example.mediminder.data.local.dao.ScheduleDao
-import com.example.mediminder.data.local.dao.LogDao
 import com.example.mediminder.data.local.dao.VaultItemDao
 import dagger.Module
 import dagger.Provides
@@ -21,35 +23,19 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideDatabase(@ApplicationContext context: Context): MediMinderDatabase {
-        return Room.databaseBuilder(
-            context,
-            MediMinderDatabase::class.java,
-            "mediminder.db"
-        )
-        .createFromAsset("database/mediminder_dataset.db")
-        .fallbackToDestructiveMigration()
-        .build()
-    }
-
-    @Provides
-    fun provideMedicineDictionaryDao(db: MediMinderDatabase): MedicineDictionaryDao = db.medicineDictionaryDao()
-
-    @Provides
-    fun provideMedicationDao(db: MediMinderDatabase): MedicationDao = db.medicationDao()
-
-    @Provides
-    fun provideScheduleDao(db: MediMinderDatabase): ScheduleDao = db.scheduleDao()
-
-    @Provides
-    fun provideLogDao(db: MediMinderDatabase): LogDao = db.logDao()
-
-    @Provides
-    fun provideVaultItemDao(db: MediMinderDatabase): VaultItemDao = db.vaultItemDao()
+    fun provideDatabase(@ApplicationContext context: Context): MediMinderDatabase = MediMinderDatabase.build(context)
 
     @Provides
     @Singleton
-    fun provideAlarmScheduler(@ApplicationContext context: Context): com.example.mediminder.alarm.AlarmScheduler {
-        return com.example.mediminder.alarm.AlarmScheduler(context)
-    }
+    fun provideCatalogueDatabase(@ApplicationContext context: Context): CatalogueDatabase = CatalogueDatabase.build(context)
+
+    @Provides
+    fun provideCatalogueDao(db: CatalogueDatabase): CatalogueDao = db.catalogueDao()
+
+    @Provides fun provideMedicationDao(db: MediMinderDatabase): MedicationDao = db.medicationDao()
+    @Provides fun provideScheduleDao(db: MediMinderDatabase): ScheduleDao = db.scheduleDao()
+    @Provides fun provideDoseLogDao(db: MediMinderDatabase): DoseLogDao = db.doseLogDao()
+    @Provides fun provideActiveAlertDao(db: MediMinderDatabase): ActiveAlertDao = db.activeAlertDao()
+    @Provides fun provideAppointmentDao(db: MediMinderDatabase): AppointmentDao = db.appointmentDao()
+    @Provides fun provideVaultItemDao(db: MediMinderDatabase): VaultItemDao = db.vaultItemDao()
 }

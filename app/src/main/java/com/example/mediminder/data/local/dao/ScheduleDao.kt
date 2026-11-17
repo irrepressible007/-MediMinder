@@ -1,28 +1,37 @@
 package com.example.mediminder.data.local.dao
 
 import androidx.room.Dao
-import androidx.room.Delete
 import androidx.room.Insert
-import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.example.mediminder.data.local.entity.Schedule
-import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ScheduleDao {
-    @Query("SELECT * FROM schedules WHERE medicationId = :medicationId")
-    fun getSchedulesForMedication(medicationId: Long): Flow<List<Schedule>>
+    @Query("SELECT * FROM schedules WHERE id = :id")
+    suspend fun getById(id: Long): Schedule?
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertSchedule(schedule: Schedule): Long
+    @Query("SELECT * FROM schedules WHERE medicationId = :medicationId ORDER BY minuteOfDay")
+    suspend fun forMedication(medicationId: Long): List<Schedule>
+
+    @Query("SELECT * FROM schedules")
+    suspend fun getAll(): List<Schedule>
+
+    @Insert
+    suspend fun insert(schedule: Schedule): Long
+
+    @Insert
+    suspend fun insertAll(schedules: List<Schedule>)
 
     @Update
-    suspend fun updateSchedule(schedule: Schedule): Int
+    suspend fun update(schedule: Schedule): Int
 
-    @Query("SELECT * FROM schedules WHERE isActive = 1")
-    suspend fun getAllActiveSchedules(): List<Schedule>
+    @Update
+    suspend fun updateAll(schedules: List<Schedule>): Int
 
-    @Delete
-    suspend fun deleteSchedule(schedule: Schedule): Int
+    @Query("DELETE FROM schedules WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: List<Long>)
+
+    @Query("DELETE FROM schedules")
+    suspend fun deleteAll()
 }
