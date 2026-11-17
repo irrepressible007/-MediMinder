@@ -1,5 +1,8 @@
 package com.example.mediminder.ui.components
 
+import kotlinx.coroutines.delay
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
@@ -179,9 +182,25 @@ fun skyContentSoftColor(scene: SkyScene): Color = skyPalette(scene).contentSoft
  */
 @Composable
 fun SkyHeader(scene: SkyScene, modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+    val reduce = rememberReduceMotion()
+    // The greeting slides in once the sky has started to paint itself
+    val words = remember { Animatable(if (reduce) 1f else 0f) }
+    LaunchedEffect(Unit) {
+        delay(350)
+        words.animateTo(1f, tween(Motion.LONG + 200, easing = FastOutSlowInEasing))
+    }
     Box(modifier.fillMaxWidth().clip(RoundedCornerShape(28.dp)).heightIn(min = 184.dp)) {
         SkyCanvas(scene, Modifier.matchParentSize())
-        Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 12.dp, top = 20.dp, bottom = 12.dp), content = content)
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .graphicsLayer {
+                    alpha = words.value
+                    translationX = (1f - words.value) * -18.dp.toPx()
+                }
+                .padding(start = 20.dp, end = 12.dp, top = 20.dp, bottom = 12.dp),
+            content = content,
+        )
     }
 }
 
@@ -210,6 +229,9 @@ private fun SkyCanvas(scene: SkyScene, modifier: Modifier) {
     }
     val rise = remember { Animatable(if (reduce) 0f else 1f) }
     LaunchedEffect(Unit) { rise.animateTo(0f, tween(1600, easing = FastOutSlowInEasing)) }
+    // The scene assembles itself: hills roll up into place, then clouds and stars appear
+    val build = remember { Animatable(if (reduce) 1f else 0f) }
+    LaunchedEffect(Unit) { build.animateTo(1f, tween(1400, easing = LinearEasing)) }
 
     Canvas(modifier) {
         val w = size.width
@@ -223,7 +245,7 @@ private fun SkyCanvas(scene: SkyScene, modifier: Modifier) {
                 val tw = 0.5f + 0.5f * sin(2f * PI.toFloat() * (t * 22f + seed))
                 val base = if (scene == SkyScene.NIGHT) 0.35f else 0.25f
                 drawCircle(
-                    Color.White.copy(alpha = (base + 0.6f * tw).coerceAtMost(1f)),
+                    Color.White.copy(alpha = (base + 0.6f * tw).coerceAtMost(1f) * appear(build.value, 0.35f, 0.5f)),
                     radius = (0.9f + seed * 1.5f).dp.toPx(),
                     center = Offset(x * w, y * h),
                 )
@@ -278,7 +300,12 @@ private fun SkyCanvas(scene: SkyScene, modifier: Modifier) {
             val unit = 1.dp.toPx()
             CLOUDS.forEach { cl ->
                 val x = cl.x * w + sin(2f * PI.toFloat() * (t * cl.swings + cl.phase)) * 22f * unit
-                cloud(Offset(x, cl.y * h), cl.scale * unit, pal.cloud.copy(alpha = if (scene == SkyScene.EVENING) 0.6f else 0.92f))
+                val shown = appear(build.value, 0.3f, 0.45f)
+                cloud(
+                    Offset(x - (1f - shown) * 24f * unit, cl.y * h),
+                    cl.scale * unit,
+                    pal.cloud.copy(alpha = (if (scene == SkyScene.EVENING) 0.6f else 0.92f) * shown),
+                )
             }
         }
 
@@ -289,16 +316,21 @@ private fun SkyCanvas(scene: SkyScene, modifier: Modifier) {
             cubicTo(w * 0.78f, h * 0.87f, w * 0.90f, h * 0.70f, w, h * 0.74f)
             lineTo(w, h); lineTo(0f, h); close()
         }
-        drawPath(back, pal.hillBack)
+        translate(top = (1f - easeOutCubic(appear(build.value, 0f, 0.6f))) * h * 0.4f) { drawPath(back, pal.hillBack) }
         val front = Path().apply {
             moveTo(0f, h * 0.91f)
             cubicTo(w * 0.20f, h * 0.81f, w * 0.42f, h * 0.83f, w * 0.60f, h * 0.93f)
             cubicTo(w * 0.75f, h * 1.01f, w * 0.88f, h * 0.85f, w, h * 0.89f)
             lineTo(w, h); lineTo(0f, h); close()
         }
-        drawPath(front, pal.hillFront)
+        translate(top = (1f - easeOutCubic(appear(build.value, 0.12f, 0.6f))) * h * 0.5f) { drawPath(front, pal.hillFront) }
     }
 }
+
+/** 0 → 1 across [start, start + length] of an entrance. */
+private fun appear(progress: Float, start: Float, length: Float) = ((progress - start) / length).coerceIn(0f, 1f)
+
+private fun easeOutCubic(v: Float) = 1f - (1f - v) * (1f - v) * (1f - v)
 
 /** A puffy cloud whose bottom-left is at [o]; [u] is one unit (1dp × scale). */
 private fun DrawScope.cloud(o: Offset, u: Float, color: Color) {
