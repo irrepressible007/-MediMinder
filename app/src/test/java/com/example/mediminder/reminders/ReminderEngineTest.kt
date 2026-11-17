@@ -4,6 +4,8 @@ import android.Manifest
 import android.app.AlarmManager
 import android.app.Application
 import android.app.Notification
+import com.example.mediminder.data.photos.MedicinePhotos
+import android.graphics.Bitmap
 import android.app.NotificationManager
 import android.content.Context
 import androidx.room.Room
@@ -115,6 +117,26 @@ class ReminderEngineTest {
         assertNull("repeat cancelled", alarmFor("dose-repeat/${schedule.id}/$day"))
         assertEquals(DoseStatus.TAKEN, db.doseLogDao().forOccurrence(schedule.id, day)!!.status)
         assertEquals(19.0, db.medicationDao().getById(schedule.medicationId)!!.stock, 0.0)
+    }
+
+    @Test fun `the medicine's photo shows beside the reminder and in full when expanded`() = runBlocking {
+        val (schedule, day) = addMedicine(minutesFromNow = -1, alert = AlertType.REMINDER)
+        val photo = MedicinePhotos.save(context, Bitmap.createBitmap(800, 600, Bitmap.Config.ARGB_8888))
+        val medication = db.medicationDao().getById(schedule.medicationId)!!
+        db.medicationDao().update(medication.copy(photoUri = photo))
+
+        engine.onDoseAlarm(schedule.id, day, ReminderScheduler.KIND_REGULAR)
+
+        val n = shownNotifications().single()
+        assertNotNull("side picture", n.getLargeIcon())
+        assertNotNull("big picture when expanded", n.extras.get(Notification.EXTRA_PICTURE) ?: n.extras.get("android.pictureIcon"))
+        assertEquals(3, n.actions.size)
+    }
+
+    @Test fun `without a photo the reminder stays text only`() = runBlocking {
+        val (schedule, day) = addMedicine(minutesFromNow = -1, alert = AlertType.REMINDER)
+        engine.onDoseAlarm(schedule.id, day, ReminderScheduler.KIND_REGULAR)
+        assertNull(shownNotifications().single().getLargeIcon())
     }
 
     @Test fun `deleting a medicine while its reminder is showing clears everything`() = runBlocking {

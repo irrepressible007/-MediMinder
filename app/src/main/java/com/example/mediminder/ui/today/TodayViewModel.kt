@@ -53,6 +53,8 @@ data class DoseRow(
     val ringing: Boolean,
     /** When a snoozed dose rings again (epoch millis). */
     val snoozedUntil: Long? = null,
+    /** Photo of the box or strip, if the user took one. */
+    val photo: String? = null,
 )
 
 data class TodayUi(
@@ -134,6 +136,7 @@ class TodayViewModel @Inject constructor(
                 alertType = occ.schedule.alertType,
                 ringing = (occ.schedule.id to occ.day) in extra.ringing,
                 snoozedUntil = log?.takeIf { it.status == DoseStatus.SNOOZED }?.snoozedUntil,
+                photo = occ.medication.photoUri,
             )
         }
         val todayEpoch = now.toLocalDate().toEpochDay()

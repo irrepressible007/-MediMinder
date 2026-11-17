@@ -50,6 +50,7 @@ import com.example.mediminder.ui.components.MediCard
 import com.example.mediminder.ui.components.SecondaryButton
 import com.example.mediminder.ui.theme.LocalStatusColors
 import com.example.mediminder.R
+import com.example.mediminder.ui.components.MedicineImage
 import com.example.mediminder.data.MedicineRepository
 import com.example.mediminder.data.catalogue.CatalogueMedicine
 import com.example.mediminder.data.catalogue.CatalogueRepository
@@ -198,7 +199,7 @@ private fun RefillRow(item: RefillItem, onOpen: () -> Unit, onBought: () -> Unit
         borderColor = if (item.low) status.due else MaterialTheme.colorScheme.outlineVariant,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            PillAvatar(m.name, m.color, size = 48)
+            MedicineImage(m.photoUri, m.name, m.color, size = 64)
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
                 Text(listOf(m.name, m.strength).filter { it.isNotBlank() }.joinToString(" "), style = MaterialTheme.typography.titleLarge)

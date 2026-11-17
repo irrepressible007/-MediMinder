@@ -3,4 +3,5 @@
 <full-backup-content>
     <include domain="database" path="mediminder.db" />
     <include domain="sharedpref" path="mediminder_settings.xml" />
+        <include domain="file" path="medicine_photos/" />
 </full-backup-content>

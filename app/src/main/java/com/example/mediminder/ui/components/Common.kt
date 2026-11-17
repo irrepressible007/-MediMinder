@@ -78,6 +78,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.mediminder.R
+import com.example.mediminder.data.photos.MedicinePhotos
+import coil.compose.SubcomposeAsyncImage
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.runtime.remember
+import androidx.compose.foundation.shape.RoundedCornerShape
 import com.example.mediminder.domain.DoseState
 import com.example.mediminder.ui.theme.LocalStatusColors
 import com.example.mediminder.util.Formats
@@ -573,6 +578,28 @@ fun PillAvatar(name: String, colorHex: String, modifier: Modifier = Modifier, si
             style = if (size >= 44) MaterialTheme.typography.titleLarge else MaterialTheme.typography.titleSmall,
         )
     }
+}
+
+/**
+ * The medicine's own photo (box or strip) when there is one, otherwise the colour badge.
+ * Rounded-square so a photo and a badge sit the same way in a list.
+ */
+@Composable
+fun MedicineImage(photo: String?, name: String, colorHex: String, modifier: Modifier = Modifier, size: Int = 48) {
+    val context = LocalContext.current
+    val model = remember(photo) { MedicinePhotos.model(context, photo) }
+    if (model == null) {
+        PillAvatar(name, colorHex, modifier, size)
+        return
+    }
+    val shape = RoundedCornerShape((size * 0.28f).dp)
+    SubcomposeAsyncImage(
+        model = model,
+        contentDescription = stringResource(R.string.cd_medicine_photo, name),
+        contentScale = ContentScale.Crop,
+        modifier = modifier.size(size.dp).clip(shape).border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape),
+        error = { PillAvatar(name, colorHex, size = size) },
+    )
 }
 
 fun parseColor(hex: String, fallback: Color = Color(0xFF0369A1)): Color =

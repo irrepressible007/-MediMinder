@@ -12,6 +12,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
+import com.example.mediminder.data.MedicineRepository
+import com.example.mediminder.data.photos.MedicinePhotos
+import kotlinx.coroutines.flow.first
 import com.example.mediminder.data.settings.SettingsRepository
 import com.example.mediminder.reminders.Notifier
 import com.example.mediminder.reminders.ReminderEngine
@@ -28,6 +31,7 @@ import javax.inject.Inject
 class MainActivity : AppCompatActivity() {
     @Inject lateinit var engine: ReminderEngine
     @Inject lateinit var settings: SettingsRepository
+    @Inject lateinit var medicines: MedicineRepository
 
     /** Where a tapped notification wants to go. */
     private val deepLink = MutableStateFlow<DeepLink?>(null)
@@ -39,6 +43,11 @@ class MainActivity : AppCompatActivity() {
 
         // Opening the app is a good moment to repair any alarm the phone dropped
         lifecycleScope.launch { engine.rescheduleAll() }
+        // ...and to tidy away medicine photos that no medicine uses any more
+        lifecycleScope.launch {
+            val inUse = medicines.observeAll().first().mapNotNull { it.medication.photoUri }.toSet()
+            MedicinePhotos.removeUnused(this@MainActivity, inUse)
+        }
 
         // AppCompat's setContentView skips the NavigationEvent owner that Navigation3 needs
         initializeViewTreeOwners()

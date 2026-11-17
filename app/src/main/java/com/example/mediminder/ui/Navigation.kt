@@ -34,6 +34,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.example.mediminder.R
+import com.example.mediminder.ui.photos.PhotoCaptureScreen
 import com.example.mediminder.data.settings.SettingsRepository
 import com.example.mediminder.ui.appointments.AppointmentEditorScreen
 import com.example.mediminder.ui.appointments.AppointmentsScreen
@@ -62,6 +63,7 @@ import javax.inject.Inject
 @Serializable data class MedicineEditor(val medicationId: Long = 0) : NavKey
 @Serializable data class MedicineDetail(val medicationId: Long, val openRestock: Boolean = false) : NavKey
 @Serializable data object Scanner : NavKey
+@Serializable data object PhotoCapture : NavKey
 @Serializable data object RefillList : NavKey
 /** appointmentId 0 = new; doctorId pre-fills the doctor */
 @Serializable data class AppointmentEditor(val appointmentId: Long = 0, val doctorId: Long = 0) : NavKey
@@ -95,8 +97,9 @@ fun MainNavigation(
 ) {
     val backStack = rememberNavBackStack(if (root.onboardingDone) Home else Onboarding)
     var tab by rememberSaveable { mutableStateOf(HomeTab.TODAY) }
-    // Brand picked on the scanner, handed back to the medicine editor
+    // Handed back to the medicine editor: the brand read by the scanner and/or a photo of the box
     var scannedCatalogueId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var capturedPhoto by rememberSaveable { mutableStateOf<String?>(null) }
 
     val link by deepLink.collectAsState()
     LaunchedEffect(link) {
@@ -139,8 +142,10 @@ fun MainNavigation(
                 MedicineEditorScreen(
                     medicationId = key.medicationId,
                     scannedCatalogueId = scannedCatalogueId,
-                    onScanConsumed = { scannedCatalogueId = null },
+                    capturedPhoto = capturedPhoto,
+                    onScanConsumed = { scannedCatalogueId = null; capturedPhoto = null },
                     onScan = { open(Scanner) },
+                    onTakePhoto = { open(PhotoCapture) },
                     onBack = ::back,
                     onSaved = { id ->
                         back()
@@ -160,11 +165,18 @@ fun MainNavigation(
             entry<Scanner> {
                 CameraScannerScreen(
                     onBack = ::back,
-                    onPicked = { id ->
+                    onPicked = { id, photo ->
                         scannedCatalogueId = id
+                        capturedPhoto = photo
                         back()
                     },
                 )
+            }
+            entry<PhotoCapture> {
+                PhotoCaptureScreen(onBack = ::back, onCaptured = { ref ->
+                    capturedPhoto = ref
+                    back()
+                })
             }
             entry<RefillList> { RefillListScreen(onBack = ::back, onOpenMedicine = { open(MedicineDetail(it)) }) }
             entry<AppointmentEditor> { key ->

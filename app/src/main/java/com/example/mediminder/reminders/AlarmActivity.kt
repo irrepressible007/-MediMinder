@@ -65,6 +65,7 @@ import com.example.mediminder.ui.theme.AlarmBackgroundBottom
 import com.example.mediminder.ui.theme.AlarmBackgroundTop
 import com.example.mediminder.ui.theme.AlarmTakenButton
 import com.example.mediminder.R
+import com.example.mediminder.ui.photos.MedicinePhoto
 import com.example.mediminder.data.local.MediMinderDatabase
 import com.example.mediminder.data.local.entity.Appointment
 import com.example.mediminder.data.local.entity.MealTiming
@@ -138,6 +139,7 @@ class AlarmActivity : AppCompatActivity() {
         val day: Long,
         val name: String,
         val detail: String,
+        val photo: String?,
     )
 
     @Composable
@@ -158,6 +160,7 @@ class AlarmActivity : AppCompatActivity() {
                             add(Formats.time(context, schedule.minuteOfDay))
                             if (medication.mealTiming != MealTiming.ANY) add(Formats.mealTiming(context, medication.mealTiming))
                         }.joinToString(" · "),
+                        photo = medication.photoUri,
                     )
                 }
             }
@@ -178,6 +181,9 @@ class AlarmActivity : AppCompatActivity() {
                         shape = MaterialTheme.shapes.large,
                     ) {
                         Column(Modifier.padding(20.dp)) {
+                            // Seeing the box or strip is the surest check that it's the right medicine
+                            MedicinePhoto(dose.photo, stringResource(R.string.cd_medicine_photo, dose.name), Modifier.fillMaxWidth().height(200.dp))
+                            if (dose.photo != null) Spacer(Modifier.height(14.dp))
                             Text(dose.name, color = Color.White, style = MaterialTheme.typography.headlineSmall)
                             Text(dose.detail, color = Color.White.copy(alpha = 0.9f), style = MaterialTheme.typography.bodyLarge)
                             Spacer(Modifier.height(16.dp))

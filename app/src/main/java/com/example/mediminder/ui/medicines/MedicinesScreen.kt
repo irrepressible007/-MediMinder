@@ -38,6 +38,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mediminder.R
+import com.example.mediminder.ui.components.MedicineImage
 import com.example.mediminder.data.MedicineRepository
 import com.example.mediminder.data.local.entity.MealTiming
 import com.example.mediminder.data.local.entity.MedicationWithSchedules
@@ -139,7 +140,7 @@ fun MedicineRow(item: MedicationWithSchedules, today: Long, onClick: () -> Unit)
         containerColor = if (m.archived) MaterialTheme.colorScheme.surfaceContainerLow else MaterialTheme.colorScheme.surface,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            PillAvatar(m.name, m.color, size = 52)
+            MedicineImage(m.photoUri, m.name, m.color, size = 64)
             Spacer(Modifier.width(16.dp))
             Column(Modifier.weight(1f)) {
                 Text(listOf(m.name, m.strength).filter { it.isNotBlank() }.joinToString(" "), style = MaterialTheme.typography.titleLarge)

@@ -59,6 +59,18 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mediminder.R
+import dagger.hilt.android.qualifiers.ApplicationContext
+import android.content.Context
+import com.example.mediminder.ui.photos.MedicinePhoto
+import com.example.mediminder.data.photos.MedicinePhotos
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import com.example.mediminder.data.MedicineRepository
 import com.example.mediminder.data.catalogue.CatalogueMedicine
 import com.example.mediminder.data.catalogue.CatalogueRepository
@@ -119,6 +131,7 @@ data class MedicineDetailUi(
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class MedicineDetailViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val repository: MedicineRepository,
     private val catalogue: CatalogueRepository,
     private val settings: SettingsRepository,
@@ -170,7 +183,11 @@ class MedicineDetailViewModel @Inject constructor(
     fun setArchived(archived: Boolean) = viewModelScope.launch { id.value?.let { repository.setArchived(it, archived) } }
 
     fun delete(onDone: () -> Unit) = viewModelScope.launch {
-        id.value?.let { repository.delete(it) }
+        id.value?.let { medId ->
+            val photo = repository.get(medId)?.medication?.photoUri
+            repository.delete(medId)
+            MedicinePhotos.delete(context, photo)
+        }
         onDone()
     }
 }
@@ -191,6 +208,7 @@ fun MedicineDetailScreen(
     var restockOpen by rememberSaveable { mutableStateOf(openRestock) }
     var countOpen by rememberSaveable { mutableStateOf(false) }
     var deleteOpen by rememberSaveable { mutableStateOf(false) }
+    var photoOpen by rememberSaveable { mutableStateOf(false) }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -218,6 +236,8 @@ fun MedicineDetailScreen(
             )
         }
         if (countOpen) CountDialog(m.stock, onDismiss = { countOpen = false }, onConfirm = viewModel::setStock)
+        val hasPhoto = MedicinePhotos.model(context, m.photoUri) != null
+        if (photoOpen && hasPhoto) FullScreenPhoto(m.photoUri, m.name, onDismiss = { photoOpen = false })
         if (deleteOpen) {
             ConfirmDialog(
                 title = stringResource(R.string.delete_medicine_title, m.name),
@@ -234,10 +254,19 @@ fun MedicineDetailScreen(
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
+            if (hasPhoto) item {
+                MedicinePhoto(
+                    m.photoUri,
+                    stringResource(R.string.cd_medicine_photo, m.name),
+                    Modifier.fillMaxWidth().aspectRatio(16f / 10f).clickable { photoOpen = true },
+                )
+            }
             item {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 4.dp)) {
-                    PillAvatar(m.name, m.color, size = 60)
-                    Spacer(Modifier.width(16.dp))
+                    if (!hasPhoto) {
+                        PillAvatar(m.name, m.color, size = 60)
+                        Spacer(Modifier.width(16.dp))
+                    }
                     Column(Modifier.weight(1f)) {
                         Text(listOf(m.name, m.strength).filter { it.isNotBlank() }.joinToString(" "), style = MaterialTheme.typography.headlineSmall)
                         m.genericName?.takeIf { it.isNotBlank() }?.let { Text(it, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant) }
@@ -403,6 +432,19 @@ fun MedicineDetailScreen(
                         modifier = Modifier.align(Alignment.CenterHorizontally),
                     )
                 }
+            }
+        }
+    }
+}
+
+/** The photo as large as the screen allows — tap anywhere to close. */
+@Composable
+private fun FullScreenPhoto(photo: String?, name: String, onDismiss: () -> Unit) {
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Box(Modifier.fillMaxSize().background(Color.Black).clickable(onClick = onDismiss)) {
+            MedicinePhoto(photo, stringResource(R.string.cd_medicine_photo, name), Modifier.fillMaxSize().padding(8.dp), contentScale = ContentScale.Fit)
+            IconButton(onClick = onDismiss, modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).size(56.dp)) {
+                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_close), tint = Color.White, modifier = Modifier.size(30.dp))
             }
         }
     }

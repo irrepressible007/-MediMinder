@@ -269,6 +269,7 @@ class ReminderEngine @Inject constructor(
         unit = medication.unit,
         mealTiming = medication.mealTiming,
         alertType = schedule.alertType,
+        photo = medication.photoUri,
     )
 
     // ── Stock ───────────────────────────────────────────────────────────────
@@ -285,6 +286,7 @@ class ReminderEngine @Inject constructor(
             medication.id, medication.name,
             Formats.quantity(ctx, medication.stock, medication.unit),
             Stock.daysLeft(medication, item.schedules),
+            medication.photoUri,
         )
         medicationDao.setLowStockAlertDay(medication.id, today)
     }

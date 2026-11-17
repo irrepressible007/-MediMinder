@@ -461,7 +461,7 @@
     <string name="onboarding_permissions_later">You can do this later from More → Reminder check.</string>
     <!-- Scanner -->
     <string name="scanner_title">Scan medicine box</string>
-    <string name="scanner_hint">Point the camera at the brand name on the box or strip.</string>
+    <string name="scanner_hint">Point the camera at the name on the box or strip. Its photo is saved too.</string>
     <string name="scanner_pick">Tap your medicine:</string>
     <string name="scanner_permission">Camera permission is needed to scan.</string>
     <string name="today_summary">%1$s of %2$s taken today</string>
@@ -564,4 +564,16 @@
     <string name="refill_send">Send the list to the pharmacy</string>
     <string name="vault_delete_title">Delete this document?</string>
     <string name="vault_delete_body">“%1$s” will be removed from this phone.</string>
+    <string name="photo_title">Photo of the box or strip</string>
+    <string name="photo_why">Shown with every reminder and alarm, so you can be sure it\'s the right medicine.</string>
+    <string name="photo_take">Take a photo</string>
+    <string name="photo_gallery">Choose from gallery</string>
+    <string name="photo_retake">Take again</string>
+    <string name="photo_remove">Remove photo</string>
+    <string name="photo_use">Use this photo</string>
+    <string name="photo_hint">Hold the box or strip inside the frame, in good light.</string>
+    <string name="photo_capture_title">Photo of the medicine</string>
+    <string name="photo_saving">Saving the photo…</string>
+    <string name="cd_take_photo">Take photo</string>
+    <string name="cd_medicine_photo">Photo of %1$s</string>
 </resources>

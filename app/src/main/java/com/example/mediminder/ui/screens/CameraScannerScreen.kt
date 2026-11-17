@@ -56,6 +56,17 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewModelScope
 import com.example.mediminder.R
+import com.example.mediminder.ui.photos.takeUprightPhoto
+import com.example.mediminder.ui.photos.rememberCameraPermission
+import com.example.mediminder.ui.photos.CameraView
+import com.example.mediminder.data.photos.MedicinePhotos
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Row
+import androidx.camera.core.ImageCapture
 import com.example.mediminder.data.catalogue.CatalogueMedicine
 import com.example.mediminder.data.catalogue.CatalogueRepository
 import com.google.mlkit.vision.common.InputImage
@@ -92,22 +103,36 @@ class ScannerViewModel @Inject constructor(private val catalogue: CatalogueRepos
 @Composable
 fun CameraScannerScreen(
     onBack: () -> Unit,
-    onPicked: (catalogueId: Long) -> Unit,
+    /** The medicine tapped, and a photo of its box taken at the same moment (if the camera allowed). */
+    onPicked: (catalogueId: Long, photoRef: String?) -> Unit,
     viewModel: ScannerViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
-    var hasPermission by remember {
-        mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
-    }
-    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted -> hasPermission = granted }
-    LaunchedEffect(Unit) { if (!hasPermission) permissionLauncher.launch(Manifest.permission.CAMERA) }
+    val scope = rememberCoroutineScope()
+    val hasPermission = rememberCameraPermission()
     val matches by viewModel.matches.collectAsState()
+    val capture = remember { ImageCapture.Builder().setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY).build() }
+    val analyzer = remember { OcrAnalyzer { text -> ContextCompat.getMainExecutor(context).execute { viewModel.onText(text) } } }
+    var saving by remember { mutableStateOf(false) }
+
+    fun pick(id: Long) {
+        if (saving) return
+        saving = true
+        scope.launch {
+            val photo = capture.takeUprightPhoto(context)?.let { MedicinePhotos.save(context, it) }
+            onPicked(id, photo)
+        }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.scanner_title)) },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_close)) } },
+                title = { Text(stringResource(R.string.scanner_title), style = MaterialTheme.typography.titleLarge) },
+                navigationIcon = {
+                    IconButton(onClick = onBack, modifier = Modifier.size(56.dp)) {
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_close), modifier = Modifier.size(28.dp))
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Black, titleContentColor = Color.White, navigationIconContentColor = Color.White),
             )
         },
@@ -115,70 +140,45 @@ fun CameraScannerScreen(
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
             if (hasPermission) {
-                CameraPreview(onTextFound = viewModel::onText)
+                CameraView(capture = capture, analyzer = analyzer, modifier = Modifier.fillMaxSize())
             } else {
-                Text(stringResource(R.string.scanner_permission), color = Color.White, modifier = Modifier.align(Alignment.Center).padding(24.dp))
+                Text(stringResource(R.string.scanner_permission), color = Color.White, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.align(Alignment.Center).padding(24.dp))
             }
             Column(
                 Modifier.align(Alignment.BottomCenter).fillMaxWidth()
-                    .background(Color.Black.copy(alpha = 0.75f), RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                    .background(Color.Black.copy(alpha = 0.8f), RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
                     .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
+                if (saving) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        CircularProgressIndicator(Modifier.size(28.dp), color = Color.White)
+                        Spacer(Modifier.width(12.dp))
+                        Text(stringResource(R.string.photo_saving), color = Color.White, style = MaterialTheme.typography.titleMedium)
+                    }
+                    return@Column
+                }
                 Text(
                     stringResource(if (matches.isEmpty()) R.string.scanner_hint else R.string.scanner_pick),
                     color = Color.White, style = MaterialTheme.typography.titleMedium,
                 )
-                LazyColumn(Modifier.heightIn(max = 260.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                LazyColumn(Modifier.heightIn(max = 300.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(matches, key = { it.id }) { m ->
                         Column(
                             Modifier.fillMaxWidth()
-                                .background(Color.White.copy(alpha = 0.12f), RoundedCornerShape(14.dp))
-                                .clickable { onPicked(m.id) }
-                                .padding(12.dp)
+                                .background(Color.White.copy(alpha = 0.14f), RoundedCornerShape(16.dp))
+                                .clickable { pick(m.id) }
+                                .heightIn(min = 64.dp)
+                                .padding(14.dp)
                         ) {
-                            Text("${m.brandName} ${m.strength.orEmpty()}", color = Color.White, fontWeight = FontWeight.Bold)
-                            Text(listOfNotNull(m.dosageForm, m.genericName, m.manufacturer).joinToString(" · "), color = Color.White.copy(alpha = 0.75f), style = MaterialTheme.typography.bodySmall)
+                            Text("${m.brandName} ${m.strength.orEmpty()}", color = Color.White, style = MaterialTheme.typography.titleMedium)
+                            Text(listOfNotNull(m.dosageForm, m.genericName, m.manufacturer).joinToString(" · "), color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.bodyMedium)
                         }
                     }
                 }
             }
         }
     }
-}
-
-@Composable
-private fun CameraPreview(onTextFound: (String) -> Unit) {
-    val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
-    val cameraExecutor: ExecutorService = remember { Executors.newSingleThreadExecutor() }
-    DisposableEffect(Unit) { onDispose { cameraExecutor.shutdown() } }
-
-    AndroidView(
-        factory = { ctx ->
-            val previewView = PreviewView(ctx).apply {
-                layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-                scaleType = PreviewView.ScaleType.FILL_CENTER
-            }
-            val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
-            cameraProviderFuture.addListener({
-                val cameraProvider = cameraProviderFuture.get()
-                val preview = Preview.Builder().build().also { it.setSurfaceProvider(previewView.surfaceProvider) }
-                val analysis = ImageAnalysis.Builder()
-                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                    .build()
-                    .also { it.setAnalyzer(cameraExecutor, OcrAnalyzer { text -> ContextCompat.getMainExecutor(ctx).execute { onTextFound(text) } }) }
-                try {
-                    cameraProvider.unbindAll()
-                    cameraProvider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, analysis)
-                } catch (e: Exception) {
-                    Log.e("CameraPreview", "Use case binding failed", e)
-                }
-            }, ContextCompat.getMainExecutor(ctx))
-            previewView
-        },
-        modifier = Modifier.fillMaxSize(),
-    )
 }
 
 /** Runs on-device text recognition (ML Kit) at most once a second. */

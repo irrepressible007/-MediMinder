@@ -20,6 +20,8 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.example.mediminder.MainActivity
 import com.example.mediminder.R
+import com.example.mediminder.data.photos.MedicinePhotos
+import android.graphics.Bitmap
 import com.example.mediminder.data.local.entity.AlertType
 import com.example.mediminder.data.local.entity.Appointment
 import com.example.mediminder.data.local.entity.MealTiming
@@ -42,6 +44,8 @@ data class DoseInfo(
     val unit: String,
     val mealTiming: MealTiming,
     val alertType: AlertType,
+    /** Photo of the box or strip (MedicinePhotos reference), or null. */
+    val photo: String? = null,
 )
 
 /** Builds and posts every notification the app shows. */
@@ -131,6 +135,7 @@ class Notifier @Inject constructor(
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
             builder.setDefaults(NotificationCompat.DEFAULT_ALL)
         }
+        withPhoto(builder, dose.photo, summary = text)
         post(doseNotificationId(dose.scheduleId, dose.day), builder.build())
     }
 
@@ -175,8 +180,28 @@ class Notifier @Inject constructor(
             builder.setSound(alarmSound(), AudioManager.STREAM_ALARM)
             builder.setVibrate(longArrayOf(0, 800, 400, 800, 400, 800))
         }
+        val photo = doses.firstNotNullOfOrNull { it.photo }
+        if (doses.size == 1) withPhoto(builder, photo, summary = lines.first())
+        else MedicinePhotos.thumbnail(appContext, photo)?.let(builder::setLargeIcon)
         val notification = builder.build().apply { flags = flags or Notification.FLAG_INSISTENT }
         post(ID_ALARM, notification)
+    }
+
+    /**
+     * The medicine's photo on the side of the notification (large icon), and the whole photo
+     * when it is expanded. Without a photo the notification is left as it is.
+     */
+    private fun withPhoto(builder: NotificationCompat.Builder, photo: String?, summary: String) {
+        val thumb = MedicinePhotos.thumbnail(appContext, photo) ?: return
+        builder.setLargeIcon(thumb)
+        MedicinePhotos.picture(appContext, photo)?.let { picture ->
+            builder.setStyle(
+                NotificationCompat.BigPictureStyle()
+                    .bigPicture(picture)
+                    .bigLargeIcon(null as Bitmap?)   // the side picture hides once the big one shows
+                    .setSummaryText(summary)
+            )
+        }
     }
 
     fun cancelDose(scheduleId: Long, day: Long) = manager.cancel(doseNotificationId(scheduleId, day))
@@ -185,7 +210,7 @@ class Notifier @Inject constructor(
 
     // ── Stock ───────────────────────────────────────────────────────────────
 
-    fun showLowStock(medicationId: Long, name: String, stockText: String, daysLeft: Int?) {
+    fun showLowStock(medicationId: Long, name: String, stockText: String, daysLeft: Int?, photo: String? = null) {
         val ctx = context
         val text = if (daysLeft != null) ctx.getString(R.string.notif_low_stock_days, stockText, Formats.number(ctx, daysLeft))
         else ctx.getString(R.string.notif_low_stock_units, stockText)
@@ -199,6 +224,8 @@ class Notifier @Inject constructor(
             .setAutoCancel(true)
             .setContentIntent(openApp("$DEEP_LINK_MEDICINE$medicationId"))
             .addAction(0, ctx.getString(R.string.action_restock), openApp("$DEEP_LINK_RESTOCK$medicationId"))
+            // the pack's photo helps at the pharmacy
+            .also { b -> MedicinePhotos.thumbnail(appContext, photo)?.let(b::setLargeIcon) }
             .build()
         post("stock:$medicationId".hashCode(), notification)
     }

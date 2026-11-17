@@ -67,6 +67,15 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mediminder.R
+import com.example.mediminder.ui.photos.MedicinePhoto
+import com.example.mediminder.ui.components.MedicineImage
+import com.example.mediminder.data.photos.MedicinePhotos
+import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.compose.rememberLauncherForActivityResult
 import com.example.mediminder.data.catalogue.CatalogueMedicine
 import com.example.mediminder.data.local.entity.AlertType
 import com.example.mediminder.data.local.entity.DaysOfWeek
@@ -109,18 +118,23 @@ private val OTHER_PATTERNS = DosePattern.PRESETS - MAIN_PATTERNS.toSet()
 fun MedicineEditorScreen(
     medicationId: Long,
     scannedCatalogueId: Long?,
+    capturedPhoto: String?,
     onScanConsumed: () -> Unit,
     onScan: () -> Unit,
+    onTakePhoto: () -> Unit,
     onBack: () -> Unit,
     onSaved: (Long) -> Unit,
     viewModel: MedicineEditorViewModel = hiltViewModel(),
 ) {
     LaunchedEffect(medicationId) { viewModel.load(medicationId) }
-    LaunchedEffect(scannedCatalogueId) {
-        if (scannedCatalogueId != null) {
-            viewModel.pickById(scannedCatalogueId)
-            onScanConsumed()
+    // Results handed back by the scanner or the photo camera
+    LaunchedEffect(scannedCatalogueId, capturedPhoto) {
+        when {
+            scannedCatalogueId != null -> viewModel.pickScanned(scannedCatalogueId, capturedPhoto)
+            capturedPhoto != null -> viewModel.onPhoto(capturedPhoto)
+            else -> return@LaunchedEffect
         }
+        onScanConsumed()
     }
     val context = LocalContext.current
     val s by viewModel.state.collectAsState()
@@ -193,7 +207,7 @@ fun MedicineEditorScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             when (step) {
-                0 -> NameStep(s, viewModel, onScan)
+                0 -> NameStep(s, viewModel, onScan, onTakePhoto)
                 1 -> WhenStep(s, viewModel)
                 2 -> TimesStep(s, viewModel)
                 else -> FinishStep(s, viewModel)
@@ -214,8 +228,9 @@ private fun StepTitle(title: String, body: String? = null) {
 // ── 1. Which medicine ───────────────────────────────────────────────────────
 
 @Composable
-private fun ColumnScope.NameStep(s: EditorState, vm: MedicineEditorViewModel, onScan: () -> Unit) {
+private fun ColumnScope.NameStep(s: EditorState, vm: MedicineEditorViewModel, onScan: () -> Unit, onTakePhoto: () -> Unit) {
     val context = LocalContext.current
+    val gallery = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> uri?.let(vm::importPhoto) }
     if (!s.nameConfirmed) {
         StepTitle(stringResource(R.string.wiz_name_title), stringResource(R.string.wiz_name_body))
         OutlinedTextField(
@@ -263,7 +278,7 @@ private fun ColumnScope.NameStep(s: EditorState, vm: MedicineEditorViewModel, on
     StepTitle(stringResource(R.string.wiz_confirm_title))
     MediCard(containerColor = MaterialTheme.colorScheme.primaryContainer, borderColor = MaterialTheme.colorScheme.primary, borderWidth = 2.dp) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.Medication, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(36.dp))
+            MedicineImage(s.photo, s.name, s.color, size = 64)
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
                 Text(listOf(s.name, s.strength).filter { it.isNotBlank() }.joinToString(" "), style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
@@ -277,6 +292,25 @@ private fun ColumnScope.NameStep(s: EditorState, vm: MedicineEditorViewModel, on
     }
     QuietButton(stringResource(R.string.wiz_choose_other), onClick = vm::changeMedicine, icon = Icons.Default.Search)
     WarningsCard(s.warnings)
+
+    // A photo of the box or strip, shown in reminders and alarms
+    SectionTitle(stringResource(R.string.photo_title))
+    Text(stringResource(R.string.photo_why), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    if (MedicinePhotos.model(context, s.photo) != null) {
+        MedicinePhoto(s.photo, stringResource(R.string.cd_medicine_photo, s.name), Modifier.fillMaxWidth().aspectRatio(4f / 3f))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            SecondaryButton(stringResource(R.string.photo_retake), onClick = onTakePhoto, icon = Icons.Default.CameraAlt, modifier = Modifier.weight(1f))
+            SecondaryButton(stringResource(R.string.photo_remove), onClick = { vm.onPhoto(null) }, icon = Icons.Default.Delete, contentColor = MaterialTheme.colorScheme.error, modifier = Modifier.weight(1f))
+        }
+    } else {
+        SecondaryButton(stringResource(R.string.photo_take), onClick = onTakePhoto, icon = Icons.Default.CameraAlt)
+        QuietButton(
+            stringResource(R.string.photo_gallery),
+            onClick = { gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+            icon = Icons.Default.PhotoLibrary,
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+        )
+    }
 
     if (s.catalogueItem == null) {
         SectionTitle(stringResource(R.string.wiz_kind_title))

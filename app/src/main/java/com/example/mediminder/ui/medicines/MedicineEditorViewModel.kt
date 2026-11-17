@@ -4,6 +4,10 @@ import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mediminder.R
+import dagger.hilt.android.qualifiers.ApplicationContext
+import com.example.mediminder.data.photos.MedicinePhotos
+import android.net.Uri
+import android.content.Context
 import com.example.mediminder.data.MedicineRepository
 import com.example.mediminder.data.catalogue.CatalogueMedicine
 import com.example.mediminder.data.catalogue.CatalogueRepository
@@ -84,6 +88,8 @@ data class EditorState(
     val refillReminders: Boolean = true,
 
     // Looks & notes
+    /** Photo of the box or strip (see MedicinePhotos), or null. */
+    val photo: String? = null,
     val color: String = COLORS.first(),
     val shape: String = "Round",
     val notes: String = "",
@@ -106,6 +112,7 @@ data class EditorState(
 @OptIn(FlowPreview::class)
 @HiltViewModel
 class MedicineEditorViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val repository: MedicineRepository,
     private val catalogue: CatalogueRepository,
     private val settings: SettingsRepository,
@@ -191,6 +198,7 @@ class MedicineEditorViewModel @Inject constructor(
                     refillThresholdDays = m.refillThresholdDays,
                     refillReminders = m.refillReminders,
                     color = m.color,
+                    photo = m.photoUri,
                     shape = m.shape,
                     notes = m.notes.orEmpty(),
                 )
@@ -224,7 +232,24 @@ class MedicineEditorViewModel @Inject constructor(
         refreshWarnings()
     }
 
-    fun pickById(catalogueId: Long) = viewModelScope.launch { catalogue.byId(catalogueId)?.let(::pick) }
+    /** From the scanner: the medicine it read, and the photo of the box it took. */
+    fun pickScanned(catalogueId: Long, photo: String?) = viewModelScope.launch {
+        catalogue.byId(catalogueId)?.let(::pick)
+        if (photo != null) onPhoto(photo)
+    }
+
+    // ── Photo ───────────────────────────────────────────────────────────────
+
+    fun onPhoto(ref: String?) {
+        val s = _state.value
+        // A photo taken earlier in this session and now replaced will never be used
+        if (s.photo != null && s.photo != s.original?.photoUri && s.photo != ref) MedicinePhotos.delete(context, s.photo)
+        _state.update { it.copy(photo = ref) }
+    }
+
+    fun importPhoto(uri: Uri) = viewModelScope.launch {
+        MedicinePhotos.import(context, uri)?.let(::onPhoto)
+    }
 
     /** Use exactly what the user typed (medicine not in the list). */
     fun useCustomName() {
@@ -355,6 +380,7 @@ class MedicineEditorViewModel @Inject constructor(
             form = s.form,
             manufacturer = s.manufacturer.trim().ifBlank { null },
             catalogueId = s.catalogueItem?.id,
+            photoUri = s.photo,
             shape = s.shape,
             color = s.color,
             mealTiming = s.mealTiming,
@@ -386,6 +412,8 @@ class MedicineEditorViewModel @Inject constructor(
         _state.update { it.copy(saving = true, error = null) }
         viewModelScope.launch {
             val id = repository.save(medication, schedules)
+            // The old photo was replaced or removed
+            original?.photoUri?.takeIf { it != s.photo }?.let { MedicinePhotos.delete(context, it) }
             _state.update { it.copy(saving = false, savedId = id) }
         }
     }

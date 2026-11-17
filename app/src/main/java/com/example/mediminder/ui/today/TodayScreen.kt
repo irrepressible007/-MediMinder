@@ -66,6 +66,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import com.example.mediminder.R
+import com.example.mediminder.ui.photos.MedicinePhoto
+import com.example.mediminder.ui.components.MedicineImage
 import com.example.mediminder.data.local.entity.AlertType
 import com.example.mediminder.data.local.entity.MealTiming
 import com.example.mediminder.domain.DayPart
@@ -239,7 +241,7 @@ fun TodayScreen(
                 items(state.asNeeded, key = { "prn-${it.id}" }) { med ->
                     MediCard(onClick = { onOpenMedicine(med.id) }) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            PillAvatar(med.name, med.color, size = 44)
+                            MedicineImage(med.photoUri, med.name, med.color, size = 56)
                             Spacer(Modifier.width(14.dp))
                             Column(Modifier.weight(1f)) {
                                 Text(listOf(med.name, med.strength).filter { it.isNotBlank() }.joinToString(" "), style = MaterialTheme.typography.titleLarge)
@@ -421,7 +423,7 @@ private fun DoseCard(row: DoseRow, actionable: Boolean, onTake: () -> Unit, onOp
         }
         Spacer(Modifier.height(10.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
-            PillAvatar(row.name, row.color, size = 44)
+            MedicineImage(row.photo, row.name, row.color, size = 64)
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
                 Text(listOf(row.name, row.strength).filter { it.isNotBlank() }.joinToString(" "), style = MaterialTheme.typography.titleLarge)
@@ -461,6 +463,7 @@ private fun DoseOptionsSheet(
             Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp).navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            MedicinePhoto(row.photo, stringResource(R.string.cd_medicine_photo, row.name), Modifier.fillMaxWidth().height(180.dp))
             Text(listOf(row.name, row.strength).filter { it.isNotBlank() }.joinToString(" "), style = MaterialTheme.typography.headlineSmall)
             Text(
                 Formats.time(context, row.minuteOfDay) + " · " + doseDetail(row),
