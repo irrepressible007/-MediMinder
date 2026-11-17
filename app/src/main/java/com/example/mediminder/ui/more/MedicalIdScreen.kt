@@ -1,5 +1,8 @@
 package com.example.mediminder.ui.more
 
+import com.example.mediminder.ui.components.AnimatedArt
+import com.example.mediminder.ui.components.Art
+import com.example.mediminder.ui.theme.Hue
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
@@ -106,6 +109,7 @@ fun MedicalIdScreen(onBack: () -> Unit, viewModel: MedicalIdViewModel = hiltView
             Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
+            AnimatedArt(Art.HEARTBEAT, Hue.ROSE, Modifier.align(Alignment.CenterHorizontally), size = 148.dp)
             Text(stringResource(R.string.medical_id_intro), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             SectionTitle(stringResource(R.string.medical_id_blood))
             ChoiceChips(BLOOD_GROUPS, blood.ifBlank { null }, { it }, { blood = if (blood == it) "" else it })

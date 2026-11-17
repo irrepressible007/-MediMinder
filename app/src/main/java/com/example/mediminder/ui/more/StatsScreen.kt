@@ -1,5 +1,7 @@
 package com.example.mediminder.ui.more
 
+import com.example.mediminder.ui.components.Arrive
+import com.example.mediminder.ui.components.rememberEntranceState
 import com.example.mediminder.ui.components.ProgressRing
 import com.example.mediminder.ui.components.animatedCount
 import android.content.Intent
@@ -101,16 +103,17 @@ fun StatsScreen(onBack: () -> Unit, viewModel: StatsViewModel = hiltViewModel())
         containerColor = MaterialTheme.colorScheme.background,
         topBar = { AppTopBar(title = stringResource(R.string.stats_title), onBack = onBack) },
     ) { padding ->
+        val arrival = rememberEntranceState()
         LazyColumn(
             Modifier.fillMaxSize().padding(padding),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            item {
+            item { Arrive(arrival, 0) {
                 ChoiceChips(listOf(7, 30, 90), days, { n -> Formats.digits(context, context.resources.getQuantityString(R.plurals.days_count, n, n)) }, { viewModel.days.value = it })
-            }
+            }}
             val s = summary ?: return@LazyColumn
-            item {
+            item { Arrive(arrival, 1) {
                 MediCard {
                     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                         val rate = s.rate
@@ -132,8 +135,8 @@ fun StatsScreen(onBack: () -> Unit, viewModel: StatsViewModel = hiltViewModel())
                         Text(stringResource(R.string.stats_rate_label), style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
                     }
                 }
-            }
-            item {
+            }}
+            item { Arrive(arrival, 2) {
                 MediCard {
                     StatRow(stringResource(R.string.state_taken), Formats.number(context, s.taken))
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -145,14 +148,14 @@ fun StatsScreen(onBack: () -> Unit, viewModel: StatsViewModel = hiltViewModel())
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     StatRow(stringResource(R.string.stats_points), Formats.number(context, points))
                 }
-            }
-            item {
+            }}
+            item { Arrive(arrival, 3) {
                 SectionTitle(stringResource(R.string.stats_by_day))
                 Text(stringResource(R.string.stats_by_day_hint), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 DayBars(s)
-            }
+            }}
             if (s.perMedication.isNotEmpty()) {
-                item { SectionTitle(stringResource(R.string.stats_by_medicine)) }
+                item { Arrive(arrival, 4) { SectionTitle(stringResource(R.string.stats_by_medicine)) }}
                 items(s.perMedication, key = { it.medicationId }) { m ->
                     MediCard {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -178,9 +181,9 @@ fun StatsScreen(onBack: () -> Unit, viewModel: StatsViewModel = hiltViewModel())
                 }
             }
             if (s.expected == 0) {
-                item { Text(stringResource(R.string.stats_empty), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                item { Arrive(arrival, 5) { Text(stringResource(R.string.stats_empty), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant) }}
             }
-            item {
+            item { Arrive(arrival, 6) {
                 SecondaryButton(
                     stringResource(R.string.stats_share),
                     onClick = {
@@ -189,7 +192,7 @@ fun StatsScreen(onBack: () -> Unit, viewModel: StatsViewModel = hiltViewModel())
                     },
                     icon = Icons.Default.Share,
                 )
-            }
+            }}
         }
     }
 }

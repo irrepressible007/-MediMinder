@@ -1,5 +1,8 @@
 package com.example.mediminder.ui.more
 
+import com.example.mediminder.ui.components.AnimatedArt
+import com.example.mediminder.ui.components.Art
+import com.example.mediminder.ui.theme.Hue
 import android.Manifest
 import android.content.ActivityNotFoundException
 import android.os.Build
@@ -93,6 +96,12 @@ fun ReliabilityScreen(onBack: () -> Unit, settingsViewModel: SettingsViewModel =
             Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            AnimatedArt(
+                Art.SHIELD,
+                if (checks.all { it.ok != false }) Hue.GREEN else Hue.AMBER,
+                Modifier.align(Alignment.CenterHorizontally),
+                size = 148.dp,
+            )
             Text(stringResource(R.string.reliability_intro), style = MaterialTheme.typography.bodyLarge)
             checks.forEach { result -> CheckCard(result, onFix = { fix(result) }) }
             Text(stringResource(R.string.reliability_manufacturer, Reliability.manufacturer), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)

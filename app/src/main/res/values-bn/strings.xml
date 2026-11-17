@@ -606,4 +606,10 @@
     <string name="feedback_visit_saved">%1$s-এর অ্যাপয়েন্টমেন্ট সংরক্ষণ করা হয়েছে</string>
     <string name="feedback_visit_deleted">%1$s-এর অ্যাপয়েন্টমেন্ট মুছে ফেলা হয়েছে</string>
     <string name="feedback_entry_removed">ইতিহাস থেকে তথ্যটি সরানো হয়েছে</string>
+    <string name="today_undo_taken">%1$s খাওয়া হয়েছে</string>
+    <string name="today_undo_skipped">%1$s বাদ দেওয়া হয়েছে</string>
+    <string name="today_in_minutes">%1$s মিনিট পরে</string>
+    <string name="today_in_hours">%1$s ঘণ্টা পরে</string>
+    <string name="today_in_hours_minutes">%1$s ঘণ্টা %2$s মিনিট পরে</string>
+    <string name="day_summary">%2$sটির মধ্যে %1$sটি খেয়েছেন</string>
 </resources>

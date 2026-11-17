@@ -1,5 +1,13 @@
 package com.example.mediminder.reminders
 
+import androidx.lifecycle.viewModelScope
+import com.example.mediminder.data.AppointmentRepository
+import com.example.mediminder.ui.today.TodayViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
 import android.Manifest
 import android.app.AlarmManager
 import android.app.Application
@@ -158,6 +166,26 @@ class ReminderEngineTest {
         medicines.delete(schedule.medicationId, keepHistory = false)
         assertTrue(db.doseLogDao().observeHistory(0, null).first().isEmpty())
         assertNull(db.medicationDao().getById(schedule.medicationId))
+    }
+
+    @Test fun `another day never shows today's doses as taken`() = runBlocking {
+        Dispatchers.setMain(Dispatchers.Unconfined)
+        try {
+            val (schedule, day) = addMedicine(minutesFromNow = -2, alert = AlertType.REMINDER)
+            actions.take(schedule.id, day)
+            val today = TodayViewModel(medicines, AppointmentRepository(db, engine), db, settings, actions)
+            today.selectedDate.value = java.time.LocalDate.ofEpochDay(day)
+            assertEquals(1, today.state.filterNotNull().first { it.date.toEpochDay() == day }.taken)
+
+            // The very first picture of the next day must not reuse this day's records
+            today.nextDay()
+            val next = today.state.filterNotNull().first { it.date.toEpochDay() == day + 1 }
+            assertEquals("the next day starts untouched", 0, next.taken)
+            assertTrue(next.rows.none { it.state == com.example.mediminder.domain.DoseState.TAKEN })
+            today.viewModelScope.cancel()
+        } finally {
+            Dispatchers.resetMain()
+        }
     }
 
     @Test fun `a medicine with no history is simply removed`() = runBlocking {

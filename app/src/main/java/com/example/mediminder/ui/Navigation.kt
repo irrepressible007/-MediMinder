@@ -241,6 +241,7 @@ fun MainNavigation(
 
 @Composable
 private fun HomeScaffold(tab: HomeTab, onTab: (HomeTab) -> Unit, open: (NavKey) -> Unit) {
+    val reduceMotion = rememberReduceMotion()
     Scaffold(
         bottomBar = {
             NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) {
@@ -279,8 +280,12 @@ private fun HomeScaffold(tab: HomeTab, onTab: (HomeTab) -> Unit, open: (NavKey) 
         AnimatedContent(
             targetState = tab,
             transitionSpec = {
-                (fadeIn(tween(Motion.MEDIUM)) + scaleIn(tween(Motion.MEDIUM), initialScale = 0.985f))
-                    .togetherWith(fadeOut(tween(Motion.SHORT)))
+                if (reduceMotion) EnterTransition.None togetherWith ExitTransition.None
+                else {
+                    val dir = if (targetState.ordinal > initialState.ordinal) 1 else -1
+                    (slideInHorizontally(tween(Motion.MEDIUM, easing = FastOutSlowInEasing)) { dir * it / 6 } + fadeIn(tween(Motion.MEDIUM)))
+                        .togetherWith(slideOutHorizontally(tween(Motion.SHORT)) { -dir * it / 10 } + fadeOut(tween(Motion.SHORT)))
+                }
             },
             label = "tabs",
         ) { tab ->

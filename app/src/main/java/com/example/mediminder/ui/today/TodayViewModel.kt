@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -102,7 +103,14 @@ class TodayViewModel @Inject constructor(
     }
 
     private val medications = medicines.observeAll()
-    private val dayLogs = selectedDate.flatMapLatest { d -> db.doseLogDao().observeRange(d.toEpochDay(), d.toEpochDay()) }
+    /**
+     * The chosen day together with *its* dose records. Keeping them paired means a newly chosen
+     * day is never shown with the previous day's records (which would briefly mark the wrong
+     * doses as taken while the new day loads).
+     */
+    private val dayLogs = selectedDate.flatMapLatest { d ->
+        db.doseLogDao().observeRange(d.toEpochDay(), d.toEpochDay()).map { logs -> d to logs.filter { it.scheduledDay == d.toEpochDay() } }
+    }
     private val extras = combine(
         appointments.observeAppointments(),
         db.activeAlertDao().observeAll(),
@@ -116,7 +124,7 @@ class TodayViewModel @Inject constructor(
         val snoozeMinutes: Int,
     )
 
-    val state: StateFlow<TodayUi?> = combine(selectedDate, medications, dayLogs, clock, extras) { date, meds, logs, now, extra ->
+    val state: StateFlow<TodayUi?> = combine(dayLogs, medications, clock, extras) { (date, logs), meds, now, extra ->
         val logByOccurrence = logs.filter { it.scheduleId != null }.associateBy { it.scheduleId!! }
         val rows = DosePlanner.occurrencesOn(meds, date).map { occ ->
             val log = logByOccurrence[occ.schedule.id]

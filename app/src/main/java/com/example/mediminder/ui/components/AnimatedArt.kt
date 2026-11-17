@@ -67,6 +67,14 @@ enum class Art(internal val periodMillis: Int, internal val still: Float) {
     MEAL(3000, 0.3f),
     /** A bell swinging with sound waves. */
     BELL(2400, 0.12f),
+    /** An alarm clock whose hands go round, with a little ring at the top of each turn. */
+    CLOCK(4000, 0.3f),
+    /** A cup of tea with steam — "nothing to take, have a rest". */
+    TEA(3000, 0.3f),
+    /** A shield that gets a tick, then a calm pulse — "you're protected". */
+    SHIELD(3000, 0.62f),
+    /** An ID card with a heartbeat line running across it. */
+    HEARTBEAT(2600, 0.55f),
 }
 
 private const val DRAW_IN_MILLIS = 1900
@@ -177,6 +185,10 @@ private fun DrawScope.scene(art: Art, g: Grid, t: Float, c: ArtColors, tracer: T
     Art.FOLDER -> folder(g, t, c, tracer)
     Art.MEAL -> meal(g, t, c, tracer)
     Art.BELL -> bell(g, t, c, tracer)
+    Art.CLOCK -> clock(g, t, c, tracer)
+    Art.TEA -> tea(g, t, c, tracer)
+    Art.SHIELD -> shield(g, t, c, tracer)
+    Art.HEARTBEAT -> heartbeat(g, t, c, tracer)
 }
 
 /** Grid units → pixels, and the shapes the scenes are made of. */
@@ -469,4 +481,136 @@ private fun DrawScope.bell(g: Grid, t: Float, c: ArtColors, tr: Tracer?) {
         drawCircle(c.paper, radius = 7.2f * u * pulse, center = g.o(67f, 29f))
         drawCircle(c.accent, radius = 5.4f * u * pulse, center = g.o(67f, 29f))
     }
+}
+
+private fun DrawScope.clock(g: Grid, t: Float, c: ArtColors, tr: Tracer?) {
+    val u = g.u
+    // A little ring at the top of each turn
+    val shake = 6f * sin(TAU * 9f * t) * bump(t, 0f, 0.16f)
+    if (tr == null) drawOval(c.shadow, topLeft = g.o(30f, 84f), size = g.s(40f, 4f))
+    rotate(shake, pivot = g.o(50f, 56f)) {
+        // legs and bells behind the face
+        val legL = g.line(36f, 76f, 31f, 84f)
+        val legR = g.line(64f, 76f, 69f, 84f)
+        if (tr != null) { tr.trace(this, legL); tr.trace(this, legR) } else {
+            drawPath(legL, c.main, style = Stroke(3.4f * u, cap = StrokeCap.Round))
+            drawPath(legR, c.main, style = Stroke(3.4f * u, cap = StrokeCap.Round))
+        }
+        part(tr, g.arc(23f, 22f, 41f, 40f, 180f, 180f, close = true), c.main)
+        part(tr, g.arc(59f, 22f, 77f, 40f, 180f, 180f, close = true), c.main)
+        part(tr, g.circle(50f, 56f, 26f), c.main)
+        part(tr, g.circle(50f, 56f, 21.5f), c.paper)
+        if (tr != null) return@rotate
+        for (i in 0 until 12) {
+            val a = i * TAU / 12f
+            val r = if (i % 3 == 0) 1.6f else 1f
+            drawCircle(c.ink.copy(alpha = 0.28f), radius = r * u, center = g.o(50f + cos(a) * 17f, 56f + sin(a) * 17f))
+        }
+        val minute = TAU * t - PI.toFloat() / 2f
+        val hour = TAU * (0.33f + t / 12f) - PI.toFloat() / 2f
+        drawLine(c.main, g.o(50f, 56f), g.o(50f + cos(hour) * 10f, 56f + sin(hour) * 10f), strokeWidth = 3.4f * u, cap = StrokeCap.Round)
+        drawLine(c.ink.copy(alpha = 0.75f), g.o(50f, 56f), g.o(50f + cos(minute) * 15.5f, 56f + sin(minute) * 15.5f), strokeWidth = 2.2f * u, cap = StrokeCap.Round)
+        drawCircle(c.ink.copy(alpha = 0.75f), radius = 2.4f * u, center = g.o(50f, 56f))
+    }
+}
+
+private fun DrawScope.tea(g: Grid, t: Float, c: ArtColors, tr: Tracer?) {
+    val u = g.u
+    val saucer = Path().apply { addOval(Rect(g.x(24f), g.y(74f), g.x(76f), g.y(84f))) }
+    part(tr, saucer, c.main.copy(alpha = 0.45f))
+    val handle = g.arc(61f, 52f, 77f, 68f, -90f, 180f)
+    if (tr != null) tr.trace(this, handle) else drawPath(handle, c.main, style = Stroke(3.6f * u, cap = StrokeCap.Round))
+    val cup = Path().apply {
+        moveTo(g.x(31f), g.y(48f))
+        lineTo(g.x(69f), g.y(48f))
+        cubicTo(g.x(69f), g.y(66f), g.x(62f), g.y(78f), g.x(50f), g.y(78f))
+        cubicTo(g.x(38f), g.y(78f), g.x(31f), g.y(66f), g.x(31f), g.y(48f))
+        close()
+    }
+    part(tr, cup, c.main)
+    if (tr != null) return
+    // the tea inside, and a little heart on the cup
+    drawOval(Color(0xFFB8733A), topLeft = g.o(32.5f, 45.5f), size = g.s(35f, 6f))
+    heart(g.o(50f, 63f), 3.6f * u, c.onMain.copy(alpha = 0.9f))
+    for (i in 0..1) {
+        val ph = (t + i * 0.5f) % 1f
+        val x = 45f + i * 10f
+        val rise = ph * 9f
+        val alpha = sin(PI.toFloat() * ph) * 0.8f
+        val wisp = Path().apply {
+            moveTo(g.x(x), g.y(40f - rise))
+            quadraticTo(g.x(x - 3f), g.y(36f - rise), g.x(x), g.y(32f - rise))
+            quadraticTo(g.x(x + 3f), g.y(28f - rise), g.x(x), g.y(24f - rise))
+        }
+        drawPath(wisp, c.main.copy(alpha = alpha), style = Stroke(2.4f * u, cap = StrokeCap.Round))
+    }
+}
+
+private fun DrawScope.shield(g: Grid, t: Float, c: ArtColors, tr: Tracer?) {
+    val u = g.u
+    val fade = 1f - clamp01((t - 0.9f) / 0.1f)
+    if (tr == null) {
+        // a calm pulse once the tick is in
+        val q = clamp01((t - 0.42f) / 0.45f)
+        if (q > 0f && q < 1f) {
+            drawCircle(c.main.copy(alpha = (1f - q) * 0.45f), radius = (30f + 14f * q) * u, center = g.o(50f, 52f), style = Stroke(2.2f * u))
+        }
+        drawOval(c.shadow, topLeft = g.o(32f, 84f), size = g.s(36f, 4f))
+    }
+    val body = Path().apply {
+        moveTo(g.x(50f), g.y(20f))
+        cubicTo(g.x(58f), g.y(25f), g.x(66f), g.y(27f), g.x(73f), g.y(27f))
+        lineTo(g.x(73f), g.y(50f))
+        cubicTo(g.x(73f), g.y(66f), g.x(63f), g.y(76f), g.x(50f), g.y(83f))
+        cubicTo(g.x(37f), g.y(76f), g.x(27f), g.y(66f), g.x(27f), g.y(50f))
+        lineTo(g.x(27f), g.y(27f))
+        cubicTo(g.x(34f), g.y(27f), g.x(42f), g.y(25f), g.x(50f), g.y(20f))
+        close()
+    }
+    part(tr, body, c.main)
+    if (tr != null) return
+    clipRect(left = g.x(27f), top = g.y(18f), right = g.x(50f), bottom = g.y(86f)) { drawPath(body, c.onMain.copy(alpha = 0.12f)) }
+    val tick = Path().apply {
+        moveTo(g.x(39f), g.y(52f))
+        lineTo(g.x(47f), g.y(60f))
+        lineTo(g.x(62f), g.y(43f))
+    }
+    drawPartial(tick, easeOut(clamp01((t - 0.08f) / 0.32f)) * fade, c.onMain, 5f * u)
+}
+
+private fun DrawScope.heartbeat(g: Grid, t: Float, c: ArtColors, tr: Tracer?) {
+    val u = g.u
+    if (tr == null) {
+        drawRoundRect(c.shadow, topLeft = g.o(20f, 35f), size = g.s(64f, 46f), cornerRadius = g.r(6f))
+        drawRoundRect(c.ink.copy(alpha = 0.5f), topLeft = g.o(44f, 27f), size = g.s(12f, 8f), cornerRadius = g.r(2.5f))
+    }
+    part(tr, g.roundRect(18f, 32f, 64f, 46f, 6f), c.paper)
+    part(tr, g.circle(31f, 47f, 7f), c.main.copy(alpha = 0.3f))
+    val ecg = Path().apply {
+        moveTo(g.x(24f), g.y(66f))
+        lineTo(g.x(38f), g.y(66f))
+        lineTo(g.x(42f), g.y(60f))
+        lineTo(g.x(46f), g.y(72f))
+        lineTo(g.x(50f), g.y(56f))
+        lineTo(g.x(54f), g.y(68f))
+        lineTo(g.x(58f), g.y(66f))
+        lineTo(g.x(76f), g.y(66f))
+    }
+    if (tr != null) { tr.trace(this, ecg); return }
+    // the person, two lines of details
+    drawCircle(c.main, radius = 2.8f * u, center = g.o(31f, 45f))
+    drawArc(c.main, 180f, 180f, true, topLeft = g.o(26f, 49f), size = g.s(10f, 8f))
+    drawLine(c.ink.copy(alpha = 0.2f), g.o(44f, 43f), g.o(70f, 43f), strokeWidth = 2.4f * u, cap = StrokeCap.Round)
+    drawLine(c.ink.copy(alpha = 0.13f), g.o(44f, 50f), g.o(62f, 50f), strokeWidth = 2.4f * u, cap = StrokeCap.Round)
+    // a faint trace, with a bright pen running along it
+    drawPath(ecg, c.main.copy(alpha = 0.18f), style = Stroke(2.2f * u, cap = StrokeCap.Round, join = StrokeJoin.Round))
+    val measure = PathMeasure().apply { setPath(ecg, false) }
+    val head = (t * 1.35f) * measure.length
+    val tail = head - measure.length * 0.32f
+    val seg = Path()
+    measure.getSegment(tail.coerceIn(0f, measure.length), head.coerceIn(0f, measure.length), seg, true)
+    drawPath(seg, c.main, style = Stroke(2.6f * u, cap = StrokeCap.Round, join = StrokeJoin.Round))
+    // the heart beats as the pen crosses the spike
+    val beat = 1f + 0.22f * bump(t, 0.3f, 0.5f)
+    heart(g.o(71f, 39f), 4.4f * u * beat, c.accent)
 }

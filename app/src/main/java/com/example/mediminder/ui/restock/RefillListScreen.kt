@@ -1,5 +1,7 @@
 package com.example.mediminder.ui.restock
 
+import com.example.mediminder.ui.components.Arrive
+import com.example.mediminder.ui.components.rememberEntranceState
 import com.example.mediminder.ui.components.Art
 import com.example.mediminder.ui.theme.Hue
 import android.content.Intent
@@ -154,12 +156,13 @@ fun RefillListScreen(onBack: () -> Unit, onOpenMedicine: (Long) -> Unit, viewMod
             )
             return@Scaffold
         }
+        val arrival = rememberEntranceState()
         LazyColumn(
             Modifier.fillMaxSize().padding(padding),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item {
+            item { Arrive(arrival, 0) {
                 Text(
                     if (state.low.isEmpty()) stringResource(R.string.refill_all_good)
                     else stringResource(R.string.refill_summary, Formats.number(context, state.low.size), Formats.number(context, state.buyDays)),
@@ -175,15 +178,15 @@ fun RefillListScreen(onBack: () -> Unit, onOpenMedicine: (Long) -> Unit, viewMod
                         context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text), null))
                     }, icon = Icons.Default.Share)
                 }
-            }
+            }}
             if (state.low.isNotEmpty()) {
-                item { SectionTitle(stringResource(R.string.refill_running_low)) }
+                item { Arrive(arrival, 1) { SectionTitle(stringResource(R.string.refill_running_low)) }}
                 items(state.low, key = { it.medication.id }) { item ->
                     RefillRow(item, onOpen = { onOpenMedicine(item.medication.id) }, onBought = { restocking = item })
                 }
             }
             if (state.others.isNotEmpty()) {
-                item { SectionTitle(stringResource(R.string.refill_others)) }
+                item { Arrive(arrival, 2) { SectionTitle(stringResource(R.string.refill_others)) }}
                 items(state.others, key = { it.medication.id }) { item ->
                     RefillRow(item, onOpen = { onOpenMedicine(item.medication.id) }, onBought = { restocking = item })
                 }

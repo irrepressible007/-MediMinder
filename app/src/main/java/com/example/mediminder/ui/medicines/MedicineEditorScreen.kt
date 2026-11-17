@@ -1,5 +1,7 @@
 package com.example.mediminder.ui.medicines
 
+import com.example.mediminder.ui.components.AnimatedArt
+import com.example.mediminder.ui.components.Art
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.NotificationsActive
@@ -251,11 +253,11 @@ fun MedicineEditorScreen(
 }
 
 @Composable
-private fun StepTitle(title: String, body: String? = null, icon: ImageVector, hue: Hue) {
+private fun StepTitle(title: String, body: String? = null, art: Art, hue: Hue) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconBadge(icon, hue, size = 52.dp, modifier = Modifier.popOnEnter(120))
-            Spacer(Modifier.width(14.dp))
+            AnimatedArt(art, hue, size = 76.dp)
+            Spacer(Modifier.width(10.dp))
             Text(title, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
         }
         body?.let { Text(it, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant) }
@@ -269,7 +271,7 @@ private fun ColumnScope.NameStep(s: EditorState, vm: MedicineEditorViewModel, on
     val context = LocalContext.current
     val gallery = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> uri?.let(vm::importPhoto) }
     if (!s.nameConfirmed) {
-        StepTitle(stringResource(R.string.wiz_name_title), stringResource(R.string.wiz_name_body), Icons.Default.Medication, Hue.CORAL)
+        StepTitle(stringResource(R.string.wiz_name_title), stringResource(R.string.wiz_name_body), Art.PILLS, Hue.CORAL)
         OutlinedTextField(
             value = s.query,
             onValueChange = vm::onQuery,
@@ -312,7 +314,7 @@ private fun ColumnScope.NameStep(s: EditorState, vm: MedicineEditorViewModel, on
     }
 
     // Chosen — confirm it's the right one
-    StepTitle(stringResource(R.string.wiz_confirm_title), icon = Icons.Default.CheckCircle, hue = Hue.GREEN)
+    StepTitle(stringResource(R.string.wiz_confirm_title), art = Art.CHECKLIST, hue = Hue.GREEN)
     MediCard(containerColor = MaterialTheme.colorScheme.primaryContainer, borderColor = MaterialTheme.colorScheme.primary, borderWidth = 2.dp) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             MedicineImage(s.photo, s.name, s.color, size = 64)
@@ -425,7 +427,7 @@ private fun WarningsCard(warnings: List<SafetyWarning>) {
 @Composable
 private fun ColumnScope.WhenStep(s: EditorState, vm: MedicineEditorViewModel) {
     val context = LocalContext.current
-    StepTitle(stringResource(R.string.wiz_when_title), stringResource(R.string.wiz_when_body), Icons.Default.CalendarMonth, Hue.SKY)
+    StepTitle(stringResource(R.string.wiz_when_title), stringResource(R.string.wiz_when_body), Art.CALENDAR, Hue.SKY)
     val current = DosePattern.parse(s.pattern)?.text
     val isMain = s.mode == ScheduleMode.PATTERN && current in MAIN_PATTERNS
     var otherOpen by rememberSaveable { mutableStateOf(!isMain && s.mode != ScheduleMode.AS_NEEDED) }
@@ -506,7 +508,7 @@ private fun ColumnScope.WhenStep(s: EditorState, vm: MedicineEditorViewModel) {
 private fun ColumnScope.TimesStep(s: EditorState, vm: MedicineEditorViewModel) {
     val context = LocalContext.current
     if (s.mode == ScheduleMode.AS_NEEDED) {
-        StepTitle(stringResource(R.string.wiz_max_title), stringResource(R.string.wiz_max_body), Icons.Default.Shield, Hue.AMBER)
+        StepTitle(stringResource(R.string.wiz_max_title), stringResource(R.string.wiz_max_body), Art.SHIELD, Hue.AMBER)
         val max = s.maxDailyDoses.toIntOrNull() ?: 0
         MediCard {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -522,7 +524,7 @@ private fun ColumnScope.TimesStep(s: EditorState, vm: MedicineEditorViewModel) {
         return
     }
 
-    StepTitle(stringResource(R.string.wiz_times_title), stringResource(R.string.wiz_times_body), Icons.Default.Schedule, Hue.SUNRISE)
+    StepTitle(stringResource(R.string.wiz_times_title), stringResource(R.string.wiz_times_body), Art.CLOCK, Hue.SUNRISE)
     s.times.forEach { t ->
         MediCard {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -564,7 +566,7 @@ private fun ColumnScope.TimesStep(s: EditorState, vm: MedicineEditorViewModel) {
 @Composable
 private fun ColumnScope.FinishStep(s: EditorState, vm: MedicineEditorViewModel) {
     val context = LocalContext.current
-    StepTitle(stringResource(R.string.wiz_finish_title), stringResource(R.string.wiz_finish_body), Icons.Default.NotificationsActive, Hue.VIOLET)
+    StepTitle(stringResource(R.string.wiz_finish_title), stringResource(R.string.wiz_finish_body), Art.BELL, Hue.VIOLET)
 
     // How long
     SectionTitle(stringResource(R.string.wiz_how_long))

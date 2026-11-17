@@ -608,4 +608,10 @@
     <string name="feedback_visit_saved">Visit with %1$s saved</string>
     <string name="feedback_visit_deleted">Visit with %1$s deleted</string>
     <string name="feedback_entry_removed">Entry removed from history</string>
+    <string name="today_undo_taken">%1$s marked as taken</string>
+    <string name="today_undo_skipped">%1$s skipped</string>
+    <string name="today_in_minutes">in %1$s min</string>
+    <string name="today_in_hours">in %1$s h</string>
+    <string name="today_in_hours_minutes">in %1$s h %2$s min</string>
+    <string name="day_summary">%1$s of %2$s taken</string>
 </resources>

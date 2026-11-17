@@ -1,5 +1,7 @@
 package com.example.mediminder.ui.medicines
 
+import com.example.mediminder.ui.components.Arrive
+import com.example.mediminder.ui.components.rememberEntranceState
 import com.example.mediminder.ui.components.FeedbackBus
 import com.example.mediminder.ui.components.FeedbackKind
 import androidx.compose.foundation.layout.Arrangement
@@ -275,19 +277,21 @@ fun MedicineDetailScreen(
             )
         }
 
+        val arrival = rememberEntranceState()
+
         LazyColumn(
             Modifier.fillMaxSize().padding(padding),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            if (hasPhoto) item {
+            if (hasPhoto) item { Arrive(arrival, 0) {
                 MedicinePhoto(
                     m.photoUri,
                     stringResource(R.string.cd_medicine_photo, m.name),
                     Modifier.fillMaxWidth().aspectRatio(16f / 10f).clickable { photoOpen = true },
                 )
-            }
-            item {
+            }}
+            item { Arrive(arrival, 1) {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 4.dp)) {
                     if (!hasPhoto) {
                         PillAvatar(m.name, m.color, size = 60)
@@ -299,15 +303,15 @@ fun MedicineDetailScreen(
                         Text(scheduleSummary(context, state.item), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.primary)
                     }
                 }
-            }
-            if (m.archived) item {
+            }}
+            if (m.archived) item { Arrive(arrival, 2) {
                 NoticeCard(stringResource(R.string.detail_stopped_notice), Icons.Default.Pause, Tone.INFO)
-            }
+            }}
 
             // When to take it
             if (!m.isAsNeeded && schedules.isNotEmpty()) {
-                item { SectionTitle(stringResource(R.string.editor_section_schedule)) }
-                item {
+                item { Arrive(arrival, 3) { SectionTitle(stringResource(R.string.editor_section_schedule)) }}
+                item { Arrive(arrival, 4) {
                     MediCard {
                         schedules.forEachIndexed { i, s ->
                             if (i > 0) HorizontalDivider(Modifier.padding(vertical = 10.dp), color = MaterialTheme.colorScheme.outlineVariant)
@@ -328,12 +332,12 @@ fun MedicineDetailScreen(
                             Text(stringResource(R.string.detail_prescription, Formats.digits(context, it)), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
-                }
+                }}
             }
 
             // Stock
-            item { SectionTitle(stringResource(R.string.editor_section_stock)) }
-            item {
+            item { Arrive(arrival, 5) { SectionTitle(stringResource(R.string.editor_section_stock)) }}
+            item { Arrive(arrival, 6) {
                 MediCard(
                     containerColor = if (low) status.dueContainer else MaterialTheme.colorScheme.surface,
                     borderColor = if (low) status.due else MaterialTheme.colorScheme.outlineVariant,
@@ -359,10 +363,10 @@ fun MedicineDetailScreen(
                         SecondaryButton(stringResource(R.string.detail_start_counting), onClick = { countOpen = true }, icon = Icons.Default.Inventory2)
                     }
                 }
-            }
+            }}
 
             // About this medicine: folded away
-            item {
+            item { Arrive(arrival, 7) {
                 ExpandableSection(stringResource(R.string.detail_about)) {
                     MediCard {
                         InfoRow(stringResource(R.string.editor_generic), m.genericName)
@@ -394,10 +398,10 @@ fun MedicineDetailScreen(
                         }
                     }
                 }
-            }
+            }}
 
             // History: folded away
-            item {
+            item { Arrive(arrival, 8) {
                 ExpandableSection(stringResource(R.string.detail_history)) {
                     SecondaryButton(stringResource(R.string.detail_see_history), onClick = onOpenHistory, icon = Icons.Default.History)
                     state.adherence?.rate?.let { rate ->
@@ -439,10 +443,10 @@ fun MedicineDetailScreen(
                         }
                     }
                 }
-            }
+            }}
 
             // Actions, spelled out
-            item {
+            item { Arrive(arrival, 9) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 8.dp)) {
                     SecondaryButton(stringResource(R.string.action_edit_medicine), onClick = onEdit, icon = Icons.Default.Edit)
                     SecondaryButton(
@@ -459,7 +463,7 @@ fun MedicineDetailScreen(
                         modifier = Modifier.align(Alignment.CenterHorizontally),
                     )
                 }
-            }
+            }}
         }
     }
 }

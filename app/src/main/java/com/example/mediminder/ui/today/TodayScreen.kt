@@ -1,5 +1,18 @@
 package com.example.mediminder.ui.today
 
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.SnackbarData
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.rememberCoroutineScope
+import com.example.mediminder.ui.components.AnimatedArt
+import java.time.Duration
+import java.time.LocalDateTime
+import kotlinx.coroutines.launch
 import com.example.mediminder.ui.components.Art
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -152,6 +165,19 @@ fun TodayScreen(
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { reliabilityOk = Reliability.allCriticalOk(context) }
 
     val snackbar = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val undoLabel = stringResource(R.string.action_undo)
+    // A slip of the thumb is easy to put right: every Taken / Skip offers Undo for a few seconds
+    fun offerUndo(row: DoseRow, taken: Boolean) {
+        val name = listOf(row.name, row.strength).filter { it.isNotBlank() }.joinToString(" ")
+        val message = context.getString(if (taken) R.string.today_undo_taken else R.string.today_undo_skipped, name)
+        scope.launch {
+            snackbar.currentSnackbarData?.dismiss()
+            if (snackbar.showSnackbar(message, actionLabel = undoLabel, duration = SnackbarDuration.Long) == SnackbarResult.ActionPerformed) {
+                viewModel.undo(row)
+            }
+        }
+    }
     var limitDialog by remember { mutableStateOf<TodayEvent.LimitReached?>(null) }
     var sheetFor by remember { mutableStateOf<DoseRow?>(null) }
     val loggedText = stringResource(R.string.today_prn_logged)
@@ -191,15 +217,16 @@ fun TodayScreen(
             canSnooze = state.isToday && live.state != DoseState.UPCOMING,
             snoozeMinutes = state.snoozeMinutes,
             onDismiss = { sheetFor = null },
-            onTake = { viewModel.take(live); sheetFor = null },
+            onTake = { viewModel.take(live); offerUndo(live, taken = true); sheetFor = null },
             onSnooze = { viewModel.snooze(live); sheetFor = null },
-            onSkip = { viewModel.skip(live); sheetFor = null },
+            onSkip = { viewModel.skip(live); offerUndo(live, taken = false); sheetFor = null },
             onUndo = { viewModel.undo(live); sheetFor = null },
             onDetails = { sheetFor = null; onOpenMedicine(live.medicationId) },
         )
     }
 
-    val entrance = rememberEntranceState()
+    // Moving to another day lets that day's doses arrive afresh
+    val entrance = rememberEntranceState(state.date)
     Box(modifier.fillMaxSize()) {
         LazyColumn(
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 32.dp),
@@ -258,13 +285,16 @@ fun TodayScreen(
 
             if (state.rows.isEmpty() && state.asNeeded.isEmpty()) {
                 item {
-                    Text(
-                        stringResource(R.string.today_nothing_scheduled),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth().padding(24.dp),
-                    )
+                    Column(Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        AnimatedArt(Art.TEA, Hue.SUN, size = 156.dp)
+                        Text(
+                            stringResource(R.string.today_nothing_scheduled),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
+                        )
+                    }
                 }
             }
 
@@ -277,7 +307,7 @@ fun TodayScreen(
                     DoseCard(
                         row = row,
                         actionable = state.isToday && row.state in ACTIONABLE,
-                        onTake = { viewModel.take(row) },
+                        onTake = { viewModel.take(row); offerUndo(row, taken = true) },
                         onOptions = { sheetFor = row },
                         modifier = Modifier.animateItem().entrance(entrance, first + i),
                     )
@@ -308,7 +338,7 @@ fun TodayScreen(
                 }
             }
         }
-        SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
+        SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter)) { data -> UndoBar(data) }
     }
 }
 
@@ -326,7 +356,6 @@ private fun Header(state: TodayUi, onPrev: () -> Unit, onNext: () -> Unit, onTod
             else -> R.string.greeting_night
         }
     )
-    val date = Formats.digits(context, state.date.format(DateTimeFormatter.ofPattern("EEEE, d MMMM", Formats.locale(context))))
     val scene = SkyScene.at(hour)
     val ink = skyContentColor(scene)
     Column(Modifier.padding(top = 8.dp)) {
@@ -338,12 +367,23 @@ private fun Header(state: TodayUi, onPrev: () -> Unit, onNext: () -> Unit, onTod
                 modifier = Modifier.fillMaxWidth(0.68f),
             )
             Spacer(Modifier.height(4.dp))
-            Text(
-                if (state.isToday) stringResource(R.string.today_label, date) else date,
-                style = MaterialTheme.typography.titleMedium,
-                color = skyContentSoftColor(scene),
+            AnimatedContent(
+                targetState = state.date,
                 modifier = Modifier.fillMaxWidth(0.68f),
-            )
+                transitionSpec = {
+                    val dir = if (targetState > initialState) 1 else -1
+                    (slideInHorizontally(tween(Motion.MEDIUM)) { dir * it / 3 } + fadeIn(tween(Motion.MEDIUM)))
+                        .togetherWith(slideOutHorizontally(tween(Motion.SHORT)) { -dir * it / 3 } + fadeOut(tween(Motion.SHORT)))
+                },
+                label = "date",
+            ) { day ->
+                val text = Formats.digits(context, day.format(DateTimeFormatter.ofPattern("EEEE, d MMMM", Formats.locale(context))))
+                Text(
+                    if (day == LocalDate.now()) stringResource(R.string.today_label, text) else text,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = skyContentSoftColor(scene),
+                )
+            }
             Spacer(Modifier.height(14.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 SkyButton(Icons.AutoMirrored.Filled.KeyboardArrowLeft, stringResource(R.string.cd_previous_day), ink, onPrev)
@@ -414,7 +454,7 @@ private fun SummaryCard(state: TodayUi, modifier: Modifier = Modifier) {
                 Column(Modifier.weight(1f)) {
                     RollingContent(state.taken to state.total) { (taken, total) ->
                         Text(
-                            stringResource(R.string.today_summary, Formats.number(context, taken), Formats.number(context, total)),
+                            stringResource(if (state.isToday) R.string.today_summary else R.string.day_summary, Formats.number(context, taken), Formats.number(context, total)),
                             style = MaterialTheme.typography.headlineSmall,
                             color = onColor,
                         )
@@ -434,6 +474,16 @@ private fun SummaryCard(state: TodayUi, modifier: Modifier = Modifier) {
                                 Spacer(Modifier.width(8.dp))
                                 Text(text, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, color = onColor)
                             }
+                        }
+                        // "in 2 h 10 min" — refreshed with Today's clock
+                        val minutes = if (allDone || next == null) 0L else Duration.between(LocalDateTime.now(), next.first).toMinutes()
+                        AnimatedVisibility(minutes > 0, enter = fadeIn(tween(Motion.MEDIUM)) + expandVertically(), exit = fadeOut() + shrinkVertically()) {
+                            Text(
+                                untilText(context, minutes),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.secondary,
+                                modifier = Modifier.padding(start = 32.dp, top = 2.dp),
+                            )
                         }
                     }
                 }
@@ -585,6 +635,41 @@ private fun DoseCard(row: DoseRow, actionable: Boolean, onTake: () -> Unit, onOp
                     onClick = onOptions,
                     modifier = Modifier.align(Alignment.CenterHorizontally),
                 )
+            }
+        }
+    }
+}
+
+/** "in 45 min", "in 2 h", "in 2 h 10 min" */
+private fun untilText(context: android.content.Context, minutes: Long): String {
+    val h = (minutes / 60).toInt()
+    val m = (minutes % 60).toInt()
+    return when {
+        h == 0 -> context.getString(R.string.today_in_minutes, Formats.number(context, m))
+        m == 0 -> context.getString(R.string.today_in_hours, Formats.number(context, h))
+        else -> context.getString(R.string.today_in_hours_minutes, Formats.number(context, h), Formats.number(context, m))
+    }
+}
+
+/** The Undo message: large, with a big Undo button, easy to catch in time. */
+@Composable
+private fun UndoBar(data: SnackbarData) {
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.inverseSurface,
+        shadowElevation = 8.dp,
+        modifier = Modifier.padding(16.dp).fillMaxWidth(),
+    ) {
+        Row(Modifier.padding(start = 18.dp, end = 6.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.inversePrimary, modifier = Modifier.size(24.dp))
+            Spacer(Modifier.width(12.dp))
+            Text(data.visuals.message, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.inverseOnSurface, modifier = Modifier.weight(1f))
+            data.visuals.actionLabel?.let { label ->
+                TextButton(onClick = { data.performAction() }, modifier = Modifier.heightIn(min = 52.dp)) {
+                    Icon(Icons.AutoMirrored.Filled.Undo, contentDescription = null, tint = MaterialTheme.colorScheme.inversePrimary, modifier = Modifier.size(22.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.inversePrimary)
+                }
             }
         }
     }

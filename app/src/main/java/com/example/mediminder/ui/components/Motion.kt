@@ -82,10 +82,17 @@ class EntranceState(val enabled: Boolean) {
     val openedAt: Long = SystemClock.uptimeMillis()
 }
 
+/** [key]: when it changes (e.g. another day is shown), things arrive again. */
 @Composable
-fun rememberEntranceState(): EntranceState {
+fun rememberEntranceState(key: Any? = Unit): EntranceState {
     val reduce = rememberReduceMotion()
-    return remember { EntranceState(!reduce) }
+    return remember(key) { EntranceState(!reduce) }
+}
+
+/** Wraps a list item so it arrives with the screen's stagger. */
+@Composable
+fun Arrive(state: EntranceState, index: Int, content: @Composable () -> Unit) {
+    Box(Modifier.entrance(state, index)) { content() }
 }
 
 /**
