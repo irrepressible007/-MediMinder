@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Same calm medical blue as the Compose theme (ui/theme/Color.kt) -->
-    <color name="brand">#FF0369A1</color>
-    <color name="brand_dark">#FF0C4A6E</color>
-    <color name="brand_light">#FF7DD3FC</color>
-    <color name="background_light">#FFF3F6F9</color>
-    <color name="background_dark">#FF0B1117</color>
+    <!-- Same royal blue as the Compose theme (ui/theme/Color.kt) -->
+    <color name="brand">#FF2754C5</color>
+    <color name="brand_dark">#FF12306E</color>
+    <color name="brand_light">#FFA9C1FF</color>
+    <color name="background_light">#FFF7F5F2</color>
+    <color name="background_dark">#FF11131C</color>
 </resources>

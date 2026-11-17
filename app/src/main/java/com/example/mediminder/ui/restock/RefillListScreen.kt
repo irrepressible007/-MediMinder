@@ -1,5 +1,7 @@
 package com.example.mediminder.ui.restock
 
+import com.example.mediminder.ui.components.Art
+import com.example.mediminder.ui.theme.Hue
 import android.content.Intent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -144,6 +146,8 @@ fun RefillListScreen(onBack: () -> Unit, onOpenMedicine: (Long) -> Unit, viewMod
         if (state.low.isEmpty() && state.others.isEmpty()) {
             EmptyState(
                 icon = Icons.Default.CheckCircle,
+                hue = Hue.GREEN,
+                art = Art.BAG,
                 title = stringResource(R.string.refill_none_tracked_title),
                 body = stringResource(R.string.refill_none_tracked_body),
                 modifier = Modifier.padding(padding),

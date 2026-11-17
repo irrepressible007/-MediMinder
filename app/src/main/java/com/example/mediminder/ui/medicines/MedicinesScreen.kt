@@ -1,5 +1,19 @@
 package com.example.mediminder.ui.medicines
 
+import com.example.mediminder.ui.components.Art
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
+import androidx.compose.material.icons.filled.MedicalServices
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.lerp
+import com.example.mediminder.ui.components.FeedbackBus
+import com.example.mediminder.ui.components.Motion
+import com.example.mediminder.ui.components.popOnEnter
+import com.example.mediminder.ui.theme.Hue
+import com.example.mediminder.ui.theme.color
+import kotlinx.coroutines.delay
 import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -86,18 +100,29 @@ fun MedicinesScreen(
     val lowCount = active.count { Stock.isLow(it.medication, it.schedules, today) }
 
     val entrance = rememberEntranceState()
+    // The medicine just added or changed glows once when the list is next seen
+    val highlight by FeedbackBus.highlight.collectAsState()
+    val glowId = highlight?.takeIf { System.currentTimeMillis() - it.second < 120_000 }?.first
+    LaunchedEffect(glowId) {
+        if (glowId != null) {
+            delay(4000)
+            FeedbackBus.clearHighlight()
+        }
+    }
     Box(modifier.fillMaxSize()) {
         LazyColumn(
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 112.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item { ScreenHeader(stringResource(R.string.medicines_title)) }
+            item { ScreenHeader(stringResource(R.string.medicines_title), icon = Icons.Default.Medication, hue = Hue.CORAL) }
             if (active.isEmpty() && stopped.isEmpty()) {
                 item {
                     EmptyState(
                         icon = Icons.Default.Medication,
                         title = stringResource(R.string.medicines_empty_title),
                         body = stringResource(R.string.medicines_empty_body),
+                        hue = Hue.CORAL,
+                        art = Art.PILLS,
                     )
                 }
                 return@LazyColumn
@@ -111,7 +136,7 @@ fun MedicinesScreen(
                 )
             }
             itemsIndexed(active, key = { _, it -> it.medication.id }) { i, item ->
-                MedicineRow(item, today, Modifier.animateItem().entrance(entrance, i)) { onOpen(item.medication.id) }
+                MedicineRow(item, today, Modifier.animateItem().entrance(entrance, i), highlighted = item.medication.id == glowId) { onOpen(item.medication.id) }
             }
             if (stopped.isNotEmpty()) {
                 item {
@@ -123,9 +148,9 @@ fun MedicinesScreen(
         }
         ExtendedFloatingActionButton(
             onClick = onAdd,
-            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp).heightIn(min = 64.dp),
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary,
+            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp).heightIn(min = 64.dp).popOnEnter(),
+            containerColor = MaterialTheme.colorScheme.secondary,
+            contentColor = MaterialTheme.colorScheme.onSecondary,
         ) {
             Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(28.dp))
             Spacer(Modifier.width(10.dp))
@@ -135,23 +160,43 @@ fun MedicinesScreen(
 }
 
 @Composable
-fun MedicineRow(item: MedicationWithSchedules, today: Long, modifier: Modifier = Modifier, onClick: () -> Unit) {
+fun MedicineRow(item: MedicationWithSchedules, today: Long, modifier: Modifier = Modifier, highlighted: Boolean = false, onClick: () -> Unit) {
     val context = LocalContext.current
     val status = LocalStatusColors.current
     val m = item.medication
     val low = Stock.isLow(m, item.schedules, today)
     val daysLeft = Stock.daysLeft(m, item.schedules)
+    val glow = remember { Animatable(0f) }
+    LaunchedEffect(highlighted) {
+        if (highlighted) {
+            glow.animateTo(1f, tween(Motion.MEDIUM))
+            delay(900)
+            glow.animateTo(0f, tween(1600))
+        } else glow.animateTo(0f, tween(Motion.SHORT))
+    }
+    val base = if (m.archived) MaterialTheme.colorScheme.surfaceContainerLow else MaterialTheme.colorScheme.surface
     MediCard(
         onClick = onClick,
         modifier = modifier,
-        containerColor = if (m.archived) MaterialTheme.colorScheme.surfaceContainerLow else MaterialTheme.colorScheme.surface,
+        containerColor = lerp(base, MaterialTheme.colorScheme.secondaryContainer, glow.value),
+        borderColor = lerp(MaterialTheme.colorScheme.outlineVariant, MaterialTheme.colorScheme.secondary, glow.value),
+        borderWidth = if (glow.value > 0.02f) 2.dp else 1.dp,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             MedicineImage(m.photoUri, m.name, m.color, size = 64)
             Spacer(Modifier.width(16.dp))
             Column(Modifier.weight(1f)) {
                 Text(listOf(m.name, m.strength).filter { it.isNotBlank() }.joinToString(" "), style = MaterialTheme.typography.titleLarge)
-                Text(scheduleSummary(context, item), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.primary)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        if (m.isAsNeeded) Icons.Default.MedicalServices else Icons.Default.Schedule,
+                        contentDescription = null,
+                        tint = if (m.archived) MaterialTheme.colorScheme.onSurfaceVariant else Hue.SKY.color,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(scheduleSummary(context, item), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
         }
         if (m.trackStock) {

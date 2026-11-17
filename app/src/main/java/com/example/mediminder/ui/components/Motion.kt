@@ -264,5 +264,22 @@ fun <S> AnimatedContentTransitionScope<S>.stepTransition(forward: Boolean): Cont
         .togetherWith(slideOutHorizontally(tween(Motion.SHORT)) { -dir * it / 4 } + fadeOut(tween(Motion.SHORT)))
 }
 
+/** Grows in with a soft bounce shortly after the screen opens — for an "Add" button. */
+fun Modifier.popOnEnter(delayMillis: Long = 200): Modifier = composed {
+    val reduce = rememberReduceMotion()
+    val p = remember { Animatable(if (reduce) 1f else 0f) }
+    LaunchedEffect(Unit) {
+        if (reduce) return@LaunchedEffect
+        delay(delayMillis)
+        p.animateTo(1f, spring(dampingRatio = 0.55f, stiffness = Spring.StiffnessLow))
+    }
+    graphicsLayer {
+        val v = p.value
+        scaleX = 0.6f + 0.4f * v
+        scaleY = 0.6f + 0.4f * v
+        alpha = v.coerceIn(0f, 1f)
+    }
+}
+
 /** A check that pops in with a little bounce. */
 fun popIn() = scaleIn(spring(dampingRatio = 0.45f, stiffness = Spring.StiffnessMedium), initialScale = 0.4f) + fadeIn(tween(Motion.SHORT))

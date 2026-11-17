@@ -1,5 +1,10 @@
 package com.example.mediminder.ui.more
 
+import com.example.mediminder.ui.components.Art
+import com.example.mediminder.ui.components.FeedbackBus
+import com.example.mediminder.ui.components.FeedbackKind
+import com.example.mediminder.ui.components.animatedCount
+import com.example.mediminder.ui.theme.Hue
 import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
@@ -105,7 +110,10 @@ class HistoryViewModel @Inject constructor(
     }
 
     /** "Recorded by mistake": removes the entry (stock goes back for a taken dose). */
-    fun remove(entry: HistoryEntry) = viewModelScope.launch { doseActions.undoLog(entry.log.id) }
+    fun remove(entry: HistoryEntry) = viewModelScope.launch {
+        doseActions.undoLog(entry.log.id)
+        FeedbackBus.show(FeedbackKind.DELETED, R.string.feedback_entry_removed)
+    }
 
     /** For a medicine already deleted (history kept): now remove the history too. */
     fun eraseHistory(medicationId: Long) = viewModelScope.launch {
@@ -206,6 +214,8 @@ fun HistoryScreen(medicationId: Long, onBack: () -> Unit, viewModel: HistoryView
                         icon = Icons.Default.History,
                         title = stringResource(R.string.history_empty_title),
                         body = stringResource(R.string.history_empty_body),
+                        hue = Hue.VIOLET,
+                        art = Art.CHECKLIST,
                     )
                 }
                 return@LazyColumn
@@ -213,7 +223,7 @@ fun HistoryScreen(medicationId: Long, onBack: () -> Unit, viewModel: HistoryView
             item {
                 val taken = list.count { it.log.status == DoseStatus.TAKEN }
                 Text(
-                    stringResource(R.string.history_summary, Formats.number(context, taken), Formats.number(context, list.size - taken)),
+                    stringResource(R.string.history_summary, Formats.number(context, animatedCount(taken)), Formats.number(context, animatedCount(list.size - taken))),
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(top = 4.dp),
                 )

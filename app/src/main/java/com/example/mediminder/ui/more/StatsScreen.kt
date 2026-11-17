@@ -1,5 +1,7 @@
 package com.example.mediminder.ui.more
 
+import com.example.mediminder.ui.components.ProgressRing
+import com.example.mediminder.ui.components.animatedCount
 import android.content.Intent
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
@@ -109,14 +111,25 @@ fun StatsScreen(onBack: () -> Unit, viewModel: StatsViewModel = hiltViewModel())
             }
             val s = summary ?: return@LazyColumn
             item {
-                MediCard(containerColor = MaterialTheme.colorScheme.primaryContainer, borderColor = MaterialTheme.colorScheme.primaryContainer) {
+                MediCard {
                     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            s.rate?.let { Formats.number(context, it) + "%" } ?: "—",
-                            style = MaterialTheme.typography.displayMedium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        )
-                        Text(stringResource(R.string.stats_rate_label), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimaryContainer, textAlign = TextAlign.Center)
+                        val rate = s.rate
+                        val shown = animatedCount(rate ?: 0, durationMillis = 1100)
+                        ProgressRing(
+                            progress = shown / 100f,
+                            color = LocalStatusColors.current.taken,
+                            trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            size = 168.dp,
+                            stroke = 16.dp,
+                        ) {
+                            Text(
+                                rate?.let { Formats.number(context, shown) + "%" } ?: "—",
+                                style = MaterialTheme.typography.displaySmall,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                        Spacer(Modifier.height(12.dp))
+                        Text(stringResource(R.string.stats_rate_label), style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
                     }
                 }
             }

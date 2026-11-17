@@ -1,5 +1,10 @@
 package com.example.mediminder.ui
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.ui.Alignment
+import com.example.mediminder.ui.components.FeedbackHost
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -155,6 +160,7 @@ fun MainNavigation(
             .togetherWith(slideOutHorizontally(tween(Motion.MEDIUM)) { it / 3 } + fadeOut(tween(Motion.SHORT)))
     }
 
+    Box(Modifier.fillMaxSize()) {
     NavDisplay(
         backStack = backStack,
         onBack = { back() },
@@ -229,6 +235,8 @@ fun MainNavigation(
             entry<HistoryKey> { key -> HistoryScreen(medicationId = key.medicationId, onBack = ::back) }
         },
     )
+    FeedbackHost(Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp))
+    }
 }
 
 @Composable

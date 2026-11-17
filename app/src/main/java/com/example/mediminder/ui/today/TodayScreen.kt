@@ -1,5 +1,6 @@
 package com.example.mediminder.ui.today
 
+import com.example.mediminder.ui.components.Art
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -66,6 +67,28 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import com.example.mediminder.R
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.core.Animatable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.offset
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Medication
+import androidx.compose.material.icons.filled.Remove
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import com.example.mediminder.ui.components.BurstEffect
+import com.example.mediminder.ui.components.IconBadge
+import com.example.mediminder.ui.components.ProgressRing
+import com.example.mediminder.ui.components.SkyHeader
+import com.example.mediminder.ui.components.SkyScene
+import com.example.mediminder.ui.components.popIn
+import com.example.mediminder.ui.components.pressScale
+import com.example.mediminder.ui.components.skyContentColor
+import com.example.mediminder.ui.components.skyContentSoftColor
+import com.example.mediminder.ui.theme.Hue
 import com.example.mediminder.ui.components.rememberPulse
 import com.example.mediminder.ui.components.rememberEntranceState
 import com.example.mediminder.ui.components.entrance
@@ -187,9 +210,11 @@ fun TodayScreen(
             if (!state.hasMedicines) {
                 item {
                     EmptyState(
-                        icon = Icons.Default.MedicalServices,
+                        icon = Icons.Default.Medication,
                         title = stringResource(R.string.today_empty_title),
                         body = stringResource(R.string.today_empty_body),
+                        hue = Hue.CORAL,
+                        art = Art.PILLS,
                     ) { PrimaryButton(stringResource(R.string.action_add_medicine), onAddMedicine, icon = Icons.Default.Add) }
                 }
                 return@LazyColumn
@@ -260,7 +285,7 @@ fun TodayScreen(
             }
 
             if (state.asNeeded.isNotEmpty() && state.isToday) {
-                item { SectionHeading(Icons.Default.MedicalServices, stringResource(R.string.today_as_needed)) }
+                item { SectionHeading(Icons.Default.MedicalServices, stringResource(R.string.today_as_needed), Hue.TEAL) }
                 items(state.asNeeded, key = { "prn-${it.id}" }) { med ->
                     MediCard(onClick = { onOpenMedicine(med.id) }, modifier = Modifier.animateItem()) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -292,8 +317,9 @@ private val ACTIONABLE = setOf(DoseState.DUE, DoseState.SNOOZED, DoseState.MISSE
 @Composable
 private fun Header(state: TodayUi, onPrev: () -> Unit, onNext: () -> Unit, onToday: () -> Unit) {
     val context = LocalContext.current
+    val hour = LocalTime.now().hour
     val greeting = stringResource(
-        when (LocalTime.now().hour) {
+        when (hour) {
             in 4..11 -> R.string.greeting_morning
             in 12..16 -> R.string.greeting_afternoon
             in 17..20 -> R.string.greeting_evening
@@ -301,33 +327,58 @@ private fun Header(state: TodayUi, onPrev: () -> Unit, onNext: () -> Unit, onTod
         }
     )
     val date = Formats.digits(context, state.date.format(DateTimeFormatter.ofPattern("EEEE, d MMMM", Formats.locale(context))))
-    Column(Modifier.padding(top = 12.dp)) {
-        Text(
-            if (state.userName.isBlank()) greeting else "$greeting, ${state.userName}",
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(horizontal = 4.dp),
-        )
-        Row(verticalAlignment = Alignment.CenterVertically) {
+    val scene = SkyScene.at(hour)
+    val ink = skyContentColor(scene)
+    Column(Modifier.padding(top = 8.dp)) {
+        SkyHeader(scene) {
+            Text(
+                if (state.userName.isBlank()) greeting else "$greeting, ${state.userName}",
+                style = MaterialTheme.typography.headlineMedium,
+                color = ink,
+                modifier = Modifier.fillMaxWidth(0.68f),
+            )
+            Spacer(Modifier.height(4.dp))
             Text(
                 if (state.isToday) stringResource(R.string.today_label, date) else date,
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.weight(1f).padding(start = 4.dp),
+                color = skyContentSoftColor(scene),
+                modifier = Modifier.fillMaxWidth(0.68f),
             )
-            IconButton(onClick = onPrev, modifier = Modifier.size(52.dp)) {
-                Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = stringResource(R.string.cd_previous_day), modifier = Modifier.size(30.dp))
-            }
-            IconButton(onClick = onNext, modifier = Modifier.size(52.dp)) {
-                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = stringResource(R.string.cd_next_day), modifier = Modifier.size(30.dp))
+            Spacer(Modifier.height(14.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                SkyButton(Icons.AutoMirrored.Filled.KeyboardArrowLeft, stringResource(R.string.cd_previous_day), ink, onPrev)
+                Spacer(Modifier.width(10.dp))
+                SkyButton(Icons.AutoMirrored.Filled.KeyboardArrowRight, stringResource(R.string.cd_next_day), ink, onNext)
             }
         }
-        if (!state.isToday) {
-            SecondaryButton(stringResource(R.string.action_back_to_today), onClick = onToday, modifier = Modifier.padding(top = 4.dp))
+        AnimatedVisibility(
+            !state.isToday,
+            enter = expandVertically(tween(Motion.MEDIUM)) + fadeIn(tween(Motion.MEDIUM)),
+            exit = shrinkVertically(tween(Motion.MEDIUM)) + fadeOut(tween(Motion.SHORT)),
+        ) {
+            SecondaryButton(stringResource(R.string.action_back_to_today), onClick = onToday, modifier = Modifier.padding(top = 12.dp))
         }
     }
 }
 
-/** "2 of 3 taken" with a thick bar, and what comes next. */
+/** A round, see-through button that sits on the painted sky. */
+@Composable
+private fun SkyButton(icon: androidx.compose.ui.graphics.vector.ImageVector, description: String, tint: androidx.compose.ui.graphics.Color, onClick: () -> Unit) {
+    val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    IconButton(
+        onClick = onClick,
+        interactionSource = interaction,
+        modifier = Modifier
+            .size(52.dp)
+            .pressScale(interaction, 0.9f)
+            .clip(CircleShape)
+            .background(androidx.compose.ui.graphics.Color.White.copy(alpha = 0.38f)),
+    ) {
+        Icon(icon, contentDescription = description, tint = tint, modifier = Modifier.size(30.dp))
+    }
+}
+
+/** "2 of 3 taken" with a ring that fills, and what comes next. */
 @Composable
 private fun SummaryCard(state: TodayUi, modifier: Modifier = Modifier) {
     val context = LocalContext.current
@@ -348,8 +399,9 @@ private fun SummaryCard(state: TodayUi, modifier: Modifier = Modifier) {
         if (allDone && !wasDone && state.isToday) celebrate = true
         wasDone = allDone
     }
-    val container by animateColorAsState(if (allDone) status.takenContainer else MaterialTheme.colorScheme.primaryContainer, tween(Motion.LONG), label = "summaryBg")
-    val onColor by animateColorAsState(if (allDone) status.onTakenContainer else MaterialTheme.colorScheme.onPrimaryContainer, tween(Motion.LONG), label = "summaryFg")
+    val container by animateColorAsState(if (allDone) status.takenContainer else MaterialTheme.colorScheme.surface, tween(Motion.LONG), label = "summaryBg")
+    val onColor by animateColorAsState(if (allDone) status.onTakenContainer else MaterialTheme.colorScheme.onSurface, tween(Motion.LONG), label = "summaryFg")
+    val border by animateColorAsState(if (allDone) status.taken.copy(alpha = 0.4f) else MaterialTheme.colorScheme.outlineVariant, tween(Motion.LONG), label = "summaryEdge")
     val progress by animateFloatAsState(
         if (state.total == 0) 0f else state.taken / state.total.toFloat(),
         spring(dampingRatio = 0.7f, stiffness = Spring.StiffnessLow),
@@ -357,68 +409,80 @@ private fun SummaryCard(state: TodayUi, modifier: Modifier = Modifier) {
     )
 
     Box(modifier) {
-    MediCard(
-        containerColor = container,
-        borderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0f),
-    ) {
-        RollingContent(state.taken to state.total) { (taken, total) ->
-            Text(
-                stringResource(R.string.today_summary, Formats.number(context, taken), Formats.number(context, total)),
-                style = MaterialTheme.typography.headlineSmall,
-                color = onColor,
-            )
-        }
-        Spacer(Modifier.height(12.dp))
-        LinearProgressIndicator(
-            progress = { progress },
-            modifier = Modifier.fillMaxWidth().height(14.dp).clip(CircleShape),
-            color = status.taken,
-            trackColor = MaterialTheme.colorScheme.surface,
-            strokeCap = StrokeCap.Round,
-            gapSize = 0.dp,
-            drawStopIndicator = {},
-        )
-        if (state.isToday && (allDone || next != null)) {
-            Spacer(Modifier.height(12.dp))
-            val line = if (allDone) stringResource(R.string.today_all_done)
-            else stringResource(R.string.today_next_named, next!!.second.name, Formats.time(context, minuteOf(next.first.toLocalTime())))
-            RollingContent(allDone to line) { (done, text) ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(if (done) Icons.Default.CheckCircle else Icons.Default.Alarm, contentDescription = null, tint = onColor, modifier = Modifier.size(26.dp))
-                    Spacer(Modifier.width(10.dp))
-                    Text(text, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, color = onColor)
+        MediCard(containerColor = container, borderColor = border) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    RollingContent(state.taken to state.total) { (taken, total) ->
+                        Text(
+                            stringResource(R.string.today_summary, Formats.number(context, taken), Formats.number(context, total)),
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = onColor,
+                        )
+                    }
+                    if (state.isToday && (allDone || next != null)) {
+                        Spacer(Modifier.height(10.dp))
+                        val line = if (allDone) stringResource(R.string.today_all_done)
+                        else stringResource(R.string.today_next_named, next!!.second.name, Formats.time(context, minuteOf(next.first.toLocalTime())))
+                        RollingContent(allDone to line) { (done, text) ->
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    if (done) Icons.Default.CheckCircle else Icons.Default.Alarm,
+                                    contentDescription = null,
+                                    tint = if (done) status.taken else MaterialTheme.colorScheme.secondary,
+                                    modifier = Modifier.size(24.dp),
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(text, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, color = onColor)
+                            }
+                        }
+                    }
+                }
+                Spacer(Modifier.width(12.dp))
+                ProgressRing(
+                    progress = progress,
+                    color = status.taken,
+                    trackColor = if (allDone) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceContainerHighest,
+                    size = 78.dp,
+                ) {
+                    AnimatedContent(allDone, transitionSpec = { popIn() togetherWith fadeOut(tween(Motion.SHORT)) }, label = "ringIcon") { done ->
+                        Icon(
+                            if (done) Icons.Default.Check else Icons.Default.Medication,
+                            contentDescription = null,
+                            tint = if (done) status.taken else MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(34.dp),
+                        )
+                    }
                 }
             }
         }
-    }
-    if (celebrate) {
-        CelebrationBurst(
-            colors = listOf(status.taken, MaterialTheme.colorScheme.primary, status.due, status.snoozed),
-            modifier = Modifier.matchParentSize(),
-            onFinished = { celebrate = false },
-        )
-    }
+        if (celebrate) {
+            CelebrationBurst(
+                colors = listOf(Hue.SUNRISE, Hue.SUN, Hue.SUNSET, Hue.SKY, Hue.GREEN, Hue.VIOLET).map { it.fg(false) },
+                modifier = Modifier.matchParentSize(),
+                onFinished = { celebrate = false },
+            )
+        }
     }
 }
 
 @Composable
-private fun SectionHeading(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String) {
-    Row(Modifier.padding(top = 10.dp, start = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(26.dp))
-        Spacer(Modifier.width(10.dp))
+private fun SectionHeading(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String, hue: Hue) {
+    Row(Modifier.padding(top = 10.dp, start = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+        IconBadge(icon, hue, size = 40.dp)
+        Spacer(Modifier.width(12.dp))
         Text(text, style = MaterialTheme.typography.titleLarge)
     }
 }
 
 @Composable
 private fun DayPartHeader(part: DayPart) {
-    val (icon, label) = when (part) {
-        DayPart.MORNING -> Icons.Default.WbSunny to R.string.part_morning
-        DayPart.AFTERNOON -> Icons.Default.WbSunny to R.string.part_afternoon
-        DayPart.EVENING -> Icons.Default.WbTwilight to R.string.part_evening
-        DayPart.NIGHT -> Icons.Default.Bedtime to R.string.part_night
+    val (icon, label, hue) = when (part) {
+        DayPart.MORNING -> Triple(Icons.Default.WbTwilight, R.string.part_morning, Hue.SUNRISE)
+        DayPart.AFTERNOON -> Triple(Icons.Default.WbSunny, R.string.part_afternoon, Hue.SUN)
+        DayPart.EVENING -> Triple(Icons.Default.WbTwilight, R.string.part_evening, Hue.SUNSET)
+        DayPart.NIGHT -> Triple(Icons.Default.Bedtime, R.string.part_night, Hue.NIGHT)
     }
-    SectionHeading(icon, stringResource(label))
+    SectionHeading(icon, stringResource(label), hue)
 }
 
 @Composable
@@ -450,13 +514,30 @@ private fun DoseCard(row: DoseRow, actionable: Boolean, onTake: () -> Unit, onOp
 
     // A dose that is due right now gently breathes so it is noticed
     val pulse = rememberPulse(enabled = row.state == DoseState.DUE || row.ringing)
+
+    // Taken: the picture bounces, a ring bursts out and the phone gives a little buzz
+    val haptic = LocalHapticFeedback.current
+    var seen by remember(row.scheduleId, row.day) { mutableStateOf(row.state) }
+    var burst by remember { mutableStateOf(false) }
+    val bounce = remember { Animatable(1f) }
+    LaunchedEffect(row.state) {
+        val before = seen
+        seen = row.state
+        if (row.state == DoseState.TAKEN && before != DoseState.TAKEN) {
+            burst = true
+            haptic.performHapticFeedback(HapticFeedbackType.Confirm)
+            bounce.snapTo(0.82f)
+            bounce.animateTo(1f, spring(dampingRatio = 0.35f, stiffness = Spring.StiffnessMedium))
+        }
+    }
+    val dim by animateFloatAsState(if (row.state == DoseState.SKIPPED) 0.7f else 1f, tween(Motion.LONG), label = "skipDim")
     val container by animateColorAsState(
         if (answered) MaterialTheme.colorScheme.surfaceContainerLow else MaterialTheme.colorScheme.surface, tween(Motion.LONG), label = "doseBg",
     )
     val border by animateColorAsState(accent ?: MaterialTheme.colorScheme.outlineVariant, tween(Motion.MEDIUM), label = "doseBorder")
     MediCard(
         onClick = onOptions,
-        modifier = modifier,
+        modifier = modifier.graphicsLayer { alpha = dim },
         containerColor = container,
         borderColor = if (accent != null) border.copy(alpha = 0.45f + 0.55f * pulse) else border,
         borderWidth = if (accent != null) 2.dp else 1.dp,
@@ -469,14 +550,21 @@ private fun DoseCard(row: DoseRow, actionable: Boolean, onTake: () -> Unit, onOp
             Text(
                 Formats.time(context, row.minuteOfDay),
                 style = MaterialTheme.typography.titleLarge,
-                color = if (answered) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary,
+                color = if (answered) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f),
             )
             StatusChip(row.state, chipLabel)
         }
         Spacer(Modifier.height(10.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
-            MedicineImage(row.photo, row.name, row.color, size = 64)
+            Box {
+                MedicineImage(
+                    row.photo, row.name, row.color, size = 64,
+                    modifier = Modifier.graphicsLayer { scaleX = bounce.value; scaleY = bounce.value },
+                )
+                if (burst) BurstEffect(status.taken, Modifier.matchParentSize(), onFinished = { burst = false })
+                DoneMark(answered, skipped = row.state == DoseState.SKIPPED, Modifier.align(Alignment.BottomEnd).offset(x = 6.dp, y = 6.dp))
+            }
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
                 Text(listOf(row.name, row.strength).filter { it.isNotBlank() }.joinToString(" "), style = MaterialTheme.typography.titleLarge)
@@ -498,6 +586,31 @@ private fun DoseCard(row: DoseRow, actionable: Boolean, onTake: () -> Unit, onOp
                     modifier = Modifier.align(Alignment.CenterHorizontally),
                 )
             }
+        }
+    }
+}
+
+/** A tick (taken) or a dash (skipped) that pops onto the corner of the medicine's picture. */
+@Composable
+private fun DoneMark(visible: Boolean, skipped: Boolean, modifier: Modifier) {
+    val status = LocalStatusColors.current
+    AnimatedVisibility(
+        visible = visible,
+        modifier = modifier,
+        enter = popIn(),
+        exit = scaleOut(tween(Motion.SHORT), targetScale = 0.4f) + fadeOut(tween(Motion.SHORT)),
+    ) {
+        Box(
+            Modifier.size(28.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surface).padding(2.dp)
+                .clip(CircleShape).background(if (skipped) status.quiet else status.taken),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                if (skipped) Icons.Default.Remove else Icons.Default.Check,
+                contentDescription = null,
+                tint = if (skipped) MaterialTheme.colorScheme.surface else status.onTaken,
+                modifier = Modifier.size(18.dp),
+            )
         }
     }
 }

@@ -100,21 +100,28 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.runtime.remember
 import androidx.compose.foundation.shape.RoundedCornerShape
 import com.example.mediminder.domain.DoseState
+import com.example.mediminder.ui.theme.Hue
 import com.example.mediminder.ui.theme.LocalStatusColors
 import com.example.mediminder.util.Formats
 import java.time.LocalDate
 
 // ── Page structure ──────────────────────────────────────────────────────────
 
-/** Title of a main tab: large and plain, no toolbar chrome. */
+/** Title of a main tab: large, with its own coloured icon tile, no toolbar chrome. */
 @Composable
 fun ScreenHeader(
     title: String,
     modifier: Modifier = Modifier,
     subtitle: String? = null,
+    icon: ImageVector? = null,
+    hue: Hue = Hue.SKY,
     action: (@Composable RowScope.() -> Unit)? = null,
 ) {
     Row(modifier.fillMaxWidth().padding(start = 4.dp, top = 20.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        if (icon != null) {
+            IconBadge(icon, hue, size = 52.dp)
+            Spacer(Modifier.width(14.dp))
+        }
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.headlineMedium)
             subtitle?.let { Text(it, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant) }
@@ -374,7 +381,12 @@ fun StatusChip(state: DoseState, label: String = stateLabel(state), modifier: Mo
         verticalAlignment = Alignment.CenterVertically,
     ) {
         AnimatedContent(style.icon, transitionSpec = { popIn() togetherWith fadeOut(tween(Motion.SHORT)) }, label = "chipIcon") { icon ->
-            Icon(icon, contentDescription = null, tint = content, modifier = Modifier.size(18.dp))
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = content,
+                modifier = Modifier.size(18.dp).then(if (state == DoseState.DUE) Modifier.ringing() else Modifier),
+            )
         }
         Spacer(Modifier.width(6.dp))
         Text(label, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = content, maxLines = 1)
@@ -540,16 +552,14 @@ fun NavRow(
     modifier: Modifier = Modifier,
     subtitle: String? = null,
     tone: Tone? = null,
+    hue: Hue = Hue.SKY,
 ) {
     val scheme = MaterialTheme.colorScheme
-    val (iconBg, iconFg) = if (tone == Tone.DANGER) scheme.errorContainer to scheme.onErrorContainer else scheme.primaryContainer to scheme.primary
     Row(
         modifier.fillMaxWidth().clickable(onClick = onClick).heightIn(min = 76.dp).padding(horizontal = 20.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.size(48.dp).clip(CircleShape).background(iconBg), contentAlignment = Alignment.Center) {
-            Icon(icon, contentDescription = null, tint = iconFg, modifier = Modifier.size(26.dp))
-        }
+        IconBadge(icon, if (tone == Tone.DANGER) Hue.ROSE else hue)
         Spacer(Modifier.width(16.dp))
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.titleMedium)
@@ -643,7 +653,7 @@ fun MedicineImage(photo: String?, name: String, colorHex: String, modifier: Modi
     )
 }
 
-fun parseColor(hex: String, fallback: Color = Color(0xFF0369A1)): Color =
+fun parseColor(hex: String, fallback: Color = Color(0xFF2754C5)): Color =
     try { Color(android.graphics.Color.parseColor(hex)) } catch (_: Exception) { fallback }
 
 /** A time you can tap to change, e.g. "সকাল ৮:০০". */
@@ -676,12 +686,18 @@ fun showDatePicker(context: Context, date: LocalDate, minDate: LocalDate? = null
 }
 
 @Composable
-fun EmptyState(icon: ImageVector, title: String, body: String, modifier: Modifier = Modifier, action: (@Composable () -> Unit)? = null) {
-    Column(modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(Modifier.gentleFloat().size(104.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
-            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(52.dp))
-        }
-        Spacer(Modifier.size(20.dp))
+fun EmptyState(
+    icon: ImageVector,
+    title: String,
+    body: String,
+    modifier: Modifier = Modifier,
+    hue: Hue = Hue.SKY,
+    art: Art? = null,
+    action: (@Composable () -> Unit)? = null,
+) {
+    Column(modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        if (art != null) AnimatedArt(art, hue) else SpotIllustration(icon, hue)
+        Spacer(Modifier.size(16.dp))
         Text(title, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
         Spacer(Modifier.size(8.dp))
         Text(body, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)

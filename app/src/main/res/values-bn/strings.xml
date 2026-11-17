@@ -598,4 +598,12 @@
     <string name="history_erase_title">%1$s-এর ইতিহাস মুছবেন?</string>
     <string name="history_erase_body">এই ওষুধের খাওয়া ও বাদ দেওয়া সব ডোজের তথ্য মুছে যাবে। এটি আর ফেরানো যাবে না।</string>
     <string name="history_deleted_label">মুছে ফেলা ওষুধ</string>
+    <string name="feedback_medicine_added">%1$s যোগ করা হয়েছে</string>
+    <string name="feedback_medicine_saved">%1$s সংরক্ষণ করা হয়েছে</string>
+    <string name="feedback_medicine_deleted">%1$s মুছে ফেলা হয়েছে</string>
+    <string name="feedback_medicine_stopped">%1$s বন্ধ করা হয়েছে</string>
+    <string name="feedback_medicine_resumed">%1$s আবার চালু হয়েছে</string>
+    <string name="feedback_visit_saved">%1$s-এর অ্যাপয়েন্টমেন্ট সংরক্ষণ করা হয়েছে</string>
+    <string name="feedback_visit_deleted">%1$s-এর অ্যাপয়েন্টমেন্ট মুছে ফেলা হয়েছে</string>
+    <string name="feedback_entry_removed">ইতিহাস থেকে তথ্যটি সরানো হয়েছে</string>
 </resources>

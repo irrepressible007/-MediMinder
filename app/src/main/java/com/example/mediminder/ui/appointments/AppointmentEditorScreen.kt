@@ -1,5 +1,7 @@
 package com.example.mediminder.ui.appointments
 
+import com.example.mediminder.ui.components.FeedbackBus
+import com.example.mediminder.ui.components.FeedbackKind
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -157,12 +159,16 @@ class AppointmentEditorViewModel @Inject constructor(private val repository: App
                 reminderAlertType = f.alertType,
             )
             repository.save(appointment)
+            FeedbackBus.show(FeedbackKind.SAVED, R.string.feedback_visit_saved, appointment.doctorName)
             _form.update { it.copy(done = true) }
         }
     }
 
     fun delete() = viewModelScope.launch {
-        if (_form.value.id != 0L) repository.delete(_form.value.id)
+        if (_form.value.id != 0L) {
+            repository.delete(_form.value.id)
+            FeedbackBus.show(FeedbackKind.DELETED, R.string.feedback_visit_deleted, _form.value.doctorName)
+        }
         _form.update { it.copy(done = true) }
     }
 }

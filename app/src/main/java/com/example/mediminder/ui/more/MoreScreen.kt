@@ -1,5 +1,7 @@
 package com.example.mediminder.ui.more
 
+import androidx.compose.material.icons.filled.Apps
+import com.example.mediminder.ui.theme.Hue
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -64,18 +66,18 @@ fun MoreScreen(modifier: Modifier, onOpen: (NavKey) -> Unit) {
         modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        ScreenHeader(stringResource(R.string.tab_more))
+        ScreenHeader(stringResource(R.string.tab_more), icon = Icons.Default.Apps, hue = Hue.VIOLET)
         val entrance = rememberEntranceState()
         MediCard(contentPadding = PaddingValues(vertical = 4.dp), modifier = Modifier.entrance(entrance, 0)) {
-            NavRow(Icons.Default.History, stringResource(R.string.history_title), { onOpen(HistoryKey()) }, subtitle = stringResource(R.string.more_history_sub))
+            NavRow(Icons.Default.History, stringResource(R.string.history_title), { onOpen(HistoryKey()) }, subtitle = stringResource(R.string.more_history_sub), hue = Hue.VIOLET)
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            NavRow(Icons.Default.ShoppingCart, stringResource(R.string.refill_title), { onOpen(RefillList) }, subtitle = stringResource(R.string.more_refill_sub))
+            NavRow(Icons.Default.ShoppingCart, stringResource(R.string.refill_title), { onOpen(RefillList) }, subtitle = stringResource(R.string.more_refill_sub), hue = Hue.TEAL)
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            NavRow(Icons.Default.BarChart, stringResource(R.string.stats_title), { onOpen(Stats) }, subtitle = stringResource(R.string.more_stats_sub))
+            NavRow(Icons.Default.BarChart, stringResource(R.string.stats_title), { onOpen(Stats) }, subtitle = stringResource(R.string.more_stats_sub), hue = Hue.SKY)
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            NavRow(Icons.Default.Badge, stringResource(R.string.medical_id_title), { onOpen(MedicalId) }, subtitle = stringResource(R.string.more_medical_id_sub))
+            NavRow(Icons.Default.Badge, stringResource(R.string.medical_id_title), { onOpen(MedicalId) }, subtitle = stringResource(R.string.more_medical_id_sub), hue = Hue.ROSE)
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            NavRow(Icons.Default.Folder, stringResource(R.string.vault_title), { onOpen(Vault) }, subtitle = stringResource(R.string.more_vault_sub))
+            NavRow(Icons.Default.Folder, stringResource(R.string.vault_title), { onOpen(Vault) }, subtitle = stringResource(R.string.more_vault_sub), hue = Hue.AMBER)
         }
         MediCard(contentPadding = PaddingValues(vertical = 4.dp), modifier = Modifier.entrance(entrance, 1)) {
             NavRow(
@@ -84,9 +86,10 @@ fun MoreScreen(modifier: Modifier, onOpen: (NavKey) -> Unit) {
                 { onOpen(ReliabilityKey) },
                 subtitle = stringResource(if (reliable) R.string.more_reliability_ok else R.string.more_reliability_problem),
                 tone = if (reliable) null else Tone.DANGER,
+                hue = Hue.GREEN,
             )
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            NavRow(Icons.Default.Settings, stringResource(R.string.settings_title), { onOpen(SettingsKey) }, subtitle = stringResource(R.string.more_settings_sub))
+            NavRow(Icons.Default.Settings, stringResource(R.string.settings_title), { onOpen(SettingsKey) }, subtitle = stringResource(R.string.more_settings_sub), hue = Hue.SLATE)
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             NavRow(
                 Icons.Default.SystemUpdate,
@@ -102,6 +105,7 @@ fun MoreScreen(modifier: Modifier, onOpen: (NavKey) -> Unit) {
                     }
                 },
                 subtitle = stringResource(R.string.more_version, Formats.digits(context, BuildConfig.VERSION_NAME)),
+                hue = Hue.NIGHT,
             )
         }
     }

@@ -1,5 +1,7 @@
 package com.example.mediminder.ui.screens
 
+import com.example.mediminder.ui.components.Art
+import com.example.mediminder.ui.theme.Hue
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.background
@@ -106,6 +108,8 @@ fun MedicalVaultScreen(
         if (vaultItems.isEmpty()) {
             EmptyState(
                 icon = Icons.Default.Folder,
+                hue = Hue.AMBER,
+                art = Art.FOLDER,
                 title = stringResource(R.string.vault_title),
                 body = stringResource(R.string.vault_empty),
                 modifier = Modifier.padding(padding),

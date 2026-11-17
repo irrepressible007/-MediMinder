@@ -1,5 +1,16 @@
 package com.example.mediminder.ui.medicines
 
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Shield
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.example.mediminder.ui.components.FeedbackBus
+import com.example.mediminder.ui.components.FeedbackKind
+import com.example.mediminder.ui.components.IconBadge
+import com.example.mediminder.ui.components.popOnEnter
+import com.example.mediminder.ui.theme.Hue
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -144,7 +155,14 @@ fun MedicineEditorScreen(
     }
     val context = LocalContext.current
     val s by viewModel.state.collectAsState()
-    LaunchedEffect(s.savedId) { s.savedId?.let(onSaved) }
+    LaunchedEffect(s.savedId) {
+        val id = s.savedId ?: return@LaunchedEffect
+        val name = listOf(s.name, s.strength).filter { it.isNotBlank() }.joinToString(" ")
+        if (s.isNew) FeedbackBus.show(FeedbackKind.ADDED, R.string.feedback_medicine_added, name)
+        else FeedbackBus.show(FeedbackKind.SAVED, R.string.feedback_medicine_saved, name)
+        FeedbackBus.highlight(id)
+        onSaved(id)
+    }
     var step by rememberSaveable { mutableIntStateOf(0) }
     BackHandler(enabled = step > 0) { step-- }
 
@@ -233,9 +251,13 @@ fun MedicineEditorScreen(
 }
 
 @Composable
-private fun StepTitle(title: String, body: String? = null) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(title, style = MaterialTheme.typography.headlineSmall)
+private fun StepTitle(title: String, body: String? = null, icon: ImageVector, hue: Hue) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconBadge(icon, hue, size = 52.dp, modifier = Modifier.popOnEnter(120))
+            Spacer(Modifier.width(14.dp))
+            Text(title, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
+        }
         body?.let { Text(it, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant) }
     }
 }
@@ -247,7 +269,7 @@ private fun ColumnScope.NameStep(s: EditorState, vm: MedicineEditorViewModel, on
     val context = LocalContext.current
     val gallery = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> uri?.let(vm::importPhoto) }
     if (!s.nameConfirmed) {
-        StepTitle(stringResource(R.string.wiz_name_title), stringResource(R.string.wiz_name_body))
+        StepTitle(stringResource(R.string.wiz_name_title), stringResource(R.string.wiz_name_body), Icons.Default.Medication, Hue.CORAL)
         OutlinedTextField(
             value = s.query,
             onValueChange = vm::onQuery,
@@ -290,7 +312,7 @@ private fun ColumnScope.NameStep(s: EditorState, vm: MedicineEditorViewModel, on
     }
 
     // Chosen — confirm it's the right one
-    StepTitle(stringResource(R.string.wiz_confirm_title))
+    StepTitle(stringResource(R.string.wiz_confirm_title), icon = Icons.Default.CheckCircle, hue = Hue.GREEN)
     MediCard(containerColor = MaterialTheme.colorScheme.primaryContainer, borderColor = MaterialTheme.colorScheme.primary, borderWidth = 2.dp) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             MedicineImage(s.photo, s.name, s.color, size = 64)
@@ -403,7 +425,7 @@ private fun WarningsCard(warnings: List<SafetyWarning>) {
 @Composable
 private fun ColumnScope.WhenStep(s: EditorState, vm: MedicineEditorViewModel) {
     val context = LocalContext.current
-    StepTitle(stringResource(R.string.wiz_when_title), stringResource(R.string.wiz_when_body))
+    StepTitle(stringResource(R.string.wiz_when_title), stringResource(R.string.wiz_when_body), Icons.Default.CalendarMonth, Hue.SKY)
     val current = DosePattern.parse(s.pattern)?.text
     val isMain = s.mode == ScheduleMode.PATTERN && current in MAIN_PATTERNS
     var otherOpen by rememberSaveable { mutableStateOf(!isMain && s.mode != ScheduleMode.AS_NEEDED) }
@@ -484,7 +506,7 @@ private fun ColumnScope.WhenStep(s: EditorState, vm: MedicineEditorViewModel) {
 private fun ColumnScope.TimesStep(s: EditorState, vm: MedicineEditorViewModel) {
     val context = LocalContext.current
     if (s.mode == ScheduleMode.AS_NEEDED) {
-        StepTitle(stringResource(R.string.wiz_max_title), stringResource(R.string.wiz_max_body))
+        StepTitle(stringResource(R.string.wiz_max_title), stringResource(R.string.wiz_max_body), Icons.Default.Shield, Hue.AMBER)
         val max = s.maxDailyDoses.toIntOrNull() ?: 0
         MediCard {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -500,7 +522,7 @@ private fun ColumnScope.TimesStep(s: EditorState, vm: MedicineEditorViewModel) {
         return
     }
 
-    StepTitle(stringResource(R.string.wiz_times_title), stringResource(R.string.wiz_times_body))
+    StepTitle(stringResource(R.string.wiz_times_title), stringResource(R.string.wiz_times_body), Icons.Default.Schedule, Hue.SUNRISE)
     s.times.forEach { t ->
         MediCard {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -542,7 +564,7 @@ private fun ColumnScope.TimesStep(s: EditorState, vm: MedicineEditorViewModel) {
 @Composable
 private fun ColumnScope.FinishStep(s: EditorState, vm: MedicineEditorViewModel) {
     val context = LocalContext.current
-    StepTitle(stringResource(R.string.wiz_finish_title), stringResource(R.string.wiz_finish_body))
+    StepTitle(stringResource(R.string.wiz_finish_title), stringResource(R.string.wiz_finish_body), Icons.Default.NotificationsActive, Hue.VIOLET)
 
     // How long
     SectionTitle(stringResource(R.string.wiz_how_long))

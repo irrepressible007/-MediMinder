@@ -1,5 +1,7 @@
 package com.example.mediminder.ui.medicines
 
+import com.example.mediminder.ui.components.FeedbackBus
+import com.example.mediminder.ui.components.FeedbackKind
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -196,13 +198,21 @@ class MedicineDetailViewModel @Inject constructor(
 
     fun setStock(count: Double) = viewModelScope.launch { id.value?.let { repository.setStock(it, count) } }
 
-    fun setArchived(archived: Boolean) = viewModelScope.launch { id.value?.let { repository.setArchived(it, archived) } }
+    fun setArchived(archived: Boolean) = viewModelScope.launch {
+        id.value?.let { medId ->
+            repository.setArchived(medId, archived)
+            val name = repository.get(medId)?.medication?.name.orEmpty()
+            if (archived) FeedbackBus.show(FeedbackKind.STOPPED, R.string.feedback_medicine_stopped, name)
+            else FeedbackBus.show(FeedbackKind.RESUMED, R.string.feedback_medicine_resumed, name)
+        }
+    }
 
     fun delete(keepHistory: Boolean, onDone: () -> Unit) = viewModelScope.launch {
         id.value?.let { medId ->
-            val photo = repository.get(medId)?.medication?.photoUri
+            val medicine = repository.get(medId)?.medication
             repository.delete(medId, keepHistory)
-            MedicinePhotos.delete(context, photo)
+            MedicinePhotos.delete(context, medicine?.photoUri)
+            FeedbackBus.show(FeedbackKind.DELETED, R.string.feedback_medicine_deleted, medicine?.name.orEmpty())
         }
         onDone()
     }

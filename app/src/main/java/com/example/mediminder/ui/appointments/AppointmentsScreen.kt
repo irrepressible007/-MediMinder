@@ -1,5 +1,10 @@
 package com.example.mediminder.ui.appointments
 
+import com.example.mediminder.ui.components.Art
+import androidx.compose.material.icons.filled.LocalHospital
+import com.example.mediminder.ui.components.popOnEnter
+import com.example.mediminder.ui.theme.Hue
+import com.example.mediminder.ui.theme.soft
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -151,13 +156,15 @@ fun AppointmentsScreen(
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 112.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            item { ScreenHeader(stringResource(R.string.appt_title)) }
+            item { ScreenHeader(stringResource(R.string.appt_title), icon = Icons.Default.LocalHospital, hue = Hue.TEAL) }
             if (upcoming.isEmpty()) {
                 item {
                     EmptyState(
                         icon = Icons.Default.CalendarMonth,
                         title = stringResource(R.string.appt_empty_title),
                         body = stringResource(R.string.appt_empty_body),
+                        hue = Hue.TEAL,
+                        art = Art.CALENDAR,
                     )
                 }
             } else {
@@ -188,9 +195,9 @@ fun AppointmentsScreen(
         }
         ExtendedFloatingActionButton(
             onClick = { onNew(0) },
-            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp).heightIn(min = 64.dp),
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary,
+            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp).heightIn(min = 64.dp).popOnEnter(),
+            containerColor = MaterialTheme.colorScheme.secondary,
+            contentColor = MaterialTheme.colorScheme.onSecondary,
         ) {
             Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(28.dp))
             Spacer(Modifier.width(10.dp))
@@ -218,12 +225,12 @@ private fun VisitCard(a: Appointment, highlight: Boolean, onOpen: () -> Unit, on
             Column(
                 Modifier
                     .widthIn(min = 72.dp)
-                    .background(if (upcoming) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainer, MaterialTheme.shapes.medium)
+                    .background(if (upcoming) Hue.TEAL.soft else MaterialTheme.colorScheme.surfaceContainer, MaterialTheme.shapes.medium)
                     .padding(horizontal = 12.dp, vertical = 10.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text(Formats.number(context, at.dayOfMonth), style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                Text(at.format(DateTimeFormatter.ofPattern("MMM", Formats.locale(context))), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                Text(Formats.number(context, at.dayOfMonth), style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onSurface)
+                Text(at.format(DateTimeFormatter.ofPattern("MMM", Formats.locale(context))), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {

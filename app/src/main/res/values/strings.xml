@@ -600,4 +600,12 @@
     <string name="history_erase_title">Delete the history of %1$s?</string>
     <string name="history_erase_body">Every taken and skipped dose of this medicine is removed. This can\'t be undone.</string>
     <string name="history_deleted_label">Deleted medicine</string>
+    <string name="feedback_medicine_added">%1$s added</string>
+    <string name="feedback_medicine_saved">%1$s saved</string>
+    <string name="feedback_medicine_deleted">%1$s deleted</string>
+    <string name="feedback_medicine_stopped">%1$s stopped</string>
+    <string name="feedback_medicine_resumed">%1$s started again</string>
+    <string name="feedback_visit_saved">Visit with %1$s saved</string>
+    <string name="feedback_visit_deleted">Visit with %1$s deleted</string>
+    <string name="feedback_entry_removed">Entry removed from history</string>
 </resources>
