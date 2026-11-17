@@ -168,6 +168,16 @@ class ReminderEngineTest {
         assertNull(db.medicationDao().getById(schedule.medicationId))
     }
 
+    @Test fun `a wrong or too-new backup file is refused with a message the person can read`() {
+        val backup = BackupManager(context, db, settings, engine)
+        val notOurs = runCatching { backup.decode("{\"hello\": 1") }.exceptionOrNull()
+        assertEquals(com.example.mediminder.R.string.backup_not_ours, (notOurs as com.example.mediminder.data.backup.BackupException).reason)
+        val tooNew = runCatching { backup.decode("{\"format\": 99}") }.exceptionOrNull()
+        assertEquals(com.example.mediminder.R.string.backup_too_new, (tooNew as com.example.mediminder.data.backup.BackupException).reason)
+        // and both messages exist in Bangla too
+        assertTrue(context.getString(notOurs.reason).isNotBlank())
+    }
+
     @Test fun `another day never shows today's doses as taken`() = runBlocking {
         Dispatchers.setMain(Dispatchers.Unconfined)
         try {

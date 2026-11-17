@@ -35,6 +35,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -120,6 +121,7 @@ fun TextSizeChooser(current: Float, onPick: (Float) -> Unit) {
 @Composable
 fun SettingsScreen(onBack: () -> Unit, onOpenReliability: () -> Unit, viewModel: SettingsViewModel = hiltViewModel()) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     val s by viewModel.state.collectAsState()
     var mealsChanged by remember { mutableStateOf(false) }
@@ -129,9 +131,11 @@ fun SettingsScreen(onBack: () -> Unit, onOpenReliability: () -> Unit, viewModel:
         if (uri != null) scope.launch {
             try {
                 val counts = viewModel.backup.exportTo(uri)
-                Toast.makeText(context, context.getString(R.string.backup_done, counts.medicines, counts.doses), Toast.LENGTH_LONG).show()
+                Toast.makeText(context, resources.getString(R.string.backup_done, Formats.number(context, counts.medicines), Formats.number(context, counts.doses)), Toast.LENGTH_LONG).show()
+            } catch (e: BackupException) {
+                Toast.makeText(context, resources.getString(e.reason), Toast.LENGTH_LONG).show()
             } catch (e: Exception) {
-                Toast.makeText(context, e.message ?: context.getString(R.string.backup_failed), Toast.LENGTH_LONG).show()
+                Toast.makeText(context, resources.getString(R.string.backup_failed), Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -147,11 +151,11 @@ fun SettingsScreen(onBack: () -> Unit, onOpenReliability: () -> Unit, viewModel:
                 scope.launch {
                     try {
                         val counts = viewModel.backup.importFrom(uri)
-                        Toast.makeText(context, context.getString(R.string.restore_done, counts.medicines, counts.appointments), Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, resources.getString(R.string.restore_done, Formats.number(context, counts.medicines), Formats.number(context, counts.appointments)), Toast.LENGTH_LONG).show()
                     } catch (e: BackupException) {
-                        Toast.makeText(context, e.message, Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, resources.getString(e.reason), Toast.LENGTH_LONG).show()
                     } catch (e: Exception) {
-                        Toast.makeText(context, context.getString(R.string.restore_failed), Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, resources.getString(R.string.restore_failed), Toast.LENGTH_LONG).show()
                     }
                 }
             },
@@ -203,7 +207,7 @@ fun SettingsScreen(onBack: () -> Unit, onOpenReliability: () -> Unit, viewModel:
                 PrimaryButton(stringResource(R.string.settings_apply_meal_times), onClick = {
                     scope.launch {
                         val n = viewModel.applyMealTimes()
-                        Toast.makeText(context, context.getString(R.string.settings_meal_applied, n), Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, resources.getString(R.string.settings_meal_applied, Formats.number(context, n)), Toast.LENGTH_SHORT).show()
                         mealsChanged = false
                     }
                 })
@@ -235,11 +239,11 @@ fun SettingsScreen(onBack: () -> Unit, onOpenReliability: () -> Unit, viewModel:
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 SecondaryButton(stringResource(R.string.action_test_reminder), onClick = {
                     viewModel.engine.scheduleTest(AlertType.REMINDER)
-                    Toast.makeText(context, context.getString(R.string.test_scheduled), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, resources.getString(R.string.test_scheduled), Toast.LENGTH_SHORT).show()
                 }, modifier = Modifier.weight(1f))
                 SecondaryButton(stringResource(R.string.action_test_alarm), onClick = {
                     viewModel.engine.scheduleTest(AlertType.ALARM)
-                    Toast.makeText(context, context.getString(R.string.test_scheduled), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, resources.getString(R.string.test_scheduled), Toast.LENGTH_SHORT).show()
                 }, modifier = Modifier.weight(1f))
             }
             QuietButton(stringResource(R.string.reliability_title), onClick = onOpenReliability, icon = Icons.Default.VerifiedUser)

@@ -14,9 +14,11 @@ android {
         applicationId = "com.example.mediminder"
         minSdk = 24
         targetSdk = 36
-        versionCode = 24
-        versionName = "1.0.1"
+        versionCode = 25
+        versionName = "1.0.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // Real phones are ARM; the x86 copies of the scanner's native code (22 MB) only serve emulators
+        ndk { abiFilters += listOf("armeabi-v7a", "arm64-v8a") }
     }
 
     signingConfigs {
@@ -38,6 +40,8 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // java.time (LocalDate etc.) is used everywhere; this makes it work on Android 7.x (API 24–25)
+        isCoreLibraryDesugaringEnabled = true
     }
     buildFeatures {
       compose = true
@@ -75,6 +79,9 @@ kotlin {
 }
 
 dependencies {
+  coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
+  // Reliable photo orientation on every Android version (the platform one has old bugs)
+  implementation("androidx.exifinterface:exifinterface:1.3.7")
   val composeBom = platform(libs.androidx.compose.bom)
   implementation(composeBom)
   androidTestImplementation(composeBom)

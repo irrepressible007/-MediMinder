@@ -45,6 +45,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -68,6 +69,7 @@ import com.example.mediminder.reminders.ReliabilityCheck
 @Composable
 fun ReliabilityScreen(onBack: () -> Unit, settingsViewModel: SettingsViewModel = hiltViewModel()) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     var checks by remember { mutableStateOf(Reliability.checks(context)) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { checks = Reliability.checks(context) }
     val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { checks = Reliability.checks(context) }
@@ -112,11 +114,11 @@ fun ReliabilityScreen(onBack: () -> Unit, settingsViewModel: SettingsViewModel =
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 SecondaryButton(stringResource(R.string.action_test_reminder), onClick = {
                     settingsViewModel.engine.scheduleTest(AlertType.REMINDER)
-                    Toast.makeText(context, context.getString(R.string.test_scheduled), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, resources.getString(R.string.test_scheduled), Toast.LENGTH_SHORT).show()
                 }, modifier = Modifier.weight(1f))
                 SecondaryButton(stringResource(R.string.action_test_alarm), onClick = {
                     settingsViewModel.engine.scheduleTest(AlertType.ALARM)
-                    Toast.makeText(context, context.getString(R.string.test_scheduled), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, resources.getString(R.string.test_scheduled), Toast.LENGTH_SHORT).show()
                 }, modifier = Modifier.weight(1f))
             }
         }

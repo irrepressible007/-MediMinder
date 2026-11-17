@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
@@ -55,7 +56,7 @@ class MainActivity : AppCompatActivity() {
         // AppCompat's setContentView skips the NavigationEvent owner that Navigation3 needs
         initializeViewTreeOwners()
         setContent {
-            val textScale by settings.settings.map { it.textScale }.collectAsState(initial = settings.current.textScale)
+            val textScale by remember { settings.settings.map { it.textScale } }.collectAsState(initial = settings.current.textScale)
             MediMinderTheme(textScale = textScale) {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     MainNavigation(deepLink = deepLink, onDeepLinkHandled = { deepLink.value = null })

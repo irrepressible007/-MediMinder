@@ -1,5 +1,7 @@
 package com.example.mediminder.data.backup
 
+import androidx.annotation.StringRes
+import com.example.mediminder.R
 import android.content.Context
 import android.net.Uri
 import androidx.room.withTransaction
@@ -43,7 +45,8 @@ data class Backup(
 
 data class BackupCounts(val medicines: Int, val doses: Int, val appointments: Int)
 
-class BackupException(message: String) : Exception(message)
+/** A problem the person can act on; [reason] is the message to show them. */
+class BackupException(@StringRes val reason: Int) : Exception()
 
 /** Saves / restores all user data as a JSON file the user picks (Drive, WhatsApp, SD card…). */
 @Singleton
@@ -77,23 +80,27 @@ class BackupManager @Inject constructor(
         val backup = try {
             json.decodeFromString(Backup.serializer(), text)
         } catch (e: Exception) {
-            throw BackupException("This file is not a MediMinder backup.")
+            throw BackupException(R.string.backup_not_ours)
         }
-        if (backup.format > Backup.FORMAT) throw BackupException("This backup was made by a newer MediMinder. Update the app first.")
+        if (backup.format > Backup.FORMAT) throw BackupException(R.string.backup_too_new)
         return backup
     }
 
     suspend fun exportTo(uri: Uri): BackupCounts = withContext(Dispatchers.IO) {
         val backup = create()
-        context.contentResolver.openOutputStream(uri, "wt")?.use { it.write(encode(backup).toByteArray()) }
-            ?: throw BackupException("Could not write the file.")
+        val bytes = encode(backup).toByteArray()
+        // "wt" (truncate) is right for replacing a file, but some storage apps only accept "w"
+        val out = runCatching { context.contentResolver.openOutputStream(uri, "wt") }.getOrNull()
+            ?: runCatching { context.contentResolver.openOutputStream(uri, "w") }.getOrNull()
+            ?: throw BackupException(R.string.backup_cannot_write)
+        out.use { it.write(bytes) }
         settings.update { it.copy(lastBackupAt = System.currentTimeMillis()) }
         BackupCounts(backup.medications.size, backup.doseLogs.size, backup.appointments.size)
     }
 
     suspend fun importFrom(uri: Uri): BackupCounts = withContext(Dispatchers.IO) {
         val text = context.contentResolver.openInputStream(uri)?.use { it.readBytes().decodeToString() }
-            ?: throw BackupException("Could not read the file.")
+            ?: throw BackupException(R.string.backup_cannot_read)
         restore(decode(text))
     }
 

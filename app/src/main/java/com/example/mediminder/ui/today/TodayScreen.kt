@@ -1,5 +1,8 @@
 package com.example.mediminder.ui.today
 
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.heightIn
@@ -72,6 +75,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -160,6 +164,7 @@ fun TodayScreen(
     viewModel: TodayViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val ui by viewModel.state.collectAsState()
     var reliabilityOk by remember { mutableStateOf(true) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { reliabilityOk = Reliability.allCriticalOk(context) }
@@ -170,7 +175,7 @@ fun TodayScreen(
     // A slip of the thumb is easy to put right: every Taken / Skip offers Undo for a few seconds
     fun offerUndo(row: DoseRow, taken: Boolean) {
         val name = listOf(row.name, row.strength).filter { it.isNotBlank() }.joinToString(" ")
-        val message = context.getString(if (taken) R.string.today_undo_taken else R.string.today_undo_skipped, name)
+        val message = resources.getString(if (taken) R.string.today_undo_taken else R.string.today_undo_skipped, name)
         scope.launch {
             snackbar.currentSnackbarData?.dismiss()
             if (snackbar.showSnackbar(message, actionLabel = undoLabel, duration = SnackbarDuration.Long) == SnackbarResult.ActionPerformed) {
@@ -658,7 +663,7 @@ private fun UndoBar(data: SnackbarData) {
         shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.inverseSurface,
         shadowElevation = 8.dp,
-        modifier = Modifier.padding(16.dp).fillMaxWidth(),
+        modifier = Modifier.padding(16.dp).fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite },
     ) {
         Row(Modifier.padding(start = 18.dp, end = 6.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Default.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.inversePrimary, modifier = Modifier.size(24.dp))

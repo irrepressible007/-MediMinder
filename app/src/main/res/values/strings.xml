@@ -405,7 +405,7 @@
     <string name="settings_before_meal">“Before meal” means</string>
     <string name="settings_after_meal">“After meal” means</string>
     <string name="settings_apply_meal_times">Move my dose times to match</string>
-    <string name="settings_meal_applied">%1$d dose times updated</string>
+    <string name="settings_meal_applied">Dose times updated: %1$s</string>
     <string name="settings_reminders">Reminders &amp; alarms</string>
     <string name="settings_default_alert">For new medicines, remind with</string>
     <string name="settings_snooze">Snooze for</string>
@@ -422,14 +422,14 @@
     <string name="settings_disclaimer">MediMinder reminds and records; it does not replace your doctor\'s advice. Medicine data comes from DGDA and public listings and may be incomplete.</string>
     <string name="minutes_short">%1$s min</string>
     <string name="test_scheduled">A test will go off in 10 seconds — lock your phone to check it.</string>
-    <string name="backup_done">Backup saved: %1$d medicines, %2$d dose records.</string>
+    <string name="backup_done">Backup saved — medicines: %1$s, dose records: %2$s.</string>
     <string name="backup_failed">Could not save the backup.</string>
     <string name="backup_last">Last backup: %1$s</string>
     <string name="backup_never">No backup yet.</string>
     <string name="backup_hint">Save the file to Google Drive or send it to yourself on WhatsApp so a new phone can restore it.</string>
     <string name="restore_title">Restore backup?</string>
     <string name="restore_body">Everything on this phone (medicines, history, appointments) is replaced by the backup.</string>
-    <string name="restore_done">Restored %1$d medicines and %2$d appointments.</string>
+    <string name="restore_done">Restored — medicines: %1$s, doctor visits: %2$s.</string>
     <string name="restore_failed">Could not restore this file.</string>
 
     <!-- Reliability -->
@@ -614,4 +614,14 @@
     <string name="today_in_hours">in %1$s h</string>
     <string name="today_in_hours_minutes">in %1$s h %2$s min</string>
     <string name="day_summary">%1$s of %2$s taken</string>
+    <string name="backup_not_ours">This file is not a MediMinder backup.</string>
+    <string name="backup_too_new">This backup was made by a newer MediMinder. Please update the app first.</string>
+    <string name="backup_cannot_write">Could not write the file. Please choose another place.</string>
+    <string name="backup_cannot_read">Could not read the file.</string>
+    <string name="update_check_failed">Could not check for updates. Please check the internet and try again.</string>
+    <string name="update_downloading_title">Downloading the MediMinder update</string>
+    <string name="update_downloading_body">Version %1$s</string>
+    <string name="update_downloading">Downloading the update… you will be asked to install it.</string>
+    <string name="update_download_failed">The update could not be downloaded. Please check the internet and try again.</string>
+    <string name="update_install_failed">The update could not be installed. Please try again.</string>
 </resources>

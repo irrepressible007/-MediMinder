@@ -1,5 +1,7 @@
 package com.example.mediminder.updater
 
+import com.example.mediminder.R
+import com.example.mediminder.util.AppLocale
 import android.app.DownloadManager
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -59,43 +61,56 @@ object UpdateManager {
     }
 
     fun downloadAndInstallUpdate(context: Context, downloadUrl: String, versionName: String) {
-        val destination = File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "MediMinder-$versionName.apk")
+        // Strings in the app's language; the app (not the screen) waits for the download
+        val text = AppLocale.localized(context)
+        val app = context.applicationContext
+        val destination = File(app.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "MediMinder-$versionName.apk")
         if (destination.exists()) {
             destination.delete()
         }
 
         val request = DownloadManager.Request(Uri.parse(downloadUrl))
-            .setTitle("Downloading MediMinder Update")
-            .setDescription("Downloading $versionName")
+            .setTitle(text.getString(R.string.update_downloading_title))
+            .setDescription(text.getString(R.string.update_downloading_body, versionName))
             .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
             .setDestinationUri(Uri.fromFile(destination))
             .setAllowedOverMetered(true)
             .setAllowedOverRoaming(true)
 
-        val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+        val downloadManager = app.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
         val downloadId = downloadManager.enqueue(request)
 
         val onComplete = object : BroadcastReceiver() {
             override fun onReceive(ctxt: Context, intent: Intent) {
                 val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
-                if (downloadId == id) {
-                    installApk(context, destination)
-                    context.unregisterReceiver(this)
+                if (downloadId != id) return
+                runCatching { app.unregisterReceiver(this) }
+                // "Complete" is also sent when a download fails: only install a finished file
+                if (downloadSucceeded(downloadManager, id) && destination.length() > 0) {
+                    installApk(app, destination, text)
+                } else {
+                    Toast.makeText(app, text.getString(R.string.update_download_failed), Toast.LENGTH_LONG).show()
                 }
             }
         }
 
         ContextCompat.registerReceiver(
-            context,
+            app,
             onComplete,
             IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
             ContextCompat.RECEIVER_EXPORTED
         )
         
-        Toast.makeText(context, "Update downloading...", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, text.getString(R.string.update_downloading), Toast.LENGTH_LONG).show()
     }
 
-    private fun installApk(context: Context, apkFile: File) {
+    private fun downloadSucceeded(manager: DownloadManager, id: Long): Boolean = runCatching {
+        manager.query(DownloadManager.Query().setFilterById(id))?.use { c ->
+            c.moveToFirst() && c.getInt(c.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS)) == DownloadManager.STATUS_SUCCESSFUL
+        } ?: false
+    }.getOrDefault(false)
+
+    private fun installApk(context: Context, apkFile: File, text: Context) {
         try {
             val uri = FileProvider.getUriForFile(
                 context,
@@ -111,7 +126,7 @@ object UpdateManager {
             context.startActivity(intent)
         } catch (e: Exception) {
             e.printStackTrace()
-            Toast.makeText(context, "Failed to install update.", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, text.getString(R.string.update_install_failed), Toast.LENGTH_LONG).show()
         }
     }
 }

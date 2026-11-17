@@ -28,6 +28,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -58,6 +59,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun MoreScreen(modifier: Modifier, onOpen: (NavKey) -> Unit) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     var reliable by remember { mutableStateOf(true) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { reliable = Reliability.allCriticalOk(context) }
@@ -96,11 +98,11 @@ fun MoreScreen(modifier: Modifier, onOpen: (NavKey) -> Unit) {
                 stringResource(R.string.more_updates),
                 {
                     scope.launch {
-                        Toast.makeText(context, context.getString(R.string.update_checking), Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, resources.getString(R.string.update_checking), Toast.LENGTH_SHORT).show()
                         when (val result = UpdateManager.checkForUpdates(context)) {
                             is UpdateResult.UpdateAvailable -> UpdateManager.downloadAndInstallUpdate(context, result.downloadUrl, result.version)
-                            is UpdateResult.UpToDate -> Toast.makeText(context, context.getString(R.string.update_latest), Toast.LENGTH_SHORT).show()
-                            is UpdateResult.Error -> Toast.makeText(context, context.getString(R.string.update_failed, result.message), Toast.LENGTH_LONG).show()
+                            is UpdateResult.UpToDate -> Toast.makeText(context, resources.getString(R.string.update_latest), Toast.LENGTH_SHORT).show()
+                            is UpdateResult.Error -> Toast.makeText(context, resources.getString(R.string.update_check_failed), Toast.LENGTH_LONG).show()
                         }
                     }
                 },
