@@ -13,7 +13,8 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface MedicationDao {
     @Transaction
-    @Query("SELECT * FROM medications ORDER BY archived ASC, name COLLATE NOCASE ASC")
+    /** Everything on the user's list (medicines deleted with their history kept are left out). */
+    @Query("SELECT * FROM medications WHERE deletedAt IS NULL ORDER BY archived ASC, name COLLATE NOCASE ASC")
     fun observeAllWithSchedules(): Flow<List<MedicationWithSchedules>>
 
     @Transaction
@@ -25,7 +26,7 @@ interface MedicationDao {
     suspend fun getWithSchedules(id: Long): MedicationWithSchedules?
 
     @Transaction
-    @Query("SELECT * FROM medications WHERE archived = 0")
+    @Query("SELECT * FROM medications WHERE archived = 0 AND deletedAt IS NULL")
     suspend fun getActiveWithSchedules(): List<MedicationWithSchedules>
 
     @Query("SELECT * FROM medications WHERE id = :id")

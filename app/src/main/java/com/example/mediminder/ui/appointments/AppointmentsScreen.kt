@@ -60,6 +60,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mediminder.R
+import com.example.mediminder.ui.components.rememberEntranceState
+import com.example.mediminder.ui.components.entrance
+import androidx.compose.foundation.lazy.itemsIndexed
 import com.example.mediminder.data.AppointmentRepository
 import com.example.mediminder.data.local.entity.Appointment
 import com.example.mediminder.data.local.entity.AppointmentStatus
@@ -142,6 +145,7 @@ fun AppointmentsScreen(
     val upcoming = list.filter { it.status == AppointmentStatus.UPCOMING && it.dateTime >= now - 3 * 60 * 60_000 }.sortedBy { it.dateTime }
     val past = list.filter { it !in upcoming }.sortedByDescending { it.dateTime }
 
+    val entrance = rememberEntranceState()
     Box(modifier.fillMaxSize()) {
         LazyColumn(
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 112.dp),
@@ -158,10 +162,12 @@ fun AppointmentsScreen(
                 }
             } else {
                 item { SectionTitle(stringResource(R.string.appt_next)) }
-                item { VisitCard(upcoming.first(), highlight = true, onOpen = { onEdit(upcoming.first().id) }, onOptions = { optionsFor = upcoming.first() }) }
+                item { VisitCard(upcoming.first(), highlight = true, onOpen = { onEdit(upcoming.first().id) }, onOptions = { optionsFor = upcoming.first() }, modifier = Modifier.entrance(entrance, 0)) }
                 if (upcoming.size > 1) {
                     item { SectionTitle(stringResource(R.string.appt_later)) }
-                    items(upcoming.drop(1), key = { it.id }) { a -> VisitCard(a, highlight = false, onOpen = { onEdit(a.id) }, onOptions = { optionsFor = a }) }
+                    itemsIndexed(upcoming.drop(1), key = { _, a -> a.id }) { i, a ->
+                        VisitCard(a, highlight = false, onOpen = { onEdit(a.id) }, onOptions = { optionsFor = a }, modifier = Modifier.animateItem().entrance(entrance, i + 1))
+                    }
                 }
             }
 
@@ -196,12 +202,13 @@ fun AppointmentsScreen(
 private fun dial(context: Context, phone: String) = context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone")))
 
 @Composable
-private fun VisitCard(a: Appointment, highlight: Boolean, onOpen: () -> Unit, onOptions: () -> Unit) {
+private fun VisitCard(a: Appointment, highlight: Boolean, onOpen: () -> Unit, onOptions: () -> Unit, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val at = a.dateTime.toLocalDateTime()
     val upcoming = a.status == AppointmentStatus.UPCOMING
     MediCard(
         onClick = onOpen,
+        modifier = modifier,
         containerColor = if (upcoming) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceContainerLow,
         borderColor = if (highlight) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
         borderWidth = if (highlight) 2.dp else 1.dp,

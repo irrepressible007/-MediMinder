@@ -36,7 +36,7 @@ import java.util.TimeZone
         Medication::class, Schedule::class, DoseLog::class, RestockEvent::class,
         Doctor::class, Appointment::class, ActiveAlert::class, VaultItem::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 abstract class MediMinderDatabase : RoomDatabase() {
@@ -54,7 +54,7 @@ abstract class MediMinderDatabase : RoomDatabase() {
 
         fun build(context: Context): MediMinderDatabase =
             Room.databaseBuilder(context, MediMinderDatabase::class.java, FILE_NAME)
-                .addMigrations(MIGRATION_1_3, MIGRATION_2_3)
+                .addMigrations(*ALL_MIGRATIONS)
                 .build()
     }
 }
@@ -64,6 +64,16 @@ abstract class MediMinderDatabase : RoomDatabase() {
  * two indexes), so both upgrade the same way. Existing medicines, dose times, stock and
  * taken-history are kept.
  */
+/** Every upgrade path, oldest first. */
+val ALL_MIGRATIONS: Array<Migration> get() = arrayOf(MIGRATION_1_3, MIGRATION_2_3, MIGRATION_3_4)
+
+/** 3 → 4: "delete but keep the history" marks a medicine instead of removing it. */
+val MIGRATION_3_4 = object : Migration(3, 4) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE medications ADD COLUMN deletedAt INTEGER")
+    }
+}
+
 val MIGRATION_1_3 = object : Migration(1, 3) {
     override fun migrate(db: SupportSQLiteDatabase) = migrateFrom1x(db)
 }

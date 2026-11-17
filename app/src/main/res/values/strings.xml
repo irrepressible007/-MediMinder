@@ -277,7 +277,7 @@
     <string name="detail_adherence_value">%1$s%% taken (%2$s of %3$s doses)</string>
     <string name="detail_history">History</string>
     <string name="delete_medicine_title">Delete %1$s?</string>
-    <string name="delete_medicine_body">Its whole history is deleted too. To keep the history, use “Stop this medicine” instead.</string>
+    <string name="delete_medicine_body">It will be removed from your list and its reminders will stop.</string>
     <string name="count_title">How many are left?</string>
     <string name="count_label">Current count</string>
 
@@ -576,4 +576,28 @@
     <string name="photo_saving">Saving the photo…</string>
     <string name="cd_take_photo">Take photo</string>
     <string name="cd_medicine_photo">Photo of %1$s</string>
+    <string name="history_title">Medicine history</string>
+    <string name="more_history_sub">Every dose you took or skipped</string>
+    <string name="history_intro">Every dose you marked as taken or skipped, kept even after a medicine is deleted.</string>
+    <string name="history_all_time">All time</string>
+    <string name="history_all_medicines">All medicines</string>
+    <string name="history_deleted_name">%1$s (deleted)</string>
+    <string name="history_empty_title">No history yet</string>
+    <string name="history_empty_body">When you mark a dose as taken or skipped, it is saved here.</string>
+    <string name="history_summary">%1$s taken · %2$s skipped</string>
+    <string name="history_dose_at">%1$s dose</string>
+    <string name="history_when_needed">When needed</string>
+    <string name="history_today">Today</string>
+    <string name="history_yesterday">Yesterday</string>
+    <string name="history_share">Send to my doctor or family</string>
+    <string name="history_remove">Remove this entry</string>
+    <string name="history_remove_title">Remove this entry?</string>
+    <string name="history_remove_body">Use this if it was recorded by mistake. If it was a taken dose, the stock count is put back.</string>
+    <string name="detail_see_history">See full history</string>
+    <string name="delete_history_check">Also delete its intake history</string>
+    <string name="delete_history_hint">Leave this unticked to keep the record — useful to show your doctor.</string>
+    <string name="history_erase">Delete this medicine\'s history</string>
+    <string name="history_erase_title">Delete the history of %1$s?</string>
+    <string name="history_erase_body">Every taken and skipped dose of this medicine is removed. This can\'t be undone.</string>
+    <string name="history_deleted_label">Deleted medicine</string>
 </resources>

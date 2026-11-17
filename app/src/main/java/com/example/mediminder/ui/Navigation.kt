@@ -34,6 +34,26 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.example.mediminder.R
+import com.example.mediminder.ui.more.HistoryScreen
+import com.example.mediminder.ui.components.rememberReduceMotion
+import com.example.mediminder.ui.components.Motion
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.AnimatedContent
 import com.example.mediminder.ui.photos.PhotoCaptureScreen
 import com.example.mediminder.data.settings.SettingsRepository
 import com.example.mediminder.ui.appointments.AppointmentEditorScreen
@@ -72,6 +92,8 @@ import javax.inject.Inject
 @Serializable data object SettingsKey : NavKey
 @Serializable data object ReliabilityKey : NavKey
 @Serializable data object Vault : NavKey
+/** medicationId 0 = every medicine */
+@Serializable data class HistoryKey(val medicationId: Long = 0) : NavKey
 
 enum class HomeTab { TODAY, MEDICINES, APPOINTMENTS, MORE }
 
@@ -120,9 +142,25 @@ fun MainNavigation(
     fun open(key: NavKey) { backStack += key }
     fun back() { if (backStack.size > 1) backStack.removeAt(backStack.lastIndex) }
 
+    // Screens slide in from the right and settle back when you return
+    val reduceMotion = rememberReduceMotion()
+    val forward: AnimatedContentTransitionScope<*>.() -> ContentTransform = {
+        if (reduceMotion) EnterTransition.None togetherWith ExitTransition.None
+        else (slideInHorizontally(tween(Motion.MEDIUM, easing = FastOutSlowInEasing)) { it / 3 } + fadeIn(tween(Motion.MEDIUM)))
+            .togetherWith(slideOutHorizontally(tween(Motion.MEDIUM)) { -it / 8 } + fadeOut(tween(Motion.SHORT)))
+    }
+    val backward: AnimatedContentTransitionScope<*>.() -> ContentTransform = {
+        if (reduceMotion) EnterTransition.None togetherWith ExitTransition.None
+        else (slideInHorizontally(tween(Motion.MEDIUM, easing = FastOutSlowInEasing)) { -it / 8 } + fadeIn(tween(Motion.MEDIUM)))
+            .togetherWith(slideOutHorizontally(tween(Motion.MEDIUM)) { it / 3 } + fadeOut(tween(Motion.SHORT)))
+    }
+
     NavDisplay(
         backStack = backStack,
         onBack = { back() },
+        transitionSpec = { forward() },
+        popTransitionSpec = { backward() },
+        predictivePopTransitionSpec = { _ -> backward() },
         entryDecorators = listOf(
             rememberSaveableStateHolderNavEntryDecorator(),
             // each screen gets its own ViewModels, cleared when it leaves the back stack
@@ -159,6 +197,7 @@ fun MainNavigation(
                     openRestock = key.openRestock,
                     onBack = ::back,
                     onEdit = { open(MedicineEditor(key.medicationId)) },
+                    onOpenHistory = { open(HistoryKey(key.medicationId)) },
                     onDeleted = ::back,
                 )
             }
@@ -187,6 +226,7 @@ fun MainNavigation(
             entry<SettingsKey> { SettingsScreen(onBack = ::back, onOpenReliability = { open(ReliabilityKey) }) }
             entry<ReliabilityKey> { ReliabilityScreen(onBack = ::back) }
             entry<Vault> { MedicalVaultScreen(onBack = ::back) }
+            entry<HistoryKey> { key -> HistoryScreen(medicationId = key.medicationId, onBack = ::back) }
         },
     )
 }
@@ -206,7 +246,14 @@ private fun HomeScaffold(tab: HomeTab, onTab: (HomeTab) -> Unit, open: (NavKey) 
                     NavigationBarItem(
                         selected = tab == t,
                         onClick = { onTab(t) },
-                        icon = { Icon(icon, contentDescription = null, modifier = Modifier.size(28.dp)) },
+                        icon = {
+                            val hop by animateFloatAsState(
+                                if (tab == t) 1.12f else 1f,
+                                spring(dampingRatio = 0.4f, stiffness = Spring.StiffnessMediumLow),
+                                label = "tabIcon",
+                            )
+                            Icon(icon, contentDescription = null, modifier = Modifier.size(28.dp).graphicsLayer { scaleX = hop; scaleY = hop })
+                        },
                         label = { Text(stringResource(label), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold) },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = MaterialTheme.colorScheme.onPrimary,
@@ -221,6 +268,14 @@ private fun HomeScaffold(tab: HomeTab, onTab: (HomeTab) -> Unit, open: (NavKey) 
         },
     ) { padding ->
         val modifier = Modifier.padding(padding)
+        AnimatedContent(
+            targetState = tab,
+            transitionSpec = {
+                (fadeIn(tween(Motion.MEDIUM)) + scaleIn(tween(Motion.MEDIUM), initialScale = 0.985f))
+                    .togetherWith(fadeOut(tween(Motion.SHORT)))
+            },
+            label = "tabs",
+        ) { tab ->
         when (tab) {
             HomeTab.TODAY -> TodayScreen(
                 modifier = modifier,
@@ -245,6 +300,7 @@ private fun HomeScaffold(tab: HomeTab, onTab: (HomeTab) -> Unit, open: (NavKey) 
                 modifier = modifier,
                 onOpen = { open(it) },
             )
+        }
         }
     }
 }

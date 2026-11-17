@@ -8,8 +8,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.mediminder.data.catalogue.CatalogueDatabase
 import com.example.mediminder.data.catalogue.CatalogueRepository
 import com.example.mediminder.data.catalogue.CatalogueText
-import com.example.mediminder.data.local.MIGRATION_1_3
-import com.example.mediminder.data.local.MIGRATION_2_3
+import com.example.mediminder.data.local.ALL_MIGRATIONS
+import kotlinx.coroutines.flow.first
+import com.example.mediminder.data.local.Schema3
 import com.example.mediminder.data.local.MediMinderDatabase
 import com.example.mediminder.data.local.entity.AlertType
 import com.example.mediminder.data.local.entity.DaysOfWeek
@@ -100,6 +101,31 @@ class MigrationTest {
 
     @Test fun `version 2 data (1_0_10) survives the upgrade`() = upgradesFrom(2)
 
+    @Test fun `version 3 data (2_0_0) survives the upgrade to 4`() = runBlocking {
+        val file = context.getDatabasePath(name).apply { parentFile?.mkdirs() }
+        SQLiteDatabase.openOrCreateDatabase(file, null).use { old ->
+            (listOf(Schema3.MEDICATIONS, Schema3.SCHEDULES, Schema3.SCHEDULES_INDEX, Schema3.DOSE_LOGS) + Schema3.DOSE_LOGS_INDEXES +
+                listOf(Schema3.RESTOCKS, Schema3.RESTOCKS_INDEX, Schema3.DOCTORS, Schema3.APPOINTMENTS) + Schema3.APPOINTMENTS_INDEXES +
+                listOf(Schema3.ACTIVE_ALERTS, Schema3.ACTIVE_ALERTS_INDEX, Schema3.VAULT_ITEMS)).forEach(old::execSQL)
+            old.execSQL(
+                "INSERT INTO medications (id, name, strength, form, shape, color, mealTiming, isAsNeeded, trackStock, stock, unit, " +
+                    "refillThresholdDays, refillReminders, archived, createdAt, updatedAt) " +
+                    "VALUES (7, 'Seclo', '20 mg', 'Capsule', 'Capsule', '#3B82F6', 'BEFORE_MEAL', 0, 1, 14, 'capsule', 5, 1, 0, 0, 0)"
+            )
+            old.version = 3
+        }
+        val db = Room.databaseBuilder(context, MediMinderDatabase::class.java, name)
+            .addMigrations(*ALL_MIGRATIONS).allowMainThreadQueries().build()
+        try {
+            val seclo = db.medicationDao().getAll().single()
+            assertEquals("Seclo", seclo.name)
+            assertNull("not deleted", seclo.deletedAt)
+            assertEquals(1, db.medicationDao().observeAllWithSchedules().first().size)
+        } finally {
+            db.close()
+        }
+    }
+
     @Test fun `version 1 data (1_0_1 to 1_0_9) survives the upgrade`() = upgradesFrom(1)
 
     @Test fun `an unreadable early schema starts fresh instead of crashing`() = runBlocking {
@@ -111,7 +137,7 @@ class MigrationTest {
             old.version = 1
         }
         val db = Room.databaseBuilder(context, MediMinderDatabase::class.java, name)
-            .addMigrations(MIGRATION_1_3, MIGRATION_2_3).allowMainThreadQueries().build()
+            .addMigrations(*ALL_MIGRATIONS).allowMainThreadQueries().build()
         try {
             assertTrue(db.medicationDao().getAll().isEmpty())
             assertTrue(db.vaultItemDao().getAll().isEmpty())
@@ -149,7 +175,7 @@ class MigrationTest {
 
         // Opening with Room runs the migration and then validates the whole schema
         val db = Room.databaseBuilder(context, MediMinderDatabase::class.java, name)
-            .addMigrations(MIGRATION_1_3, MIGRATION_2_3)
+            .addMigrations(*ALL_MIGRATIONS)
             .allowMainThreadQueries()
             .build()
         try {

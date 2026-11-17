@@ -9,8 +9,8 @@ import androidx.compose.ui.unit.sp
 /*
  * The phone's own font (Roboto + Noto Sans Bengali on Android): the most legible choice for
  * both Bangla and English, and it matches how the rest of the phone reads.
- * Sizes start about two steps above Material's defaults — body text is 18sp, nothing is
- * smaller than 14sp — with roomy line heights so Bangla vowel signs never collide.
+ * Headings are large; body text is 17sp (a step above Material's 16) and nothing is
+ * smaller than 13sp, with roomy line heights so Bangla vowel signs never collide.
  * The user's "Text size" setting scales all of this further (see MediMinderTheme).
  */
 private val Sans = FontFamily.Default
@@ -25,13 +25,13 @@ val Typography = Typography(
     headlineLarge = style(32, 40, FontWeight.Bold),
     headlineMedium = style(28, 36, FontWeight.Bold),
     headlineSmall = style(24, 32, FontWeight.Bold),
-    titleLarge = style(22, 30, FontWeight.SemiBold),
-    titleMedium = style(19, 27, FontWeight.SemiBold),
-    titleSmall = style(17, 24, FontWeight.SemiBold),
-    bodyLarge = style(18, 27),
-    bodyMedium = style(17, 25),
-    bodySmall = style(15, 22),
-    labelLarge = style(18, 24, FontWeight.SemiBold),
-    labelMedium = style(15, 20, FontWeight.Medium),
-    labelSmall = style(14, 18, FontWeight.Medium),
+    titleLarge = style(21, 28, FontWeight.SemiBold),
+    titleMedium = style(18, 25, FontWeight.SemiBold),
+    titleSmall = style(16, 22, FontWeight.SemiBold),
+    bodyLarge = style(17, 25),
+    bodyMedium = style(16, 23),
+    bodySmall = style(14, 20),
+    labelLarge = style(17, 22, FontWeight.SemiBold),
+    labelMedium = style(14, 19, FontWeight.Medium),
+    labelSmall = style(13, 17, FontWeight.Medium),
 )

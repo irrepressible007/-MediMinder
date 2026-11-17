@@ -3,6 +3,10 @@ package com.example.mediminder.ui
 import android.Manifest
 import android.app.Application
 import android.os.Looper
+import org.junit.runners.model.Statement
+import org.junit.runner.Description
+import org.junit.rules.TestRule
+import android.provider.Settings
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -43,6 +47,21 @@ import java.time.Duration
 import java.time.LocalDateTime
 import javax.inject.Inject
 
+/**
+ * Turns the phone's animation scale to 0 before the app starts, as the "Remove animations"
+ * accessibility setting does: the app then skips its looping animations, which would
+ * otherwise keep Compose from ever going idle in a test.
+ */
+class CalmAnimationsRule : TestRule {
+    override fun apply(base: Statement, description: Description): Statement = object : Statement() {
+        override fun evaluate() {
+            val resolver = ApplicationProvider.getApplicationContext<Application>().contentResolver
+            Settings.Global.putFloat(resolver, Settings.Global.ANIMATOR_DURATION_SCALE, 0f)
+            base.evaluate()
+        }
+    }
+}
+
 /** Waits for text, moving Robolectric's paused main-looper clock forward as it goes. */
 internal fun ComposeTestRule.waitForText(value: String, timeoutMs: Long = 15_000) {
     val end = System.currentTimeMillis() + timeoutMs
@@ -61,7 +80,8 @@ internal fun ComposeTestRule.waitForText(value: String, timeoutMs: Long = 15_000
 @Config(application = HiltTestApplication::class, sdk = [34], qualifiers = "bn-w393dp-h873dp-xxhdpi")
 class BanglaTest {
     @get:Rule(order = 0) val hilt = HiltAndroidRule(this)
-    @get:Rule(order = 1) val compose = createAndroidComposeRule<MainActivity>()
+    @get:Rule(order = 1) val calm = CalmAnimationsRule()
+    @get:Rule(order = 2) val compose = createAndroidComposeRule<MainActivity>()
 
     @Test fun `app works in Bangla`() {
         shadowOf(ApplicationProvider.getApplicationContext<Application>()).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
@@ -98,7 +118,8 @@ class BanglaTest {
 @Config(application = HiltTestApplication::class, sdk = [34], qualifiers = "w393dp-h873dp-xxhdpi")
 class AlarmScreenTest {
     @get:Rule(order = 0) val hilt = HiltAndroidRule(this)
-    @get:Rule(order = 1) val compose = createEmptyComposeRule()
+    @get:Rule(order = 1) val calm = CalmAnimationsRule()
+    @get:Rule(order = 2) val compose = createEmptyComposeRule()
 
     @Inject lateinit var medicines: MedicineRepository
     @Inject lateinit var engine: ReminderEngine

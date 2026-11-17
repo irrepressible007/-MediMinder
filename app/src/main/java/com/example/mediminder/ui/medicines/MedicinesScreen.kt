@@ -38,6 +38,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mediminder.R
+import com.example.mediminder.ui.components.rememberEntranceState
+import com.example.mediminder.ui.components.entrance
+import androidx.compose.foundation.lazy.itemsIndexed
 import com.example.mediminder.ui.components.MedicineImage
 import com.example.mediminder.data.MedicineRepository
 import com.example.mediminder.data.local.entity.MealTiming
@@ -82,6 +85,7 @@ fun MedicinesScreen(
     val stopped = list.filter { it.medication.archived }
     val lowCount = active.count { Stock.isLow(it.medication, it.schedules, today) }
 
+    val entrance = rememberEntranceState()
     Box(modifier.fillMaxSize()) {
         LazyColumn(
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 112.dp),
@@ -106,7 +110,9 @@ fun MedicinesScreen(
                     onClick = onOpenRefills,
                 )
             }
-            items(active, key = { it.medication.id }) { item -> MedicineRow(item, today) { onOpen(item.medication.id) } }
+            itemsIndexed(active, key = { _, it -> it.medication.id }) { i, item ->
+                MedicineRow(item, today, Modifier.animateItem().entrance(entrance, i)) { onOpen(item.medication.id) }
+            }
             if (stopped.isNotEmpty()) {
                 item {
                     ExpandableSection(stringResource(R.string.medicines_stopped, stopped.size)) {
@@ -129,7 +135,7 @@ fun MedicinesScreen(
 }
 
 @Composable
-fun MedicineRow(item: MedicationWithSchedules, today: Long, onClick: () -> Unit) {
+fun MedicineRow(item: MedicationWithSchedules, today: Long, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val context = LocalContext.current
     val status = LocalStatusColors.current
     val m = item.medication
@@ -137,6 +143,7 @@ fun MedicineRow(item: MedicationWithSchedules, today: Long, onClick: () -> Unit)
     val daysLeft = Stock.daysLeft(m, item.schedules)
     MediCard(
         onClick = onClick,
+        modifier = modifier,
         containerColor = if (m.archived) MaterialTheme.colorScheme.surfaceContainerLow else MaterialTheme.colorScheme.surface,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {

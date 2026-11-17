@@ -33,6 +33,10 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.navigation3.runtime.NavKey
 import com.example.mediminder.BuildConfig
 import com.example.mediminder.R
+import com.example.mediminder.ui.components.rememberEntranceState
+import com.example.mediminder.ui.components.entrance
+import com.example.mediminder.ui.HistoryKey
+import androidx.compose.material.icons.filled.History
 import com.example.mediminder.reminders.Reliability
 import com.example.mediminder.ui.MedicalId
 import com.example.mediminder.ui.RefillList
@@ -61,7 +65,10 @@ fun MoreScreen(modifier: Modifier, onOpen: (NavKey) -> Unit) {
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         ScreenHeader(stringResource(R.string.tab_more))
-        MediCard(contentPadding = PaddingValues(vertical = 4.dp)) {
+        val entrance = rememberEntranceState()
+        MediCard(contentPadding = PaddingValues(vertical = 4.dp), modifier = Modifier.entrance(entrance, 0)) {
+            NavRow(Icons.Default.History, stringResource(R.string.history_title), { onOpen(HistoryKey()) }, subtitle = stringResource(R.string.more_history_sub))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             NavRow(Icons.Default.ShoppingCart, stringResource(R.string.refill_title), { onOpen(RefillList) }, subtitle = stringResource(R.string.more_refill_sub))
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             NavRow(Icons.Default.BarChart, stringResource(R.string.stats_title), { onOpen(Stats) }, subtitle = stringResource(R.string.more_stats_sub))
@@ -70,7 +77,7 @@ fun MoreScreen(modifier: Modifier, onOpen: (NavKey) -> Unit) {
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             NavRow(Icons.Default.Folder, stringResource(R.string.vault_title), { onOpen(Vault) }, subtitle = stringResource(R.string.more_vault_sub))
         }
-        MediCard(contentPadding = PaddingValues(vertical = 4.dp)) {
+        MediCard(contentPadding = PaddingValues(vertical = 4.dp), modifier = Modifier.entrance(entrance, 1)) {
             NavRow(
                 Icons.Default.VerifiedUser,
                 stringResource(R.string.reliability_title),

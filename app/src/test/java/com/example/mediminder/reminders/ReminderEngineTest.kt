@@ -22,6 +22,7 @@ import com.example.mediminder.data.settings.SettingsRepository
 import com.example.mediminder.domain.minuteOf
 import com.example.mediminder.domain.toEpochMillis
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.first
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -137,6 +138,32 @@ class ReminderEngineTest {
         val (schedule, day) = addMedicine(minutesFromNow = -1, alert = AlertType.REMINDER)
         engine.onDoseAlarm(schedule.id, day, ReminderScheduler.KIND_REGULAR)
         assertNull(shownNotifications().single().getLargeIcon())
+    }
+
+    @Test fun `deleting a medicine keeps its history unless asked not to`() = runBlocking {
+        val (schedule, day) = addMedicine(minutesFromNow = -2, alert = AlertType.REMINDER)
+        actions.take(schedule.id, day)
+
+        medicines.delete(schedule.medicationId)   // default: keep the history
+
+        assertTrue("gone from the list", medicines.observeAll().first().isEmpty())
+        assertNull("no more reminders", alarmFor("dose/${schedule.id}"))
+        val kept = db.doseLogDao().observeHistory(0, null).first().single()
+        assertEquals("Napa", kept.name)
+        assertNotNull("marked deleted", kept.deletedAt)
+        engine.rescheduleAll()
+        assertNull("stays silent after a full re-arm", alarmFor("dose/${schedule.id}"))
+
+        // Deleting it again with "also delete its history" removes everything
+        medicines.delete(schedule.medicationId, keepHistory = false)
+        assertTrue(db.doseLogDao().observeHistory(0, null).first().isEmpty())
+        assertNull(db.medicationDao().getById(schedule.medicationId))
+    }
+
+    @Test fun `a medicine with no history is simply removed`() = runBlocking {
+        val (schedule, _) = addMedicine(minutesFromNow = 60, alert = AlertType.REMINDER)
+        medicines.delete(schedule.medicationId)
+        assertNull(db.medicationDao().getById(schedule.medicationId))
     }
 
     @Test fun `deleting a medicine while its reminder is showing clears everything`() = runBlocking {

@@ -67,6 +67,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.mediminder.R
+import com.example.mediminder.ui.components.stepTransition
+import com.example.mediminder.ui.components.Motion
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.AnimatedContent
 import com.example.mediminder.ui.photos.MedicinePhoto
 import com.example.mediminder.ui.components.MedicineImage
 import com.example.mediminder.data.photos.MedicinePhotos
@@ -168,8 +174,9 @@ fun MedicineEditorScreen(
                         }
                     },
                 )
+                val progress by animateFloatAsState((step + 1) / STEPS.toFloat(), tween(Motion.LONG, easing = FastOutSlowInEasing), label = "steps")
                 LinearProgressIndicator(
-                    progress = { (step + 1) / STEPS.toFloat() },
+                    progress = { progress },
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).height(8.dp).clip(CircleShape),
                     strokeCap = StrokeCap.Round,
                     trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
@@ -202,17 +209,25 @@ fun MedicineEditorScreen(
             Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             return@Scaffold
         }
-        Column(
-            Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            when (step) {
-                0 -> NameStep(s, viewModel, onScan, onTakePhoto)
-                1 -> WhenStep(s, viewModel)
-                2 -> TimesStep(s, viewModel)
-                else -> FinishStep(s, viewModel)
+        // Next slides the new page in from the right; Back from the left
+        AnimatedContent(
+            targetState = step,
+            modifier = Modifier.fillMaxSize().padding(padding),
+            transitionSpec = { stepTransition(forward = targetState > initialState) },
+            label = "wizard",
+        ) { page ->
+            Column(
+                Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                when (page) {
+                    0 -> NameStep(s, viewModel, onScan, onTakePhoto)
+                    1 -> WhenStep(s, viewModel)
+                    2 -> TimesStep(s, viewModel)
+                    else -> FinishStep(s, viewModel)
+                }
+                Spacer(Modifier.height(12.dp))
             }
-            Spacer(Modifier.height(12.dp))
         }
     }
 }

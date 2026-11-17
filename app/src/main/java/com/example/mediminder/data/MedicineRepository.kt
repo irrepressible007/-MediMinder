@@ -66,11 +66,22 @@ class MedicineRepository @Inject constructor(
         engine.rescheduleMedication(id)
     }
 
-    /** Deletes a medicine and its whole history. */
-    suspend fun delete(id: Long) {
+    /**
+     * Deletes a medicine. With [keepHistory] (the default) it leaves the list and its
+     * reminders stop, but every dose taken or skipped stays in the history; without it,
+     * the medicine and its whole history are removed.
+     */
+    suspend fun delete(id: Long, keepHistory: Boolean = true) {
         val item = medicationDao.getWithSchedules(id) ?: return
-        medicationDao.delete(item.medication)
-        engine.rescheduleMedication(id, item.schedules.map { it.id })
+        val hasHistory = db.doseLogDao().countForMedication(id) > 0
+        if (keepHistory && hasHistory) {
+            val now = System.currentTimeMillis()
+            medicationDao.update(item.medication.copy(archived = true, deletedAt = now, photoUri = null, updatedAt = now))
+            engine.rescheduleMedication(id)
+        } else {
+            medicationDao.delete(item.medication)
+            engine.rescheduleMedication(id, item.schedules.map { it.id })
+        }
     }
 
     /** "I bought more": adds stock and records the purchase. */

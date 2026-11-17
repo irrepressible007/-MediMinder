@@ -56,6 +56,8 @@ data class Medication(
 
     /** Stopped medicines are kept (with their history) but no longer remind. */
     val archived: Boolean = false,
+    /** Deleted from the list, with its intake history kept (epoch millis). Hidden everywhere else. */
+    val deletedAt: Long? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
 )

@@ -275,7 +275,7 @@
     <string name="detail_adherence_value">%1$s%% খেয়েছেন (%3$sটির মধ্যে %2$sটি ডোজ)</string>
     <string name="detail_history">ইতিহাস</string>
     <string name="delete_medicine_title">%1$s মুছে ফেলবেন?</string>
-    <string name="delete_medicine_body">এর সব ইতিহাসও মুছে যাবে। ইতিহাস রাখতে চাইলে “ওষুধটি বন্ধ করুন” ব্যবহার করুন।</string>
+    <string name="delete_medicine_body">এটি তালিকা থেকে সরে যাবে আর এর রিমাইন্ডার বন্ধ হবে।</string>
     <string name="count_title">কতগুলো বাকি আছে?</string>
     <string name="count_label">এখনকার সংখ্যা</string>
 
@@ -574,4 +574,28 @@
     <string name="photo_saving">ছবি রাখা হচ্ছে…</string>
     <string name="cd_take_photo">ছবি তুলুন</string>
     <string name="cd_medicine_photo">%1$s-এর ছবি</string>
+    <string name="history_title">ওষুধ খাওয়ার ইতিহাস</string>
+    <string name="more_history_sub">যত ডোজ খেয়েছেন বা বাদ দিয়েছেন</string>
+    <string name="history_intro">যে ডোজগুলো খেয়েছেন বা বাদ দিয়েছেন — ওষুধ মুছে ফেললেও থেকে যায়।</string>
+    <string name="history_all_time">শুরু থেকে</string>
+    <string name="history_all_medicines">সব ওষুধ</string>
+    <string name="history_deleted_name">%1$s (মুছে ফেলা)</string>
+    <string name="history_empty_title">এখনো কোনো ইতিহাস নেই</string>
+    <string name="history_empty_body">কোনো ডোজ খেয়েছেন বা বাদ দিয়েছেন জানালে তা এখানে জমা থাকবে।</string>
+    <string name="history_summary">%1$sটি খেয়েছেন · %2$sটি বাদ</string>
+    <string name="history_dose_at">%1$s-এর ডোজ</string>
+    <string name="history_when_needed">দরকারমতো</string>
+    <string name="history_today">আজ</string>
+    <string name="history_yesterday">গতকাল</string>
+    <string name="history_share">ডাক্তার বা পরিবারকে পাঠান</string>
+    <string name="history_remove">এই তথ্যটি সরান</string>
+    <string name="history_remove_title">এই তথ্যটি সরাবেন?</string>
+    <string name="history_remove_body">ভুল করে লেখা হলে সরান। খাওয়া ডোজ হলে মজুদের হিসাব আগের মতো হবে।</string>
+    <string name="detail_see_history">পুরো ইতিহাস দেখুন</string>
+    <string name="delete_history_check">এর খাওয়ার ইতিহাসও মুছে ফেলুন</string>
+    <string name="delete_history_hint">ইতিহাস রেখে দিতে টিক দেবেন না — ডাক্তারকে দেখাতে কাজে লাগবে।</string>
+    <string name="history_erase">এই ওষুধের ইতিহাস মুছে ফেলুন</string>
+    <string name="history_erase_title">%1$s-এর ইতিহাস মুছবেন?</string>
+    <string name="history_erase_body">এই ওষুধের খাওয়া ও বাদ দেওয়া সব ডোজের তথ্য মুছে যাবে। এটি আর ফেরানো যাবে না।</string>
+    <string name="history_deleted_label">মুছে ফেলা ওষুধ</string>
 </resources>

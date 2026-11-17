@@ -39,7 +39,10 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        deepLink.value = parse(intent)
+        // Follow a notification's link only on a real tap: when Android rebuilds the app (after an
+        // update or from Recents) it hands back the original launch, which must not reopen it
+        val relaunch = savedInstanceState != null || intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY != 0
+        deepLink.value = if (relaunch) null else parse(intent)
 
         // Opening the app is a good moment to repair any alarm the phone dropped
         lifecycleScope.launch { engine.rescheduleAll() }

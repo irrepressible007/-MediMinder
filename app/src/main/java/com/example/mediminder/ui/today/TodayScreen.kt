@@ -66,6 +66,24 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import com.example.mediminder.R
+import com.example.mediminder.ui.components.rememberPulse
+import com.example.mediminder.ui.components.rememberEntranceState
+import com.example.mediminder.ui.components.entrance
+import com.example.mediminder.ui.components.RollingContent
+import com.example.mediminder.ui.components.Motion
+import com.example.mediminder.ui.components.CelebrationBurst
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.AnimatedVisibility
 import com.example.mediminder.ui.photos.MedicinePhoto
 import com.example.mediminder.ui.components.MedicineImage
 import com.example.mediminder.data.local.entity.AlertType
@@ -158,6 +176,7 @@ fun TodayScreen(
         )
     }
 
+    val entrance = rememberEntranceState()
     Box(modifier.fillMaxSize()) {
         LazyColumn(
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 32.dp),
@@ -186,7 +205,7 @@ fun TodayScreen(
                 )
             }
 
-            if (state.rows.isNotEmpty()) item { SummaryCard(state) }
+            if (state.rows.isNotEmpty()) item { SummaryCard(state, Modifier.entrance(entrance, 0)) }
 
             if (state.lowStock > 0) item {
                 NoticeCard(
@@ -224,14 +243,18 @@ fun TodayScreen(
                 }
             }
 
+            var shown = 1
             state.rows.groupBy { dayPartOf(it.minuteOfDay) }.toSortedMap().forEach { (part, rows) ->
                 item(key = "part-$part") { DayPartHeader(part) }
-                items(rows, key = { "${it.scheduleId}:${it.day}" }) { row ->
+                val first = shown   // stagger by position, worked out up front
+                shown += rows.size
+                itemsIndexed(rows, key = { _, it -> "${it.scheduleId}:${it.day}" }) { i, row ->
                     DoseCard(
                         row = row,
                         actionable = state.isToday && row.state in ACTIONABLE,
                         onTake = { viewModel.take(row) },
                         onOptions = { sheetFor = row },
+                        modifier = Modifier.animateItem().entrance(entrance, first + i),
                     )
                 }
             }
@@ -239,7 +262,7 @@ fun TodayScreen(
             if (state.asNeeded.isNotEmpty() && state.isToday) {
                 item { SectionHeading(Icons.Default.MedicalServices, stringResource(R.string.today_as_needed)) }
                 items(state.asNeeded, key = { "prn-${it.id}" }) { med ->
-                    MediCard(onClick = { onOpenMedicine(med.id) }) {
+                    MediCard(onClick = { onOpenMedicine(med.id) }, modifier = Modifier.animateItem()) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             MedicineImage(med.photoUri, med.name, med.color, size = 56)
                             Spacer(Modifier.width(14.dp))
@@ -306,7 +329,7 @@ private fun Header(state: TodayUi, onPrev: () -> Unit, onNext: () -> Unit, onTod
 
 /** "2 of 3 taken" with a thick bar, and what comes next. */
 @Composable
-private fun SummaryCard(state: TodayUi) {
+private fun SummaryCard(state: TodayUi, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val status = LocalStatusColors.current
     val allDone = state.total > 0 && state.taken == state.total
@@ -318,19 +341,36 @@ private fun SummaryCard(state: TodayUi) {
         }
     }.minByOrNull { it.first }
 
+    // Confetti only when the day gets finished while watching — not every time Today opens
+    var wasDone by remember { mutableStateOf(allDone) }
+    var celebrate by remember { mutableStateOf(false) }
+    LaunchedEffect(allDone, state.isToday) {
+        if (allDone && !wasDone && state.isToday) celebrate = true
+        wasDone = allDone
+    }
+    val container by animateColorAsState(if (allDone) status.takenContainer else MaterialTheme.colorScheme.primaryContainer, tween(Motion.LONG), label = "summaryBg")
+    val onColor by animateColorAsState(if (allDone) status.onTakenContainer else MaterialTheme.colorScheme.onPrimaryContainer, tween(Motion.LONG), label = "summaryFg")
+    val progress by animateFloatAsState(
+        if (state.total == 0) 0f else state.taken / state.total.toFloat(),
+        spring(dampingRatio = 0.7f, stiffness = Spring.StiffnessLow),
+        label = "progress",
+    )
+
+    Box(modifier) {
     MediCard(
-        containerColor = if (allDone) status.takenContainer else MaterialTheme.colorScheme.primaryContainer,
+        containerColor = container,
         borderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0f),
     ) {
-        val onColor = if (allDone) status.onTakenContainer else MaterialTheme.colorScheme.onPrimaryContainer
-        Text(
-            stringResource(R.string.today_summary, Formats.number(context, state.taken), Formats.number(context, state.total)),
-            style = MaterialTheme.typography.headlineSmall,
-            color = onColor,
-        )
+        RollingContent(state.taken to state.total) { (taken, total) ->
+            Text(
+                stringResource(R.string.today_summary, Formats.number(context, taken), Formats.number(context, total)),
+                style = MaterialTheme.typography.headlineSmall,
+                color = onColor,
+            )
+        }
         Spacer(Modifier.height(12.dp))
         LinearProgressIndicator(
-            progress = { if (state.total == 0) 0f else state.taken / state.total.toFloat() },
+            progress = { progress },
             modifier = Modifier.fillMaxWidth().height(14.dp).clip(CircleShape),
             color = status.taken,
             trackColor = MaterialTheme.colorScheme.surface,
@@ -340,18 +380,24 @@ private fun SummaryCard(state: TodayUi) {
         )
         if (state.isToday && (allDone || next != null)) {
             Spacer(Modifier.height(12.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(if (allDone) Icons.Default.CheckCircle else Icons.Default.Alarm, contentDescription = null, tint = onColor, modifier = Modifier.size(26.dp))
-                Spacer(Modifier.width(10.dp))
-                Text(
-                    if (allDone) stringResource(R.string.today_all_done)
-                    else stringResource(R.string.today_next_named, next!!.second.name, Formats.time(context, minuteOf(next.first.toLocalTime()))),
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium,
-                    color = onColor,
-                )
+            val line = if (allDone) stringResource(R.string.today_all_done)
+            else stringResource(R.string.today_next_named, next!!.second.name, Formats.time(context, minuteOf(next.first.toLocalTime())))
+            RollingContent(allDone to line) { (done, text) ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(if (done) Icons.Default.CheckCircle else Icons.Default.Alarm, contentDescription = null, tint = onColor, modifier = Modifier.size(26.dp))
+                    Spacer(Modifier.width(10.dp))
+                    Text(text, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, color = onColor)
+                }
             }
         }
+    }
+    if (celebrate) {
+        CelebrationBurst(
+            colors = listOf(status.taken, MaterialTheme.colorScheme.primary, status.due, status.snoozed),
+            modifier = Modifier.matchParentSize(),
+            onFinished = { celebrate = false },
+        )
+    }
     }
 }
 
@@ -385,7 +431,7 @@ private fun doseDetail(row: DoseRow): String {
 }
 
 @Composable
-private fun DoseCard(row: DoseRow, actionable: Boolean, onTake: () -> Unit, onOptions: () -> Unit) {
+private fun DoseCard(row: DoseRow, actionable: Boolean, onTake: () -> Unit, onOptions: () -> Unit, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val status = LocalStatusColors.current
     val answered = row.state == DoseState.TAKEN || row.state == DoseState.SKIPPED
@@ -402,10 +448,17 @@ private fun DoseCard(row: DoseRow, actionable: Boolean, onTake: () -> Unit, onOp
         else -> stateLabel(row.state)
     }
 
+    // A dose that is due right now gently breathes so it is noticed
+    val pulse = rememberPulse(enabled = row.state == DoseState.DUE || row.ringing)
+    val container by animateColorAsState(
+        if (answered) MaterialTheme.colorScheme.surfaceContainerLow else MaterialTheme.colorScheme.surface, tween(Motion.LONG), label = "doseBg",
+    )
+    val border by animateColorAsState(accent ?: MaterialTheme.colorScheme.outlineVariant, tween(Motion.MEDIUM), label = "doseBorder")
     MediCard(
         onClick = onOptions,
-        containerColor = if (answered) MaterialTheme.colorScheme.surfaceContainerLow else MaterialTheme.colorScheme.surface,
-        borderColor = accent ?: MaterialTheme.colorScheme.outlineVariant,
+        modifier = modifier,
+        containerColor = container,
+        borderColor = if (accent != null) border.copy(alpha = 0.45f + 0.55f * pulse) else border,
         borderWidth = if (accent != null) 2.dp else 1.dp,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -430,14 +483,21 @@ private fun DoseCard(row: DoseRow, actionable: Boolean, onTake: () -> Unit, onOp
                 Text(doseDetail(row), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-        if (actionable) {
-            Spacer(Modifier.height(16.dp))
-            TakenButton(onClick = onTake)
-            QuietButton(
-                stringResource(R.string.dose_snooze_or_skip),
-                onClick = onOptions,
-                modifier = Modifier.align(Alignment.CenterHorizontally),
-            )
+        // Folds away once answered, while the badge turns to "Taken at …"
+        AnimatedVisibility(
+            visible = actionable,
+            enter = expandVertically(tween(Motion.MEDIUM)) + fadeIn(tween(Motion.MEDIUM)),
+            exit = shrinkVertically(tween(Motion.LONG, easing = FastOutSlowInEasing)) + fadeOut(tween(Motion.SHORT)),
+        ) {
+            Column {
+                Spacer(Modifier.height(16.dp))
+                TakenButton(onClick = onTake)
+                QuietButton(
+                    stringResource(R.string.dose_snooze_or_skip),
+                    onClick = onOptions,
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                )
+            }
         }
     }
 }

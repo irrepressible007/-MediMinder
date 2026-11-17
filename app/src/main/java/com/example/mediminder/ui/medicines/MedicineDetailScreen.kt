@@ -59,6 +59,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mediminder.R
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.draw.clip
+import androidx.compose.material3.Checkbox
+import androidx.compose.material.icons.filled.History
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.layout.heightIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import android.content.Context
 import com.example.mediminder.ui.photos.MedicinePhoto
@@ -113,6 +119,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -161,6 +168,15 @@ class MedicineDetailViewModel @Inject constructor(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
+    /**
+     * The medicine no longer exists, or was deleted (history kept) — e.g. a page restored
+     * by Android after an update, or an old notification's link. The page then closes.
+     */
+    val gone: StateFlow<Boolean> = id.filterNotNull()
+        .flatMapLatest { repository.observe(it) }
+        .map { it == null || it.medication.deletedAt != null }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
     fun load(medicationId: Long) {
         if (id.value == medicationId) return
         id.value = medicationId
@@ -182,10 +198,10 @@ class MedicineDetailViewModel @Inject constructor(
 
     fun setArchived(archived: Boolean) = viewModelScope.launch { id.value?.let { repository.setArchived(it, archived) } }
 
-    fun delete(onDone: () -> Unit) = viewModelScope.launch {
+    fun delete(keepHistory: Boolean, onDone: () -> Unit) = viewModelScope.launch {
         id.value?.let { medId ->
             val photo = repository.get(medId)?.medication?.photoUri
-            repository.delete(medId)
+            repository.delete(medId, keepHistory)
             MedicinePhotos.delete(context, photo)
         }
         onDone()
@@ -198,6 +214,7 @@ fun MedicineDetailScreen(
     openRestock: Boolean,
     onBack: () -> Unit,
     onEdit: () -> Unit,
+    onOpenHistory: () -> Unit,
     onDeleted: () -> Unit,
     viewModel: MedicineDetailViewModel = hiltViewModel(),
 ) {
@@ -205,6 +222,8 @@ fun MedicineDetailScreen(
     val context = LocalContext.current
     val status = LocalStatusColors.current
     val ui by viewModel.state.collectAsState()
+    val gone by viewModel.gone.collectAsState()
+    LaunchedEffect(gone) { if (gone) onBack() }
     var restockOpen by rememberSaveable { mutableStateOf(openRestock) }
     var countOpen by rememberSaveable { mutableStateOf(false) }
     var deleteOpen by rememberSaveable { mutableStateOf(false) }
@@ -239,12 +258,9 @@ fun MedicineDetailScreen(
         val hasPhoto = MedicinePhotos.model(context, m.photoUri) != null
         if (photoOpen && hasPhoto) FullScreenPhoto(m.photoUri, m.name, onDismiss = { photoOpen = false })
         if (deleteOpen) {
-            ConfirmDialog(
-                title = stringResource(R.string.delete_medicine_title, m.name),
-                text = stringResource(R.string.delete_medicine_body),
-                confirmLabel = stringResource(R.string.action_delete),
-                destructive = true,
-                onConfirm = { viewModel.delete(onDeleted) },
+            DeleteMedicineDialog(
+                name = m.name,
+                onConfirm = { alsoHistory -> viewModel.delete(keepHistory = !alsoHistory, onDone = onDeleted) },
                 onDismiss = { deleteOpen = false },
             )
         }
@@ -373,6 +389,7 @@ fun MedicineDetailScreen(
             // History: folded away
             item {
                 ExpandableSection(stringResource(R.string.detail_history)) {
+                    SecondaryButton(stringResource(R.string.detail_see_history), onClick = onOpenHistory, icon = Icons.Default.History)
                     state.adherence?.rate?.let { rate ->
                         Text(
                             stringResource(R.string.detail_adherence) + ": " + stringResource(R.string.detail_adherence_value, Formats.number(context, rate), Formats.number(context, state.adherence.taken), Formats.number(context, state.adherence.expected)),
@@ -435,6 +452,47 @@ fun MedicineDetailScreen(
             }
         }
     }
+}
+
+/**
+ * "Delete Napa?" with one choice: also delete its intake history. Unticked by default,
+ * so the record stays (e.g. to show a doctor) unless the user asks otherwise.
+ */
+@Composable
+private fun DeleteMedicineDialog(name: String, onConfirm: (alsoHistory: Boolean) -> Unit, onDismiss: () -> Unit) {
+    var alsoHistory by rememberSaveable { mutableStateOf(false) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.delete_medicine_title, name), style = MaterialTheme.typography.headlineSmall) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(stringResource(R.string.delete_medicine_body), style = MaterialTheme.typography.bodyLarge)
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(MaterialTheme.shapes.medium)
+                        .toggleable(value = alsoHistory, role = Role.Checkbox, onValueChange = { alsoHistory = it })
+                        .heightIn(min = 56.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Checkbox(checked = alsoHistory, onCheckedChange = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.delete_history_check), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                }
+                Text(stringResource(R.string.delete_history_hint), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(alsoHistory); onDismiss() }, modifier = Modifier.heightIn(min = 48.dp)) {
+                Text(stringResource(R.string.action_delete), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.error)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, modifier = Modifier.heightIn(min = 48.dp)) {
+                Text(stringResource(R.string.action_cancel), style = MaterialTheme.typography.labelLarge)
+            }
+        },
+    )
 }
 
 /** The photo as large as the screen allows — tap anywhere to close. */

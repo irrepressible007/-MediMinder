@@ -78,6 +78,22 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.mediminder.R
+import androidx.compose.ui.draw.rotate
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.AnimatedContent
 import com.example.mediminder.data.photos.MedicinePhotos
 import coil.compose.SubcomposeAsyncImage
 import androidx.compose.ui.layout.ContentScale
@@ -160,7 +176,15 @@ fun MediCard(
     val colors = CardDefaults.cardColors(containerColor = containerColor)
     val border = BorderStroke(borderWidth, borderColor)
     if (onClick != null) {
-        Card(onClick = onClick, modifier = modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large, colors = colors, border = border) {
+        val interaction = remember { MutableInteractionSource() }
+        Card(
+            onClick = onClick,
+            modifier = modifier.fillMaxWidth().pressScale(interaction, 0.985f),
+            shape = MaterialTheme.shapes.large,
+            colors = colors,
+            border = border,
+            interactionSource = interaction,
+        ) {
             Column(Modifier.padding(contentPadding), content = content)
         }
     } else {
@@ -182,13 +206,15 @@ fun PrimaryButton(
     enabled: Boolean = true,
     colors: ButtonColors = ButtonDefaults.buttonColors(),
 ) {
+    val interaction = remember { MutableInteractionSource() }
     Button(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth().heightIn(min = 60.dp),
+        modifier = modifier.fillMaxWidth().heightIn(min = 58.dp).pressScale(interaction),
         enabled = enabled,
         shape = MaterialTheme.shapes.medium,
         colors = colors,
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
+        interactionSource = interaction,
     ) {
         if (icon != null) {
             Icon(icon, contentDescription = null, modifier = Modifier.size(26.dp))
@@ -220,9 +246,11 @@ fun SecondaryButton(
     enabled: Boolean = true,
     contentColor: Color = MaterialTheme.colorScheme.primary,
 ) {
+    val interaction = remember { MutableInteractionSource() }
     OutlinedButton(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth().heightIn(min = 56.dp),
+        modifier = modifier.fillMaxWidth().heightIn(min = 54.dp).pressScale(interaction),
+        interactionSource = interaction,
         enabled = enabled,
         shape = MaterialTheme.shapes.medium,
         border = BorderStroke(1.5.dp, if (enabled) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.outlineVariant),
@@ -339,13 +367,17 @@ fun stateLabel(state: DoseState): String = stringResource(
 @Composable
 fun StatusChip(state: DoseState, label: String = stateLabel(state), modifier: Modifier = Modifier) {
     val style = statusStyle(state)
+    val container by animateColorAsState(style.container, tween(Motion.MEDIUM), label = "chipBg")
+    val content by animateColorAsState(style.content, tween(Motion.MEDIUM), label = "chipFg")
     Row(
-        modifier.clip(CircleShape).background(style.container).padding(horizontal = 12.dp, vertical = 6.dp),
+        modifier.clip(CircleShape).background(container).animateContentSize().padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(style.icon, contentDescription = null, tint = style.content, modifier = Modifier.size(18.dp))
+        AnimatedContent(style.icon, transitionSpec = { popIn() togetherWith fadeOut(tween(Motion.SHORT)) }, label = "chipIcon") { icon ->
+            Icon(icon, contentDescription = null, tint = content, modifier = Modifier.size(18.dp))
+        }
         Spacer(Modifier.width(6.dp))
-        Text(label, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = style.content, maxLines = 1)
+        Text(label, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = content, maxLines = 1)
     }
 }
 
@@ -363,16 +395,20 @@ fun ChoiceTile(
     badge: String? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
+    val container by animateColorAsState(if (selected) scheme.primaryContainer else scheme.surface, tween(Motion.MEDIUM), label = "tileBg")
+    val borderColor by animateColorAsState(if (selected) scheme.primary else scheme.outlineVariant, tween(Motion.MEDIUM), label = "tileBorder")
+    val borderWidth by animateDpAsState(if (selected) 2.5.dp else 1.dp, tween(Motion.MEDIUM), label = "tileBorderWidth")
+    val interaction = remember { MutableInteractionSource() }
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().pressScale(interaction, 0.985f),
         shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(containerColor = if (selected) scheme.primaryContainer else scheme.surface),
-        border = BorderStroke(if (selected) 2.5.dp else 1.dp, if (selected) scheme.primary else scheme.outlineVariant),
+        colors = CardDefaults.cardColors(containerColor = container),
+        border = BorderStroke(borderWidth, borderColor),
     ) {
         Row(
             Modifier
                 .fillMaxWidth()
-                .selectable(selected = selected, onClick = onClick, role = Role.RadioButton)
+                .selectable(selected = selected, onClick = onClick, role = Role.RadioButton, interactionSource = interaction, indication = LocalIndication.current)
                 .heightIn(min = 64.dp)
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -399,12 +435,12 @@ fun ChoiceTile(
 @Composable
 private fun RadioMark(selected: Boolean) {
     val scheme = MaterialTheme.colorScheme
-    if (selected) {
-        Box(Modifier.size(28.dp).clip(CircleShape).background(scheme.primary), contentAlignment = Alignment.Center) {
-            Icon(Icons.Default.Check, contentDescription = null, tint = scheme.onPrimary, modifier = Modifier.size(20.dp))
+    Box(Modifier.size(28.dp).border(2.dp, if (selected) scheme.primary else scheme.outline, CircleShape), contentAlignment = Alignment.Center) {
+        AnimatedVisibility(selected, enter = popIn(), exit = fadeOut(tween(Motion.SHORT)) + scaleOut(targetScale = 0.6f)) {
+            Box(Modifier.size(28.dp).clip(CircleShape).background(scheme.primary), contentAlignment = Alignment.Center) {
+                Icon(Icons.Default.Check, contentDescription = null, tint = scheme.onPrimary, modifier = Modifier.size(20.dp))
+            }
         }
-    } else {
-        Box(Modifier.size(28.dp).border(2.dp, scheme.outline, CircleShape))
     }
 }
 
@@ -480,9 +516,14 @@ fun ExpandableSection(
                 Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
                 subtitle?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             }
-            Icon(if (open) Icons.Default.ExpandLess else Icons.Default.ExpandMore, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(30.dp))
+            val turn by animateFloatAsState(if (open) 180f else 0f, tween(Motion.MEDIUM, easing = FastOutSlowInEasing), label = "chevron")
+            Icon(Icons.Default.ExpandMore, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(30.dp).rotate(turn))
         }
-        AnimatedVisibility(open) {
+        AnimatedVisibility(
+            open,
+            enter = expandVertically(tween(Motion.MEDIUM, easing = FastOutSlowInEasing)) + fadeIn(tween(Motion.MEDIUM)),
+            exit = shrinkVertically(tween(Motion.SHORT)) + fadeOut(tween(Motion.SHORT)),
+        ) {
             Column(Modifier.padding(top = 4.dp), verticalArrangement = Arrangement.spacedBy(12.dp), content = content)
         }
     }
@@ -637,7 +678,7 @@ fun showDatePicker(context: Context, date: LocalDate, minDate: LocalDate? = null
 @Composable
 fun EmptyState(icon: ImageVector, title: String, body: String, modifier: Modifier = Modifier, action: (@Composable () -> Unit)? = null) {
     Column(modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(Modifier.size(104.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
+        Box(Modifier.gentleFloat().size(104.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
             Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(52.dp))
         }
         Spacer(Modifier.size(20.dp))

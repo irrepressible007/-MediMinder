@@ -52,6 +52,13 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import com.example.mediminder.R
+import com.example.mediminder.ui.components.stepTransition
+import com.example.mediminder.ui.components.gentleFloat
+import com.example.mediminder.ui.components.Motion
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.AnimatedContent
 import com.example.mediminder.reminders.Reliability
 import com.example.mediminder.reminders.ReliabilityCheck
 import com.example.mediminder.ui.components.ChoiceTile
@@ -74,8 +81,9 @@ fun OnboardingScreen(onFinished: () -> Unit, viewModel: SettingsViewModel = hilt
     val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { checks = Reliability.checks(context) }
 
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).safeDrawingPadding().padding(horizontal = 20.dp, vertical = 16.dp)) {
+        val progress by animateFloatAsState((step + 1) / 3f, tween(Motion.LONG, easing = FastOutSlowInEasing), label = "steps")
         LinearProgressIndicator(
-            progress = { (step + 1) / 3f },
+            progress = { progress },
             modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
             strokeCap = StrokeCap.Round,
             trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
@@ -83,11 +91,17 @@ fun OnboardingScreen(onFinished: () -> Unit, viewModel: SettingsViewModel = hilt
             drawStopIndicator = {},
         )
         Spacer(Modifier.height(20.dp))
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            when (step) {
+        AnimatedContent(
+            targetState = step,
+            modifier = Modifier.weight(1f),
+            transitionSpec = { stepTransition(forward = targetState > initialState) },
+            label = "onboarding",
+        ) { page ->
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            when (page) {
                 0 -> {
                     Box(
-                        Modifier.size(104.dp).background(MaterialTheme.colorScheme.primaryContainer, CircleShape).align(Alignment.CenterHorizontally),
+                        Modifier.align(Alignment.CenterHorizontally).gentleFloat().size(104.dp).background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
                         contentAlignment = Alignment.Center,
                     ) { Icon(Icons.Default.Medication, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(60.dp)) }
                     Text(stringResource(R.string.onboarding_welcome), style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
@@ -158,6 +172,7 @@ fun OnboardingScreen(onFinished: () -> Unit, viewModel: SettingsViewModel = hilt
                     Text(stringResource(R.string.onboarding_permissions_later), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
+        }
         }
         Spacer(Modifier.height(12.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {

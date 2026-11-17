@@ -65,6 +65,9 @@ import com.example.mediminder.ui.theme.AlarmBackgroundBottom
 import com.example.mediminder.ui.theme.AlarmBackgroundTop
 import com.example.mediminder.ui.theme.AlarmTakenButton
 import com.example.mediminder.R
+import com.example.mediminder.ui.components.ringing
+import com.example.mediminder.ui.components.PulseRings
+import androidx.compose.material.icons.filled.NotificationsActive
 import com.example.mediminder.ui.photos.MedicinePhoto
 import com.example.mediminder.data.local.MediMinderDatabase
 import com.example.mediminder.data.local.entity.Appointment
@@ -301,11 +304,12 @@ class AlarmActivity : AppCompatActivity() {
                 .padding(24.dp)
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxSize()) {
-                Spacer(Modifier.height(24.dp))
-                Box(
-                    Modifier.size(88.dp).background(Color.White.copy(alpha = 0.12f), CircleShape),
-                    contentAlignment = Alignment.Center,
-                ) { Icon(Icons.Default.Medication, contentDescription = null, tint = Color.White, modifier = Modifier.size(48.dp)) }
+                PulseRings(color = Color.White, size = 150.dp) {
+                    Box(
+                        Modifier.size(88.dp).background(Color.White.copy(alpha = 0.16f), CircleShape),
+                        contentAlignment = Alignment.Center,
+                    ) { Icon(Icons.Default.NotificationsActive, contentDescription = null, tint = Color.White, modifier = Modifier.size(48.dp).ringing()) }
+                }
                 Spacer(Modifier.height(16.dp))
                 Text(Formats.time(context, minuteOf(now)), color = Color.White, style = MaterialTheme.typography.displayMedium)
                 Text(title, color = Color.White, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)

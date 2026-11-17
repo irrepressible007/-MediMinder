@@ -1,5 +1,7 @@
 package com.example.mediminder.data.local.dao
 
+import com.example.mediminder.data.local.entity.Medication
+import androidx.room.Embedded
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
@@ -38,6 +40,30 @@ interface DoseLogDao {
     @Query("SELECT * FROM dose_logs")
     suspend fun getAll(): List<DoseLog>
 
+    /**
+     * Intake history, newest first: every dose taken or skipped since [fromDay], with its
+     * medicine — including medicines deleted with their history kept.
+     */
+    @Query(
+        "SELECT dose_logs.*, medications.name AS name, medications.strength AS strength, medications.unit AS unit, " +
+            "medications.color AS color, medications.photoUri AS photoUri, medications.deletedAt AS deletedAt " +
+            "FROM dose_logs JOIN medications ON medications.id = dose_logs.medicationId " +
+            "WHERE dose_logs.scheduledDay >= :fromDay AND dose_logs.status IN ('TAKEN', 'SKIPPED') " +
+            "AND (:medicationId IS NULL OR dose_logs.medicationId = :medicationId) " +
+            "ORDER BY dose_logs.scheduledDay DESC, COALESCE(dose_logs.scheduledMinute, 1440) DESC, dose_logs.loggedAt DESC"
+    )
+    fun observeHistory(fromDay: Long, medicationId: Long?): Flow<List<HistoryEntry>>
+
+    /** Medicines that have any history, for the history filter. */
+    @Query(
+        "SELECT * FROM medications WHERE id IN (SELECT DISTINCT medicationId FROM dose_logs WHERE status IN ('TAKEN', 'SKIPPED')) " +
+            "ORDER BY deletedAt IS NOT NULL, name COLLATE NOCASE"
+    )
+    fun observeMedicinesWithHistory(): Flow<List<Medication>>
+
+    @Query("SELECT COUNT(*) FROM dose_logs WHERE medicationId = :medicationId")
+    suspend fun countForMedication(medicationId: Long): Int
+
     @Insert
     suspend fun insert(log: DoseLog): Long
 
@@ -53,3 +79,14 @@ interface DoseLogDao {
     @Query("DELETE FROM dose_logs")
     suspend fun deleteAll()
 }
+
+/** One dose from the history, with the medicine it belongs to. */
+data class HistoryEntry(
+    @Embedded val log: DoseLog,
+    val name: String,
+    val strength: String,
+    val unit: String,
+    val color: String,
+    val photoUri: String?,
+    val deletedAt: Long?,
+)

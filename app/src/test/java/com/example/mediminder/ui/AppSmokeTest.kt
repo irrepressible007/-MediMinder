@@ -37,7 +37,8 @@ import org.robolectric.annotation.Config
 @Config(application = HiltTestApplication::class, sdk = [34], qualifiers = "w393dp-h873dp-xxhdpi")
 class AppSmokeTest {
     @get:Rule(order = 0) val hilt = HiltAndroidRule(this)
-    @get:Rule(order = 1) val compose = createAndroidComposeRule<MainActivity>()
+    @get:Rule(order = 1) val calm = CalmAnimationsRule()
+    @get:Rule(order = 2) val compose = createAndroidComposeRule<MainActivity>()
 
     private fun text(id: Int, vararg args: Any) = compose.activity.getString(id, *args)
     private fun waitForText(value: String) = compose.waitForText(value)
@@ -107,6 +108,7 @@ class AppSmokeTest {
 
         compose.onNodeWithText(text(R.string.tab_more)).performClick()
         for ((entry, screenText) in listOf(
+            R.string.history_title to R.string.history_intro,
             R.string.refill_title to R.string.refill_none_tracked_title,
             R.string.stats_title to R.string.stats_rate_label,
             R.string.medical_id_title to R.string.medical_id_blood,
