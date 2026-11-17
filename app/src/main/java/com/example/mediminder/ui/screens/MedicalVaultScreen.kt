@@ -23,6 +23,18 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.example.mediminder.ui.components.AppTopBar
+import com.example.mediminder.ui.components.ConfirmDialog
+import com.example.mediminder.ui.components.EmptyState
 import com.example.mediminder.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
@@ -50,22 +62,27 @@ fun MedicalVaultScreen(
         }
     }
 
+    // Deleting a photo of a prescription can't be undone: always ask first
+    var deleting by remember { mutableStateOf<VaultItem?>(null) }
+    deleting?.let { item ->
+        ConfirmDialog(
+            title = stringResource(R.string.vault_delete_title),
+            text = stringResource(R.string.vault_delete_body, item.title),
+            confirmLabel = stringResource(R.string.action_delete),
+            destructive = true,
+            onConfirm = { viewModel.deleteVaultItem(item) },
+            onDismiss = { deleting = null },
+        )
+    }
+
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.vault_title), fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent
-                )
-            )
+            AppTopBar(title = stringResource(R.string.vault_title), onBack = onBack)
         },
         floatingActionButton = {
-            FloatingActionButton(
+            ExtendedFloatingActionButton(
+                modifier = Modifier.heightIn(min = 64.dp),
                 onClick = {
                     cropImageLauncher.launch(
                         CropImageContractOptions(
@@ -80,14 +97,19 @@ fun MedicalVaultScreen(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
-                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.vault_add))
+                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(28.dp))
+                Spacer(Modifier.width(10.dp))
+                Text(stringResource(R.string.vault_add), style = MaterialTheme.typography.labelLarge)
             }
         }
     ) { padding ->
         if (vaultItems.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Text(stringResource(R.string.vault_empty), color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f), modifier = Modifier.padding(32.dp))
-            }
+            EmptyState(
+                icon = Icons.Default.Folder,
+                title = stringResource(R.string.vault_title),
+                body = stringResource(R.string.vault_empty),
+                modifier = Modifier.padding(padding),
+            )
         } else {
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
@@ -99,7 +121,7 @@ fun MedicalVaultScreen(
                 items(vaultItems) { item ->
                     VaultItemCard(
                         item = item,
-                        onDelete = { viewModel.deleteVaultItem(item) }
+                        onDelete = { deleting = item }
                     )
                 }
             }
@@ -139,23 +161,22 @@ fun VaultItemCard(item: VaultItem, onDelete: () -> Unit) {
             // Delete button
             IconButton(
                 onClick = onDelete,
-                modifier = Modifier.align(Alignment.TopEnd)
+                modifier = Modifier.align(Alignment.TopEnd).size(56.dp)
             ) {
                 Icon(
                     Icons.Default.Delete,
                     contentDescription = stringResource(R.string.action_delete),
                     tint = Color.White,
                     modifier = Modifier.background(Color.Black.copy(alpha = 0.4f), shape = RoundedCornerShape(50))
-                        .padding(4.dp)
-                        .size(20.dp)
+                        .padding(8.dp)
+                        .size(24.dp)
                 )
             }
             
             // Title
             Text(
                 text = item.title,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.titleSmall,
                 color = Color.White,
                 modifier = Modifier
                     .align(Alignment.BottomStart)

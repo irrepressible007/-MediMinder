@@ -1,6 +1,7 @@
 package com.example.mediminder.ui.medicines
 
-import androidx.compose.foundation.clickable
+import android.content.Context
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -9,54 +10,51 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Medication
 import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mediminder.R
 import com.example.mediminder.data.MedicineRepository
+import com.example.mediminder.data.local.entity.MealTiming
 import com.example.mediminder.data.local.entity.MedicationWithSchedules
+import com.example.mediminder.domain.DosePattern
+import com.example.mediminder.domain.Stock
 import com.example.mediminder.ui.components.EmptyState
+import com.example.mediminder.ui.components.ExpandableSection
+import com.example.mediminder.ui.components.MediCard
+import com.example.mediminder.ui.components.NoticeCard
 import com.example.mediminder.ui.components.PillAvatar
+import com.example.mediminder.ui.components.ScreenHeader
+import com.example.mediminder.ui.components.Tone
+import com.example.mediminder.ui.theme.LocalStatusColors
+import com.example.mediminder.util.Formats
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import java.time.LocalDate
 import javax.inject.Inject
@@ -64,11 +62,9 @@ import javax.inject.Inject
 @HiltViewModel
 class MedicinesViewModel @Inject constructor(repository: MedicineRepository) : ViewModel() {
     val medicines: StateFlow<List<MedicationWithSchedules>?> = repository.observeAll()
-        .map { it }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MedicinesScreen(
     modifier: Modifier,
@@ -77,58 +73,56 @@ fun MedicinesScreen(
     onOpenRefills: () -> Unit,
     viewModel: MedicinesViewModel = hiltViewModel(),
 ) {
+    val context = LocalContext.current
     val all by viewModel.medicines.collectAsState()
     val list = all ?: return
     val today = LocalDate.now().toEpochDay()
     val active = list.filter { !it.medication.archived }
     val stopped = list.filter { it.medication.archived }
-    val lowCount = active.count { com.example.mediminder.domain.Stock.isLow(it.medication, it.schedules, today) }
-    var showStopped by rememberSaveable { mutableStateOf(false) }
+    val lowCount = active.count { Stock.isLow(it.medication, it.schedules, today) }
 
     Box(modifier.fillMaxSize()) {
-        Column {
-            TopAppBar(
-                title = { Text(stringResource(R.string.tab_medicines), fontWeight = FontWeight.Bold) },
-                actions = {
-                    IconButton(onClick = onOpenRefills) {
-                        BadgedBox(badge = { if (lowCount > 0) Badge { Text(lowCount.toString()) } }) {
-                            Icon(Icons.Default.ShoppingCart, contentDescription = stringResource(R.string.refill_title))
-                        }
-                    }
-                },
-            )
+        LazyColumn(
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 112.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            item { ScreenHeader(stringResource(R.string.medicines_title)) }
             if (active.isEmpty() && stopped.isEmpty()) {
-                EmptyState(
-                    icon = Icons.Default.Medication,
-                    title = stringResource(R.string.medicines_empty_title),
-                    body = stringResource(R.string.medicines_empty_body),
+                item {
+                    EmptyState(
+                        icon = Icons.Default.Medication,
+                        title = stringResource(R.string.medicines_empty_title),
+                        body = stringResource(R.string.medicines_empty_body),
+                    )
+                }
+                return@LazyColumn
+            }
+            if (lowCount > 0) item {
+                NoticeCard(
+                    text = stringResource(R.string.today_low_stock_banner, Formats.number(context, lowCount)),
+                    icon = Icons.Default.ShoppingCart,
+                    tone = Tone.WARNING,
+                    onClick = onOpenRefills,
                 )
-            } else {
-                LazyColumn(
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 96.dp),
-                    verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp),
-                ) {
-                    items(active, key = { it.medication.id }) { item -> MedicineRow(item, today) { onOpen(item.medication.id) } }
-                    if (stopped.isNotEmpty()) {
-                        item {
-                            TextButton(onClick = { showStopped = !showStopped }) {
-                                Text(stringResource(R.string.medicines_stopped, stopped.size))
-                                Icon(if (showStopped) Icons.Default.ExpandLess else Icons.Default.ExpandMore, contentDescription = null)
-                            }
-                        }
-                        if (showStopped) items(stopped, key = { it.medication.id }) { item -> MedicineRow(item, today) { onOpen(item.medication.id) } }
+            }
+            items(active, key = { it.medication.id }) { item -> MedicineRow(item, today) { onOpen(item.medication.id) } }
+            if (stopped.isNotEmpty()) {
+                item {
+                    ExpandableSection(stringResource(R.string.medicines_stopped, stopped.size)) {
+                        stopped.forEach { item -> MedicineRow(item, today) { onOpen(item.medication.id) } }
                     }
                 }
             }
         }
         ExtendedFloatingActionButton(
             onClick = onAdd,
-            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
+            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp).heightIn(min = 64.dp),
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
         ) {
-            // Static label (no expand/collapse animation)
-            Icon(Icons.Default.Add, contentDescription = null)
-            Spacer(Modifier.width(8.dp))
-            Text(stringResource(R.string.action_add_medicine))
+            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(28.dp))
+            Spacer(Modifier.width(10.dp))
+            Text(stringResource(R.string.action_add_medicine), style = MaterialTheme.typography.labelLarge)
         }
     }
 }
@@ -136,61 +130,73 @@ fun MedicinesScreen(
 @Composable
 fun MedicineRow(item: MedicationWithSchedules, today: Long, onClick: () -> Unit) {
     val context = LocalContext.current
+    val status = LocalStatusColors.current
     val m = item.medication
-    val low = com.example.mediminder.domain.Stock.isLow(m, item.schedules, today)
-    val daysLeft = com.example.mediminder.domain.Stock.daysLeft(m, item.schedules)
-    Card(
-        Modifier.fillMaxWidth().clickable(onClick = onClick),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = if (m.archived) MaterialTheme.colorScheme.surfaceContainer else MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (m.archived) 0.dp else 2.dp),
+    val low = Stock.isLow(m, item.schedules, today)
+    val daysLeft = Stock.daysLeft(m, item.schedules)
+    MediCard(
+        onClick = onClick,
+        containerColor = if (m.archived) MaterialTheme.colorScheme.surfaceContainerLow else MaterialTheme.colorScheme.surface,
     ) {
-        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-            PillAvatar(m.name, m.color)
-            Spacer(Modifier.width(12.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            PillAvatar(m.name, m.color, size = 52)
+            Spacer(Modifier.width(16.dp))
             Column(Modifier.weight(1f)) {
-                Text(listOf(m.name, m.strength).filter { it.isNotBlank() }.joinToString(" "), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                m.genericName?.takeIf { it.isNotBlank() }?.let {
-                    Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
-                }
-                Text(scheduleSummary(context, item), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
-                if (m.trackStock) {
-                    Spacer(Modifier.height(6.dp))
-                    val stockText = com.example.mediminder.util.Formats.quantity(context, m.stock, m.unit)
-                    Text(
-                        if (daysLeft != null) stringResource(R.string.stock_left_days, stockText, com.example.mediminder.util.Formats.number(context, daysLeft)) else stringResource(R.string.stock_left, stockText),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (low) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = if (low) FontWeight.SemiBold else FontWeight.Normal,
-                    )
-                    if (daysLeft != null) {
-                        LinearProgressIndicator(
-                            progress = { (daysLeft.coerceAtMost(30) / 30f).coerceIn(0f, 1f) },
-                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                            color = if (low) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                }
+                Text(listOf(m.name, m.strength).filter { it.isNotBlank() }.joinToString(" "), style = MaterialTheme.typography.titleLarge)
+                Text(scheduleSummary(context, item), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.primary)
+            }
+        }
+        if (m.trackStock) {
+            Spacer(Modifier.height(10.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    if (low) Icons.Default.Warning else Icons.Default.Inventory2,
+                    contentDescription = null,
+                    tint = if (low) status.due else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(22.dp),
+                )
+                Spacer(Modifier.width(8.dp))
+                val stockText = Formats.quantity(context, m.stock, m.unit)
+                Text(
+                    if (daysLeft != null) stringResource(R.string.stock_left_days, stockText, Formats.number(context, daysLeft)) else stringResource(R.string.stock_left, stockText),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (low) status.onDueContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }
 }
 
-/** "১+০+১ · খাবারের পরে", "3 times a day", "As needed", "Stopped" */
-fun scheduleSummary(context: android.content.Context, item: MedicationWithSchedules): String {
+/** Plain words for the common prescription patterns, e.g. "1+0+1" → "Morning and night". */
+fun patternName(context: Context, pattern: String?): String? {
+    val text = pattern?.let { DosePattern.parse(it)?.text } ?: return null
+    val id = when (text) {
+        "1+0+0" -> R.string.pattern_morning
+        "0+1+0" -> R.string.pattern_noon
+        "0+0+1" -> R.string.pattern_night
+        "1+0+1" -> R.string.pattern_morning_night
+        "1+1+1" -> R.string.pattern_three
+        "1+1+1+1" -> R.string.pattern_four
+        else -> return null
+    }
+    return context.getString(id)
+}
+
+/** "Morning and night · After meal", "3 times a day", "As needed", "Stopped" */
+fun scheduleSummary(context: Context, item: MedicationWithSchedules): String {
     val m = item.medication
     if (m.archived) return context.getString(R.string.medicine_stopped)
     if (m.isAsNeeded) return context.getString(R.string.schedule_as_needed)
     val enabled = item.schedules.filter { it.enabled }
     if (enabled.isEmpty()) return context.getString(R.string.schedule_none)
     val parts = mutableListOf<String>()
-    parts += m.dosePattern?.let { com.example.mediminder.util.Formats.digits(context, it) }
-        ?: context.resources.getQuantityString(R.plurals.times_a_day, enabled.size, enabled.size)
-    if (m.mealTiming != com.example.mediminder.data.local.entity.MealTiming.ANY) parts += com.example.mediminder.util.Formats.mealTiming(context, m.mealTiming)
+    parts += patternName(context, m.dosePattern)
+        ?: m.dosePattern?.let { Formats.digits(context, it) }
+        ?: context.resources.getQuantityString(R.plurals.times_a_day, enabled.size, enabled.size).let { Formats.digits(context, it) }
+    if (m.mealTiming != MealTiming.ANY) parts += Formats.mealTiming(context, m.mealTiming)
     if (m.endDate != null) {
         val left = (m.endDate - LocalDate.now().toEpochDay() + 1).toInt()
-        if (left > 0) parts += context.getString(R.string.course_days_left, com.example.mediminder.util.Formats.number(context, left))
-        else parts += context.getString(R.string.course_finished)
+        parts += if (left > 0) context.getString(R.string.course_days_left, Formats.number(context, left)) else context.getString(R.string.course_finished)
     }
     return parts.joinToString(" · ")
 }

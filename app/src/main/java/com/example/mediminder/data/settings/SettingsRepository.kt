@@ -56,6 +56,8 @@ data class AppSettings(
     val refillBuyDays: Int = 30,
     val profile: MedicalProfile = MedicalProfile(),
     val lastBackupAt: Long = 0,
+    /** In-app text size on top of the phone's: 1.0 normal, 1.15 large, 1.3 extra large. */
+    val textScale: Float = 1f,
 )
 
 /**
@@ -114,6 +116,7 @@ class SettingsRepository @Inject constructor(
                 birthYear = getInt("profile.birthYear", 0).takeIf { it > 0 },
             ),
             lastBackupAt = getLong("lastBackupAt", 0),
+            textScale = getFloat("textScale", defaults.textScale).coerceIn(1f, 1.3f),
         )
     }
 
@@ -144,6 +147,7 @@ class SettingsRepository @Inject constructor(
             .putString("profile.emergencyPhone", s.profile.emergencyPhone)
             .putInt("profile.birthYear", s.profile.birthYear ?: 0)
             .putLong("lastBackupAt", s.lastBackupAt)
+            .putFloat("textScale", s.textScale)
             .apply()
     }
 

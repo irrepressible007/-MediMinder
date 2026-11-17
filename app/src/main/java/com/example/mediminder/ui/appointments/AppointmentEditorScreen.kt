@@ -1,46 +1,38 @@
 package com.example.mediminder.ui.appointments
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -53,10 +45,19 @@ import com.example.mediminder.data.local.entity.Appointment
 import com.example.mediminder.data.local.entity.Doctor
 import com.example.mediminder.domain.toEpochMillis
 import com.example.mediminder.domain.toLocalDateTime
+import com.example.mediminder.ui.components.AppTopBar
 import com.example.mediminder.ui.components.ChoiceChips
+import com.example.mediminder.ui.components.ChoiceTile
+import com.example.mediminder.ui.components.ConfirmDialog
+import com.example.mediminder.ui.components.ExpandableSection
+import com.example.mediminder.ui.components.MediCard
+import com.example.mediminder.ui.components.PrimaryButton
+import com.example.mediminder.ui.components.QuietButton
 import com.example.mediminder.ui.components.SectionTitle
-import com.example.mediminder.ui.components.TimePill
+import com.example.mediminder.ui.components.SwitchRow
+import com.example.mediminder.ui.components.ValueRow
 import com.example.mediminder.ui.components.showDatePicker
+import com.example.mediminder.ui.components.showTimePicker
 import com.example.mediminder.util.Formats
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -168,7 +169,6 @@ class AppointmentEditorViewModel @Inject constructor(private val repository: App
 
 private val REMINDER_OPTIONS = listOf(0, 30, 60, 120, 180, 24 * 60)
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppointmentEditorScreen(appointmentId: Long, doctorId: Long, onBack: () -> Unit, viewModel: AppointmentEditorViewModel = hiltViewModel()) {
     LaunchedEffect(appointmentId, doctorId) { viewModel.load(appointmentId, doctorId) }
@@ -176,66 +176,78 @@ fun AppointmentEditorScreen(appointmentId: Long, doctorId: Long, onBack: () -> U
     val doctors by viewModel.doctors.collectAsState()
     val context = LocalContext.current
     LaunchedEffect(f.done) { if (f.done) onBack() }
+    var confirmDelete by remember { mutableStateOf(false) }
+    if (confirmDelete) {
+        ConfirmDialog(
+            title = stringResource(R.string.appt_delete_title),
+            text = stringResource(R.string.appt_delete_body, f.doctorName),
+            confirmLabel = stringResource(R.string.action_delete),
+            destructive = true,
+            onConfirm = viewModel::delete,
+            onDismiss = { confirmDelete = false },
+        )
+    }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(if (appointmentId == 0L) R.string.appt_new else R.string.appt_edit), fontWeight = FontWeight.Bold) },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back)) } },
-                actions = {
-                    if (appointmentId != 0L) IconButton(onClick = viewModel::delete) { Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.action_delete)) }
-                },
-            )
-        },
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = { AppTopBar(title = stringResource(if (appointmentId == 0L) R.string.appt_new else R.string.appt_edit), onBack = onBack) },
         bottomBar = {
-            Button(
+            PrimaryButton(
+                text = stringResource(R.string.action_save_appointment),
                 onClick = viewModel::save,
                 enabled = f.doctorName.isNotBlank(),
-                modifier = Modifier.fillMaxWidth().padding(16.dp).height(52.dp).imePadding(),
-            ) { Text(stringResource(R.string.action_save_appointment)) }
+                modifier = Modifier.background(MaterialTheme.colorScheme.background).padding(16.dp).navigationBarsPadding().imePadding(),
+            )
         },
     ) { padding ->
         Column(
-            Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            SectionTitle(stringResource(R.string.appt_section_doctor))
+            // Which doctor
+            SectionTitle(stringResource(R.string.appt_which_doctor))
             if (doctors.isNotEmpty() && f.id == 0L) {
                 ChoiceChips(doctors, doctors.firstOrNull { it.id == f.doctorId }, { it.name }, viewModel::pickDoctor)
             }
-            OutlinedTextField(f.doctorName, { v -> viewModel.update { it.copy(doctorName = v, doctorId = null) } }, label = { Text(stringResource(R.string.doctor_name)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(f.specialty, { v -> viewModel.update { it.copy(specialty = v) } }, label = { Text(stringResource(R.string.doctor_specialty)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(f.hospital, { v -> viewModel.update { it.copy(hospital = v) } }, label = { Text(stringResource(R.string.doctor_hospital)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(f.address, { v -> viewModel.update { it.copy(address = v) } }, label = { Text(stringResource(R.string.doctor_address)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
             OutlinedTextField(
-                f.phone, { v -> viewModel.update { it.copy(phone = v) } }, label = { Text(stringResource(R.string.doctor_phone_serial)) }, singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone), modifier = Modifier.fillMaxWidth(),
+                f.doctorName, { v -> viewModel.update { it.copy(doctorName = v, doctorId = null) } },
+                label = { Text(stringResource(R.string.doctor_name)) }, singleLine = true, modifier = Modifier.fillMaxWidth(),
             )
-            if (f.doctorId == null && f.id == 0L) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(f.saveDoctor, { v -> viewModel.update { it.copy(saveDoctor = v) } })
-                    Text(stringResource(R.string.appt_save_doctor))
-                }
-            }
-
-            SectionTitle(stringResource(R.string.appt_section_when))
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                OutlinedButton(onClick = { showDatePicker(context, f.date, LocalDate.now().minusYears(1)) { d -> viewModel.update { it.copy(date = d) } } }) {
-                    Text(Formats.date(context, f.date))
-                }
-                TimePill(f.minuteOfDay, onChange = { m -> viewModel.update { it.copy(minuteOfDay = m) } })
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(f.serial, { v -> viewModel.update { it.copy(serial = v.take(10)) } }, label = { Text(stringResource(R.string.appt_serial)) }, singleLine = true, modifier = Modifier.weight(1f))
+            ExpandableSection(
+                stringResource(R.string.appt_doctor_details),
+                initiallyExpanded = listOf(f.phone, f.hospital).any { it.isNotBlank() },
+            ) {
                 OutlinedTextField(
-                    f.fee, { v -> viewModel.update { it.copy(fee = v.filter { c -> c.isDigit() || c == '.' }.take(7)) } },
-                    label = { Text(stringResource(R.string.appt_fee)) }, prefix = { Text("৳ ") }, singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.weight(1f),
+                    f.phone, { v -> viewModel.update { it.copy(phone = v) } }, label = { Text(stringResource(R.string.doctor_phone_serial)) }, singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone), modifier = Modifier.fillMaxWidth(),
                 )
+                OutlinedTextField(f.hospital, { v -> viewModel.update { it.copy(hospital = v) } }, label = { Text(stringResource(R.string.doctor_hospital)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(f.specialty, { v -> viewModel.update { it.copy(specialty = v) } }, label = { Text(stringResource(R.string.doctor_specialty)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(f.address, { v -> viewModel.update { it.copy(address = v) } }, label = { Text(stringResource(R.string.doctor_address)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                if (f.doctorId == null && f.id == 0L) {
+                    SwitchRow(stringResource(R.string.appt_save_doctor), f.saveDoctor, { v -> viewModel.update { it.copy(saveDoctor = v) } })
+                }
             }
-            OutlinedTextField(f.purpose, { v -> viewModel.update { it.copy(purpose = v) } }, label = { Text(stringResource(R.string.appt_purpose)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(f.notes, { v -> viewModel.update { it.copy(notes = v) } }, label = { Text(stringResource(R.string.appt_notes)) }, placeholder = { Text(stringResource(R.string.appt_notes_hint)) }, minLines = 2, modifier = Modifier.fillMaxWidth())
 
+            // When
+            SectionTitle(stringResource(R.string.appt_when))
+            MediCard {
+                ValueRow(stringResource(R.string.appt_date), Formats.date(context, f.date), onClick = {
+                    showDatePicker(context, f.date, LocalDate.now().minusYears(1)) { d -> viewModel.update { it.copy(date = d) } }
+                })
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                ValueRow(stringResource(R.string.appt_time), Formats.time(context, f.minuteOfDay), onClick = {
+                    showTimePicker(context, f.minuteOfDay) { m -> viewModel.update { it.copy(minuteOfDay = m) } }
+                })
+            }
+            OutlinedTextField(
+                f.serial, { v -> viewModel.update { it.copy(serial = v.take(10)) } },
+                label = { Text(stringResource(R.string.appt_serial)) },
+                supportingText = { Text(stringResource(R.string.appt_serial_tip)) },
+                singleLine = true, modifier = Modifier.fillMaxWidth(),
+            )
+
+            // Reminder
             SectionTitle(stringResource(R.string.appt_section_reminder))
             ChoiceChips(REMINDER_OPTIONS, f.reminderMinutes, { minutes ->
                 when {
@@ -245,22 +257,42 @@ fun AppointmentEditorScreen(appointmentId: Long, doctorId: Long, onBack: () -> U
                     else -> stringResource(R.string.reminder_day_before)
                 }
             }, { m -> viewModel.update { it.copy(reminderMinutes = m) } })
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(R.string.appt_remind_evening), modifier = Modifier.weight(1f))
-                Switch(f.remindDayBefore, { v -> viewModel.update { it.copy(remindDayBefore = v) } })
-            }
-            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                listOf(AlertType.REMINDER, AlertType.ALARM).forEachIndexed { i, type ->
-                    SegmentedButton(
+            SwitchRow(stringResource(R.string.appt_remind_evening), f.remindDayBefore, { v -> viewModel.update { it.copy(remindDayBefore = v) } })
+
+            // The rest
+            ExpandableSection(stringResource(R.string.appt_more), initiallyExpanded = listOf(f.fee, f.purpose, f.notes).any { it.isNotBlank() }) {
+                OutlinedTextField(
+                    f.fee, { v -> viewModel.update { it.copy(fee = v.filter { c -> c.isDigit() || c == '.' }.take(7)) } },
+                    label = { Text(stringResource(R.string.appt_fee)) }, prefix = { Text("৳ ") }, singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(f.purpose, { v -> viewModel.update { it.copy(purpose = v) } }, label = { Text(stringResource(R.string.appt_purpose)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(
+                    f.notes, { v -> viewModel.update { it.copy(notes = v) } },
+                    label = { Text(stringResource(R.string.appt_notes)) }, placeholder = { Text(stringResource(R.string.appt_notes_hint)) },
+                    minLines = 2, modifier = Modifier.fillMaxWidth(),
+                )
+                Text(stringResource(R.string.wiz_alert_title), style = MaterialTheme.typography.titleSmall)
+                listOf(AlertType.REMINDER, AlertType.ALARM).forEach { type ->
+                    ChoiceTile(
+                        title = stringResource(if (type == AlertType.ALARM) R.string.wiz_alert_alarm else R.string.wiz_alert_reminder),
+                        subtitle = stringResource(if (type == AlertType.ALARM) R.string.wiz_alert_alarm_sub else R.string.wiz_alert_reminder_sub),
+                        icon = if (type == AlertType.ALARM) Icons.Default.Alarm else Icons.Default.Notifications,
                         selected = f.alertType == type,
                         onClick = { viewModel.update { it.copy(alertType = type) } },
-                        shape = SegmentedButtonDefaults.itemShape(i, 2),
-                        icon = { Icon(if (type == AlertType.ALARM) Icons.Default.Alarm else Icons.Default.Notifications, null) },
-                    ) { Text(stringResource(if (type == AlertType.ALARM) R.string.alert_alarm else R.string.alert_reminder)) }
+                    )
                 }
             }
-            Text(stringResource(R.string.appt_serial_tip), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(Modifier.height(24.dp))
+            if (appointmentId != 0L) {
+                QuietButton(
+                    stringResource(R.string.appt_delete),
+                    onClick = { confirmDelete = true },
+                    icon = Icons.Default.Delete,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                )
+            }
+            Spacer(Modifier.height(16.dp))
         }
     }
 }

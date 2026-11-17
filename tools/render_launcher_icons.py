@@ -17,10 +17,10 @@ RES = Path(__file__).resolve().parent.parent / "app" / "src" / "main" / "res"
 SIZES = {"mdpi": 48, "hdpi": 72, "xhdpi": 96, "xxhdpi": 144, "xxxhdpi": 192}
 SUPERSAMPLE = 8
 
-TOP_LEFT = (0x34, 0xD3, 0x99)
-BOTTOM_RIGHT = (0x04, 0x78, 0x57)
+TOP_LEFT = (0x0E, 0xA5, 0xE9)
+BOTTOM_RIGHT = (0x07, 0x59, 0x85)
 WHITE = (255, 255, 255, 255)
-MINT = (0xA7, 0xF3, 0xD0, 255)
+MINT = (0xBA, 0xE6, 0xFD, 255)
 MARK_SCALE = 0.88  # the <group> scale in ic_launcher_foreground.xml
 
 

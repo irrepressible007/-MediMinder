@@ -117,6 +117,31 @@ class ReminderEngineTest {
         assertEquals(19.0, db.medicationDao().getById(schedule.medicationId)!!.stock, 0.0)
     }
 
+    @Test fun `deleting a medicine while its reminder is showing clears everything`() = runBlocking {
+        val (schedule, day) = addMedicine(minutesFromNow = -2, alert = AlertType.REMINDER)
+        engine.onDoseAlarm(schedule.id, day, ReminderScheduler.KIND_REGULAR)
+        assertEquals(1, shownNotifications().size)
+        assertNotNull(alarmFor("dose-repeat/${schedule.id}/$day"))
+
+        medicines.delete(schedule.medicationId)
+
+        assertTrue("reminder removed from the screen", shownNotifications().isEmpty())
+        assertNull("repeat cancelled", alarmFor("dose-repeat/${schedule.id}/$day"))
+        assertNull("daily alarm cancelled", alarmFor("dose/${schedule.id}"))
+    }
+
+    @Test fun `stopping a medicine cancels a pending snooze`() = runBlocking {
+        val (schedule, day) = addMedicine(minutesFromNow = -2, alert = AlertType.ALARM)
+        engine.onDoseAlarm(schedule.id, day, ReminderScheduler.KIND_REGULAR)
+        actions.snooze(schedule.id, day)
+        assertNotNull(alarmFor("dose-repeat/${schedule.id}/$day"))
+
+        medicines.setArchived(schedule.medicationId, true)
+
+        assertNull("snooze cancelled", alarmFor("dose-repeat/${schedule.id}/$day"))
+        assertNull(alarmFor("dose/${schedule.id}"))
+    }
+
     @Test fun `tapping Taken twice only counts one dose`() = runBlocking {
         val (schedule, day) = addMedicine(minutesFromNow = -2, alert = AlertType.REMINDER, stock = 10.0)
         actions.take(schedule.id, day)

@@ -31,7 +31,7 @@
     <string name="action_fix">Fix</string>
     <string name="action_get_started">Get started</string>
     <string name="action_map">Map</string>
-    <string name="action_new_appointment">New appointment</string>
+    <string name="action_new_appointment">Add a doctor visit</string>
     <string name="action_next">Next</string>
     <string name="action_open">Open</string>
     <string name="action_reopen">Mark upcoming</string>
@@ -138,8 +138,8 @@
     <string name="today_nothing_scheduled">No doses on this day.</string>
     <string name="today_reliability_banner">Reminders might not ring on time on this phone.</string>
     <string name="today_low_stock_banner">%1$s medicines are running low</string>
-    <string name="today_next_appointment">%1$s · %2$s</string>
-    <string name="today_as_needed">As needed</string>
+    <string name="today_next_appointment">Doctor visit: %1$s, %2$s</string>
+    <string name="today_as_needed">Only when needed</string>
     <string name="today_prn_count">Taken today: %1$s</string>
     <string name="today_prn_count_limit">Taken today: %1$s of %2$s</string>
     <string name="today_prn_logged">%1$s logged</string>
@@ -190,9 +190,9 @@
 
     <!-- Meals -->
     <string name="meal_any">Any time</string>
-    <string name="meal_before">Before meal</string>
-    <string name="meal_after">After meal</string>
-    <string name="meal_with">With meal</string>
+    <string name="meal_before">Before food</string>
+    <string name="meal_after">After food</string>
+    <string name="meal_with">With food</string>
     <string name="meal_empty_stomach">Empty stomach</string>
     <string name="meal_bedtime">At bedtime</string>
     <string name="meal_breakfast">Breakfast</string>
@@ -268,7 +268,7 @@
     <string name="detail_times">Dose times</string>
     <string name="detail_days_left">Lasts about %1$s more days</string>
     <string name="detail_low_stock">Running low — time to buy more.</string>
-    <string name="detail_stock_not_tracked">Stock is not being counted. Tap Restock or Set count to start.</string>
+    <string name="detail_stock_not_tracked">Not being counted yet. Start counting to be warned before it runs out.</string>
     <string name="detail_purchases">Purchases</string>
     <string name="detail_alternatives">Other brands of the same medicine</string>
     <string name="detail_alternatives_hint">Same generic and strength — useful if the pharmacy is out of stock. Ask your doctor or pharmacist before switching.</string>
@@ -287,7 +287,7 @@
     <string name="restock_price">Price paid (optional)</string>
     <string name="restock_pharmacy">Pharmacy (optional)</string>
     <string name="restock_hint">The price helps you track what you spend on medicine.</string>
-    <string name="refill_title">Refill list</string>
+    <string name="refill_title">Medicines to buy</string>
     <string name="refill_summary">%1$s medicines are running low. Buy enough for %2$s days:</string>
     <string name="refill_all_good">Nothing is running low. 👍</string>
     <string name="refill_estimated_total">Estimated total: %1$s</string>
@@ -313,7 +313,7 @@
     <string name="doctor_hours">Visiting hours (e.g. Sat–Thu 5–9 PM)</string>
     <string name="appt_upcoming">Upcoming (%1$d)</string>
     <string name="appt_past">Past (%1$d)</string>
-    <string name="appt_empty_title">No upcoming appointments</string>
+    <string name="appt_empty_title">No doctor visits coming up</string>
     <string name="appt_empty_past">No past appointments</string>
     <string name="appt_empty_body">Add a visit and MediMinder reminds you before it — and the evening before.</string>
     <string name="appt_new">New appointment</string>
@@ -355,7 +355,7 @@
     <string name="update_failed">Could not check for updates: %1$s</string>
 
     <!-- Statistics -->
-    <string name="stats_title">Statistics</string>
+    <string name="stats_title">My report</string>
     <string name="stats_rate_label">of doses taken</string>
     <string name="stats_streak">Streak</string>
     <string name="stats_by_day">Day by day</string>
@@ -390,7 +390,7 @@
     <string name="medical_id_share_contact">Emergency contact: %1$s</string>
 
     <!-- Vault -->
-    <string name="vault_title">Medical vault</string>
+    <string name="vault_title">My documents</string>
     <string name="vault_add">Add a document</string>
     <string name="vault_empty">Keep photos of prescriptions, test reports and cards here — they stay on this phone.</string>
     <string name="vault_item_title">Document, %1$s</string>
@@ -401,7 +401,7 @@
     <string name="settings_language_system">Phone\'s language</string>
     <string name="settings_name">Your name</string>
     <string name="settings_meal_times">Meal times</string>
-    <string name="settings_meal_times_hint">“After meal” and “before meal” doses are timed from these.</string>
+    <string name="settings_meal_times_hint">“After food” and “before food” doses are timed from these.</string>
     <string name="settings_before_meal">“Before meal” means</string>
     <string name="settings_after_meal">“After meal” means</string>
     <string name="settings_apply_meal_times">Move my dose times to match</string>
@@ -433,7 +433,7 @@
     <string name="restore_failed">Could not restore this file.</string>
 
     <!-- Reliability -->
-    <string name="reliability_title">Reminder reliability</string>
+    <string name="reliability_title">Reminder check</string>
     <string name="reliability_intro">Phones often block reminders to save battery. Fix every red item so your medicine reminders ring on time.</string>
     <string name="reliability_manufacturer">Your phone: %1$s. Xiaomi, Oppo, Realme, Vivo, Infinix and Tecno phones especially need “Autostart” and “No battery restrictions” for MediMinder.</string>
     <string name="reliability_test_title">Test it</string>
@@ -458,11 +458,110 @@
     <string name="onboarding_meals_body">Prescriptions say “after meal” or “before meal”. Set your usual meal times and MediMinder times your doses from them.</string>
     <string name="onboarding_permissions_title">Make sure reminders ring</string>
     <string name="onboarding_permissions_body">Allow these so your phone doesn\'t silence MediMinder.</string>
-    <string name="onboarding_permissions_later">You can do this later from More → Reminder reliability.</string>
-
+    <string name="onboarding_permissions_later">You can do this later from More → Reminder check.</string>
     <!-- Scanner -->
     <string name="scanner_title">Scan medicine box</string>
     <string name="scanner_hint">Point the camera at the brand name on the box or strip.</string>
     <string name="scanner_pick">Tap your medicine:</string>
     <string name="scanner_permission">Camera permission is needed to scan.</string>
+    <string name="today_summary">%1$s of %2$s taken today</string>
+    <string name="today_next_named">Next: %1$s at %2$s</string>
+    <string name="today_prn_took">I took one now</string>
+    <string name="dose_snooze_or_skip">Snooze or skip</string>
+    <string name="dose_sheet_take">I\'ve taken it</string>
+    <string name="dose_sheet_snooze">Remind me again in %1$s minutes</string>
+    <string name="dose_sheet_skip">Skip this dose</string>
+    <string name="dose_sheet_undo">Undo — mark as not taken</string>
+    <string name="dose_sheet_details">Medicine details</string>
+    <string name="medicines_title">My medicines</string>
+    <string name="pattern_morning">Every morning</string>
+    <string name="pattern_noon">Every noon</string>
+    <string name="pattern_night">Every night</string>
+    <string name="pattern_morning_night">Morning and night</string>
+    <string name="pattern_three">Morning, noon and night</string>
+    <string name="pattern_four">4 times a day</string>
+    <string name="wiz_step">Step %1$s of %2$s</string>
+    <string name="wiz_name_title">Which medicine?</string>
+    <string name="wiz_name_body">Type the name written on the box or strip.</string>
+    <string name="wiz_scan">Scan the box with the camera</string>
+    <string name="wiz_confirm_title">Is this your medicine?</string>
+    <string name="wiz_choose_other">Choose a different medicine</string>
+    <string name="wiz_kind_title">What kind of medicine is it?</string>
+    <string name="wiz_details">Change the name or strength</string>
+    <string name="wiz_when_title">When do you take it?</string>
+    <string name="wiz_when_body">Choose what your prescription says.</string>
+    <string name="wiz_needed">Only when needed</string>
+    <string name="wiz_needed_sub">For pain, fever and the like — no fixed time</string>
+    <string name="wiz_other">Something else</string>
+    <string name="wiz_other_sub">Another prescription, or your own times</string>
+    <string name="wiz_other_pattern">Other prescriptions</string>
+    <string name="wiz_own_times">I\'ll set the times myself</string>
+    <string name="wiz_food_title">Before or after food?</string>
+    <string name="wiz_food_any">Doesn\'t matter</string>
+    <string name="wiz_food_more">Other</string>
+    <string name="wiz_times_title">Check the times</string>
+    <string name="wiz_times_body">Worked out from your meal times. Tap a time to change it.</string>
+    <string name="wiz_amount">Amount</string>
+    <string name="wiz_alert_title">How should we remind you?</string>
+    <string name="wiz_alert_reminder">Notification</string>
+    <string name="wiz_alert_reminder_sub">A message with a sound, like an SMS</string>
+    <string name="wiz_alert_alarm">Alarm</string>
+    <string name="wiz_alert_alarm_sub">Rings loudly and fills the screen until you answer</string>
+    <string name="wiz_max_title">How many times a day at most?</string>
+    <string name="wiz_max_body">MediMinder warns you if you try to take more. Leave it at “No limit” if your doctor gave none.</string>
+    <string name="wiz_max_label">Most per day</string>
+    <string name="wiz_no_limit">No limit</string>
+    <string name="wiz_finish_title">A few last things</string>
+    <string name="wiz_finish_body">All optional — you can change them later.</string>
+    <string name="wiz_how_long">How long will you take it?</string>
+    <string name="wiz_no_end">No end date</string>
+    <string name="wiz_no_end_sub">Keep reminding me until I stop it</string>
+    <string name="wiz_some_days">For a number of days</string>
+    <string name="wiz_some_days_sub">For example, a 7-day course of antibiotics</string>
+    <string name="wiz_days_label">Number of days</string>
+    <string name="wiz_count_heading">Stock</string>
+    <string name="wiz_count_title">Count how many I have</string>
+    <string name="wiz_count_sub">You\'ll be reminded to buy more before it runs out</string>
+    <string name="wiz_more">More options</string>
+    <string name="wiz_more_sub">Days of the week, colour, notes</string>
+    <string name="wiz_colour">Colour, to tell your medicines apart</string>
+    <string name="detail_stopped_notice">You stopped this medicine. No reminders will come for it.</string>
+    <string name="detail_prescription">Prescription: %1$s</string>
+    <string name="detail_left">%1$s left</string>
+    <string name="detail_bought_more">I bought more</string>
+    <string name="detail_fix_count">Correct the count</string>
+    <string name="detail_start_counting">Start counting</string>
+    <string name="detail_about">About this medicine</string>
+    <string name="action_edit_medicine">Change this medicine</string>
+    <string name="action_delete_medicine">Delete this medicine</string>
+    <string name="appt_title">Doctor visits</string>
+    <string name="appt_next">Next visit</string>
+    <string name="appt_later">Later visits</string>
+    <string name="appt_past_title">Past visits (%1$d)</string>
+    <string name="doctors_title_count">My doctors (%1$d)</string>
+    <string name="action_book_visit">Book a visit</string>
+    <string name="appt_mark_visited">I went — mark as visited</string>
+    <string name="appt_which_doctor">Which doctor?</string>
+    <string name="appt_doctor_details">Doctor\'s phone and chamber (optional)</string>
+    <string name="appt_when">When?</string>
+    <string name="appt_date">Date</string>
+    <string name="appt_time">Time</string>
+    <string name="appt_more">More details (optional)</string>
+    <string name="appt_delete">Delete this visit</string>
+    <string name="settings_text_size">Text size</string>
+    <string name="text_size_normal">Normal</string>
+    <string name="text_size_large">Large</string>
+    <string name="text_size_huge">Extra large</string>
+    <string name="text_size_preview">Text across the whole app changes as soon as you choose.</string>
+    <string name="settings_meal_offsets">How long before or after a meal</string>
+    <string name="settings_test">Check that it works on this phone</string>
+    <string name="settings_advanced">More reminder settings</string>
+    <string name="stats_points">Points</string>
+    <string name="stats_by_day_hint">Green: taken. Red: missed.</string>
+    <string name="stats_doses_of">%1$s of %2$s doses taken</string>
+    <string name="stats_share">Send to my doctor or family</string>
+    <string name="medical_id_share">Share my medical ID</string>
+    <string name="refill_send">Send the list to the pharmacy</string>
+    <string name="vault_delete_title">Delete this document?</string>
+    <string name="vault_delete_body">“%1$s” will be removed from this phone.</string>
 </resources>

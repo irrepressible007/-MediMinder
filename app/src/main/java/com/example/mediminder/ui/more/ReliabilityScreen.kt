@@ -48,6 +48,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.compose.foundation.layout.size
+import com.example.mediminder.ui.components.AppTopBar
+import com.example.mediminder.ui.components.MediCard
+import com.example.mediminder.ui.components.PrimaryButton
+import com.example.mediminder.ui.components.SecondaryButton
+import com.example.mediminder.ui.theme.LocalStatusColors
 import com.example.mediminder.R
 import com.example.mediminder.data.local.entity.AlertType
 import com.example.mediminder.reminders.CheckResult
@@ -80,32 +86,29 @@ fun ReliabilityScreen(onBack: () -> Unit, settingsViewModel: SettingsViewModel =
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.reliability_title), fontWeight = FontWeight.Bold) },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back)) } },
-            )
+            AppTopBar(title = stringResource(R.string.reliability_title), onBack = onBack)
         },
     ) { padding ->
         Column(
-            Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(stringResource(R.string.reliability_intro), style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(R.string.reliability_intro), style = MaterialTheme.typography.bodyLarge)
             checks.forEach { result -> CheckCard(result, onFix = { fix(result) }) }
-            Text(stringResource(R.string.reliability_manufacturer, Reliability.manufacturer), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.reliability_manufacturer, Reliability.manufacturer), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
             Spacer(Modifier.height(8.dp))
-            Text(stringResource(R.string.reliability_test_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            Text(stringResource(R.string.reliability_test_body), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = {
+            Text(stringResource(R.string.reliability_test_title), style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(R.string.reliability_test_body), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                SecondaryButton(stringResource(R.string.action_test_reminder), onClick = {
                     settingsViewModel.engine.scheduleTest(AlertType.REMINDER)
                     Toast.makeText(context, context.getString(R.string.test_scheduled), Toast.LENGTH_SHORT).show()
-                }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.action_test_reminder)) }
-                OutlinedButton(onClick = {
+                }, modifier = Modifier.weight(1f))
+                SecondaryButton(stringResource(R.string.action_test_alarm), onClick = {
                     settingsViewModel.engine.scheduleTest(AlertType.ALARM)
                     Toast.makeText(context, context.getString(R.string.test_scheduled), Toast.LENGTH_SHORT).show()
-                }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.action_test_alarm)) }
+                }, modifier = Modifier.weight(1f))
             }
         }
     }
@@ -122,31 +125,35 @@ private fun CheckCard(result: CheckResult, onFix: () -> Unit) {
         ReliabilityCheck.AUTOSTART -> R.string.check_autostart to R.string.check_autostart_body
     }
     val ok = result.ok
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = when (ok) {
-                true -> MaterialTheme.colorScheme.surfaceContainer
-                false -> MaterialTheme.colorScheme.errorContainer
-                null -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.6f)
-            }
-        ),
+    val status = LocalStatusColors.current
+    MediCard(
+        containerColor = when (ok) {
+            true -> MaterialTheme.colorScheme.surface
+            false -> MaterialTheme.colorScheme.errorContainer
+            null -> status.dueContainer
+        },
+        borderColor = when (ok) {
+            true -> MaterialTheme.colorScheme.outlineVariant
+            false -> MaterialTheme.colorScheme.error
+            null -> status.due
+        },
     ) {
-        Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 when (ok) { true -> Icons.Default.CheckCircle; false -> Icons.Default.Error; null -> Icons.Default.Help },
                 contentDescription = null,
-                tint = when (ok) { true -> MaterialTheme.colorScheme.primary; false -> MaterialTheme.colorScheme.error; null -> MaterialTheme.colorScheme.tertiary },
+                tint = when (ok) { true -> status.taken; false -> MaterialTheme.colorScheme.error; null -> status.due },
+                modifier = Modifier.size(30.dp),
             )
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text(stringResource(title), fontWeight = FontWeight.SemiBold)
-                Text(stringResource(body), style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(title), style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(body), style = MaterialTheme.typography.bodyMedium)
             }
-            if (ok != true && result.fix != null) {
-                Spacer(Modifier.width(8.dp))
-                FilledTonalButton(onClick = onFix) { Text(stringResource(if (ok == null) R.string.action_open else R.string.action_fix)) }
-            }
+        }
+        if (ok != true && result.fix != null) {
+            Spacer(Modifier.height(12.dp))
+            PrimaryButton(stringResource(if (ok == null) R.string.action_open else R.string.action_fix), onClick = onFix)
         }
     }
 }

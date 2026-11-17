@@ -2,7 +2,6 @@ package com.example.mediminder.ui
 
 import android.Manifest
 import android.app.Application
-import android.os.Looper
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
@@ -11,8 +10,6 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.onRoot
-import androidx.compose.ui.test.printToString
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
@@ -29,7 +26,6 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
-import java.time.Duration
 
 /**
  * Boots the real app (Hilt graph, databases, navigation, every screen) on Robolectric and
@@ -44,80 +40,82 @@ class AppSmokeTest {
     @get:Rule(order = 1) val compose = createAndroidComposeRule<MainActivity>()
 
     private fun text(id: Int, vararg args: Any) = compose.activity.getString(id, *args)
+    private fun waitForText(value: String) = compose.waitForText(value)
 
     @Before fun setUp() {
         hilt.inject()
         shadowOf(ApplicationProvider.getApplicationContext<Application>()).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
     }
 
-    /**
-     * Waits for [value] to appear. Robolectric's main looper is paused, so delayed work
-     * (the search debounce, coroutine delays) only runs when its clock is moved forward.
-     */
-    private fun waitForText(value: String, timeoutMs: Long = 15_000) {
-        val end = System.currentTimeMillis() + timeoutMs
-        while (System.currentTimeMillis() < end) {
-            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(100))
-            compose.waitForIdle()
-            if (compose.onAllNodesWithText(value, substring = true).fetchSemanticsNodes().isNotEmpty()) return
-            Thread.sleep(25) // let database work on background threads finish
-        }
-        throw AssertionError("Never showed: \"$value\". On screen:\n" + compose.onRoot().printToString(maxDepth = 30))
-    }
-
-    @Test fun `first run, add a medicine from the catalogue, visit every screen`() {
-        // ── Onboarding ──
+    @Test fun `first run, add a medicine with the wizard, visit every screen`() {
+        // ── Onboarding: language & text size → meal times → permissions ──
         waitForText(text(R.string.onboarding_welcome))
+        compose.onNodeWithText(text(R.string.text_size_large)).performScrollTo().assertIsDisplayed()
         compose.onNodeWithText(text(R.string.action_next)).performClick()
-        compose.onNodeWithText(text(R.string.onboarding_meals_title)).assertIsDisplayed()
+        waitForText(text(R.string.onboarding_meals_title))
         compose.onNodeWithText(text(R.string.action_next)).performClick()
-        compose.onNodeWithText(text(R.string.onboarding_permissions_title)).assertIsDisplayed()
+        waitForText(text(R.string.onboarding_permissions_title))
         compose.onNodeWithText(text(R.string.action_get_started)).performClick()
 
         // ── Today, empty ──
         waitForText(text(R.string.today_empty_title))
-        compose.onAllNodesWithText(text(R.string.action_add_medicine)).onFirst().performClick()
+        compose.onNodeWithText(text(R.string.action_add_medicine)).performClick()
 
-        // ── Add medicine: search the catalogue and pick Napa ──
-        waitForText(text(R.string.editor_title_new))
+        // ── Wizard 1: which medicine ──
+        waitForText(text(R.string.wiz_name_title))
         compose.onNode(hasSetTextAction()).performTextInput("Napa")
         waitForText("Beximco")
         // a result row (not the search box, which also says "Napa")
         compose.onAllNodes(hasText("Napa", substring = false) and !hasSetTextAction()).onFirst().performClick()
-        waitForText(text(R.string.editor_from_catalogue))
-        compose.onNodeWithText(text(R.string.editor_section_schedule)).performScrollTo().assertIsDisplayed()
+        waitForText(text(R.string.wiz_confirm_title))
+        compose.onNodeWithText(text(R.string.action_next)).performClick()
+
+        // ── Wizard 2: when — "morning and night, after food" is the default ──
+        waitForText(text(R.string.wiz_when_title))
+        compose.onNodeWithText(text(R.string.pattern_morning_night)).assertIsDisplayed()
+        compose.onNodeWithText(text(R.string.action_next)).performClick()
+
+        // ── Wizard 3: the times, from the meal times ──
+        waitForText(text(R.string.wiz_times_title))
+        waitForText("8:15 AM")
+        waitForText("9:15 PM")
+        compose.onNodeWithText(text(R.string.action_next)).performClick()
+
+        // ── Wizard 4: optional extras, then save ──
+        waitForText(text(R.string.wiz_finish_title))
         compose.onNodeWithText(text(R.string.action_save_medicine)).performClick()
 
-        // ── Saved: detail screen shows the prescription pattern and food timing ──
-        waitForText("1+0+1 · " + text(R.string.meal_after))
-        compose.onNodeWithText(text(R.string.action_restock)).performScrollTo().assertIsDisplayed()
+        // ── Saved: detail screen in plain words ──
+        waitForText(text(R.string.pattern_morning_night) + " · " + text(R.string.meal_after))
+        compose.onNodeWithText(text(R.string.detail_start_counting)).performScrollTo().assertIsDisplayed()
         compose.onNodeWithContentDescription(text(R.string.cd_back)).performClick()
 
         // ── Today now lists the doses ──
-        waitForText(text(R.string.today_taken_label))
-        compose.onAllNodesWithText("Napa", substring = true).onFirst().assertIsDisplayed()
+        waitForText(text(R.string.today_summary, "0", "2"))
+        compose.onAllNodesWithText("Napa 500 mg").onFirst().assertIsDisplayed()
 
         // ── Every other tab and screen opens ──
         compose.onNodeWithText(text(R.string.tab_medicines)).performClick()
-        waitForText(text(R.string.action_add_medicine))
+        waitForText(text(R.string.medicines_title))
         compose.onNodeWithText("Napa 500 mg").assertIsDisplayed()
+
         compose.onNodeWithText(text(R.string.tab_appointments)).performClick()
-        waitForText(text(R.string.doctors_title))
+        waitForText(text(R.string.appt_title))
         compose.onNodeWithText(text(R.string.action_new_appointment)).performClick()
-        waitForText(text(R.string.appt_section_doctor))
+        waitForText(text(R.string.appt_which_doctor))
         compose.onNodeWithContentDescription(text(R.string.cd_back)).performClick()
 
         compose.onNodeWithText(text(R.string.tab_more)).performClick()
         for ((entry, screenText) in listOf(
-            R.string.refill_title to R.string.refill_title,
+            R.string.refill_title to R.string.refill_none_tracked_title,
             R.string.stats_title to R.string.stats_rate_label,
             R.string.medical_id_title to R.string.medical_id_blood,
             R.string.vault_title to R.string.vault_empty,
             R.string.reliability_title to R.string.reliability_intro,
-            R.string.settings_title to R.string.settings_meal_times,
+            R.string.settings_title to R.string.settings_text_size,
         )) {
             waitForText(text(entry))
-            compose.onAllNodesWithText(text(entry)).onFirst().performClick()
+            compose.onAllNodesWithText(text(entry)).onFirst().performScrollTo().performClick()
             waitForText(text(screenText))
             compose.onNodeWithContentDescription(text(R.string.cd_back)).performClick()
             waitForText(text(R.string.tab_more))

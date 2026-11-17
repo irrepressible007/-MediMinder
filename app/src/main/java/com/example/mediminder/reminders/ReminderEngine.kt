@@ -77,16 +77,30 @@ class ReminderEngine @Inject constructor(
 
     /** Re-arms one medicine after it was added, edited, archived or deleted. */
     suspend fun rescheduleMedication(medicationId: Long, removedScheduleIds: Collection<Long> = emptyList()) = mutex.withLock {
-        removedScheduleIds.forEach { scheduler.cancelDose(it) }
+        val today = LocalDate.now().toEpochDay()
+        removedScheduleIds.forEach { clearScheduleLocked(it, today) }
         val item = medicationDao.getWithSchedules(medicationId)
         if (item == null || item.medication.archived) {
-            item?.schedules?.forEach { scheduler.cancelDose(it.id) }
+            item?.schedules?.forEach { clearScheduleLocked(it.id, today) }
             activeAlertDao.deleteForMedication(medicationId)
             refreshAlarmLocked()
             return@withLock
         }
         val now = LocalDateTime.now()
         item.schedules.forEach { armDose(item.medication, it, now, catchUp = false) }
+    }
+
+    /**
+     * A dose time that was deleted or stopped: cancel its next alarm, any repeat or snooze
+     * still pending, and any reminder still on screen. Those are keyed by day, and a dose
+     * can only be ringing for yesterday (late night), today or tomorrow (time-zone change).
+     */
+    private fun clearScheduleLocked(scheduleId: Long, today: Long) {
+        scheduler.cancelDose(scheduleId)
+        for (day in today - 1..today + 1) {
+            scheduler.cancelDoseRepeat(scheduleId, day)
+            notifier.cancelDose(scheduleId, day)
+        }
     }
 
     private suspend fun armDose(medication: Medication, schedule: Schedule, now: LocalDateTime, catchUp: Boolean) {

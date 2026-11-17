@@ -1,9 +1,9 @@
 package com.example.mediminder.ui.appointments
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,40 +12,36 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Map
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -58,6 +54,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
@@ -71,6 +68,11 @@ import com.example.mediminder.domain.minuteOf
 import com.example.mediminder.domain.toLocalDateTime
 import com.example.mediminder.ui.components.ConfirmDialog
 import com.example.mediminder.ui.components.EmptyState
+import com.example.mediminder.ui.components.ExpandableSection
+import com.example.mediminder.ui.components.MediCard
+import com.example.mediminder.ui.components.QuietButton
+import com.example.mediminder.ui.components.ScreenHeader
+import com.example.mediminder.ui.components.SecondaryButton
 import com.example.mediminder.ui.components.SectionTitle
 import com.example.mediminder.util.Formats
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -102,9 +104,9 @@ fun AppointmentsScreen(
 ) {
     val all by viewModel.appointments.collectAsState()
     val doctors by viewModel.doctors.collectAsState()
-    var showPast by rememberSaveable { mutableStateOf(false) }
     var editingDoctor by remember { mutableStateOf<Doctor?>(null) }
     var deleting by remember { mutableStateOf<Appointment?>(null) }
+    var optionsFor by remember { mutableStateOf<Appointment?>(null) }
 
     editingDoctor?.let { d ->
         DoctorDialog(d, onDismiss = { editingDoctor = null }, onSave = viewModel::saveDoctor, onDelete = if (d.id != 0L) ({ viewModel.deleteDoctor(d) }) else null)
@@ -119,6 +121,21 @@ fun AppointmentsScreen(
             onDismiss = { deleting = null },
         )
     }
+    optionsFor?.let { a ->
+        ModalBottomSheet(onDismissRequest = { optionsFor = null }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
+            Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp).navigationBarsPadding(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(a.doctorName, style = MaterialTheme.typography.headlineSmall)
+                SecondaryButton(stringResource(R.string.action_edit), onClick = { optionsFor = null; onEdit(a.id) }, icon = Icons.Default.Edit)
+                if (a.status == AppointmentStatus.UPCOMING) {
+                    SecondaryButton(stringResource(R.string.appt_mark_visited), onClick = { viewModel.setStatus(a.id, AppointmentStatus.DONE); optionsFor = null }, icon = Icons.Default.Check)
+                    SecondaryButton(stringResource(R.string.action_cancel_appointment), onClick = { viewModel.setStatus(a.id, AppointmentStatus.CANCELLED); optionsFor = null }, icon = Icons.Default.Cancel, contentColor = MaterialTheme.colorScheme.onSurface)
+                } else {
+                    SecondaryButton(stringResource(R.string.action_reopen), onClick = { viewModel.setStatus(a.id, AppointmentStatus.UPCOMING); optionsFor = null }, icon = Icons.Default.Replay)
+                }
+                QuietButton(stringResource(R.string.action_delete), onClick = { deleting = a; optionsFor = null }, icon = Icons.Default.Delete, color = MaterialTheme.colorScheme.error, modifier = Modifier.align(Alignment.CenterHorizontally))
+            }
+        }
+    }
 
     val list = all ?: return
     val now = System.currentTimeMillis()
@@ -126,163 +143,133 @@ fun AppointmentsScreen(
     val past = list.filter { it !in upcoming }.sortedByDescending { it.dateTime }
 
     Box(modifier.fillMaxSize()) {
-        Column {
-            TopAppBar(title = { Text(stringResource(R.string.tab_appointments), fontWeight = FontWeight.Bold) })
-            LazyColumn(
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 96.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
+        LazyColumn(
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 112.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            item { ScreenHeader(stringResource(R.string.appt_title)) }
+            if (upcoming.isEmpty()) {
                 item {
-                    SectionTitle(stringResource(R.string.doctors_title)) {
-                        TextButton(onClick = { editingDoctor = Doctor(name = "") }) {
-                            Icon(Icons.Default.Add, contentDescription = null)
-                            Text(stringResource(R.string.action_add_doctor))
-                        }
-                    }
-                    if (doctors.isEmpty()) {
-                        Text(stringResource(R.string.doctors_empty), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    } else {
-                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            items(doctors, key = { it.id }) { d -> DoctorChip(d, onBook = { onNew(d.id) }, onEdit = { editingDoctor = d }) }
-                        }
-                    }
-                }
-                item {
-                    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(top = 8.dp)) {
-                        SegmentedButton(!showPast, { showPast = false }, SegmentedButtonDefaults.itemShape(0, 2)) { Text(stringResource(R.string.appt_upcoming, upcoming.size)) }
-                        SegmentedButton(showPast, { showPast = true }, SegmentedButtonDefaults.itemShape(1, 2)) { Text(stringResource(R.string.appt_past, past.size)) }
-                    }
-                }
-                val shown = if (showPast) past else upcoming
-                if (shown.isEmpty()) {
-                    item {
-                        EmptyState(
-                            icon = Icons.Default.CalendarMonth,
-                            title = stringResource(if (showPast) R.string.appt_empty_past else R.string.appt_empty_title),
-                            body = stringResource(R.string.appt_empty_body),
-                        )
-                    }
-                }
-                items(shown, key = { it.id }) { a ->
-                    AppointmentCard(
-                        a,
-                        onEdit = { onEdit(a.id) },
-                        onDone = { viewModel.setStatus(a.id, AppointmentStatus.DONE) },
-                        onCancel = { viewModel.setStatus(a.id, AppointmentStatus.CANCELLED) },
-                        onReopen = { viewModel.setStatus(a.id, AppointmentStatus.UPCOMING) },
-                        onDelete = { deleting = a },
+                    EmptyState(
+                        icon = Icons.Default.CalendarMonth,
+                        title = stringResource(R.string.appt_empty_title),
+                        body = stringResource(R.string.appt_empty_body),
                     )
+                }
+            } else {
+                item { SectionTitle(stringResource(R.string.appt_next)) }
+                item { VisitCard(upcoming.first(), highlight = true, onOpen = { onEdit(upcoming.first().id) }, onOptions = { optionsFor = upcoming.first() }) }
+                if (upcoming.size > 1) {
+                    item { SectionTitle(stringResource(R.string.appt_later)) }
+                    items(upcoming.drop(1), key = { it.id }) { a -> VisitCard(a, highlight = false, onOpen = { onEdit(a.id) }, onOptions = { optionsFor = a }) }
+                }
+            }
+
+            item {
+                ExpandableSection(
+                    stringResource(R.string.doctors_title_count, doctors.size),
+                    subtitle = stringResource(R.string.doctors_empty).takeIf { doctors.isEmpty() },
+                ) {
+                    doctors.forEach { d -> DoctorCard(d, onBook = { onNew(d.id) }, onEdit = { editingDoctor = d }) }
+                    SecondaryButton(stringResource(R.string.action_add_doctor), onClick = { editingDoctor = Doctor(name = "") }, icon = Icons.Default.Add)
+                }
+            }
+            if (past.isNotEmpty()) item {
+                ExpandableSection(stringResource(R.string.appt_past_title, past.size)) {
+                    past.forEach { a -> VisitCard(a, highlight = false, onOpen = { onEdit(a.id) }, onOptions = { optionsFor = a }) }
                 }
             }
         }
         ExtendedFloatingActionButton(
             onClick = { onNew(0) },
-            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
+            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp).heightIn(min = 64.dp),
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
         ) {
-            // Static label (no expand/collapse animation)
-            Icon(Icons.Default.Add, contentDescription = null)
-            Spacer(Modifier.width(8.dp))
-            Text(stringResource(R.string.action_new_appointment))
+            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(28.dp))
+            Spacer(Modifier.width(10.dp))
+            Text(stringResource(R.string.action_new_appointment), style = MaterialTheme.typography.labelLarge)
         }
     }
 }
 
-@Composable
-private fun DoctorChip(doctor: Doctor, onBook: () -> Unit, onEdit: () -> Unit) {
-    Card(shape = RoundedCornerShape(16.dp), modifier = Modifier.width(210.dp)) {
-        Column(Modifier.padding(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                Spacer(Modifier.width(6.dp))
-                Text(doctor.name, fontWeight = FontWeight.SemiBold, maxLines = 1, modifier = Modifier.weight(1f))
-                IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) { Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.action_edit), modifier = Modifier.size(18.dp)) }
-            }
-            listOfNotNull(doctor.specialty, doctor.hospital).filter { it.isNotBlank() }.joinToString(" · ").takeIf { it.isNotEmpty() }?.let {
-                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
-            }
-            Row {
-                doctor.phone?.takeIf { it.isNotBlank() }?.let { phone ->
-                    val context = LocalContext.current
-                    TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone"))) }) {
-                        Icon(Icons.Default.Call, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text(stringResource(R.string.action_call_short))
-                    }
-                }
-                TextButton(onClick = onBook) { Text(stringResource(R.string.action_book)) }
-            }
-        }
-    }
-}
+private fun dial(context: Context, phone: String) = context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone")))
 
 @Composable
-private fun AppointmentCard(
-    a: Appointment,
-    onEdit: () -> Unit,
-    onDone: () -> Unit,
-    onCancel: () -> Unit,
-    onReopen: () -> Unit,
-    onDelete: () -> Unit,
-) {
+private fun VisitCard(a: Appointment, highlight: Boolean, onOpen: () -> Unit, onOptions: () -> Unit) {
     val context = LocalContext.current
     val at = a.dateTime.toLocalDateTime()
-    var menu by remember { mutableStateOf(false) }
-    Card(
-        Modifier.fillMaxWidth().clickable(onClick = onEdit),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = if (a.status == AppointmentStatus.UPCOMING) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceContainer),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (a.status == AppointmentStatus.UPCOMING) 2.dp else 0.dp),
+    val upcoming = a.status == AppointmentStatus.UPCOMING
+    MediCard(
+        onClick = onOpen,
+        containerColor = if (upcoming) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceContainerLow,
+        borderColor = if (highlight) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+        borderWidth = if (highlight) 2.dp else 1.dp,
     ) {
-        Row(Modifier.padding(14.dp)) {
-            // Date block
+        Row {
+            // Calendar-page date block
             Column(
-                Modifier.background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(14.dp)).padding(horizontal = 12.dp, vertical = 8.dp),
+                Modifier
+                    .widthIn(min = 72.dp)
+                    .background(if (upcoming) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainer, MaterialTheme.shapes.medium)
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text(Formats.number(context, at.dayOfMonth), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                Text(at.format(DateTimeFormatter.ofPattern("MMM", Formats.locale(context))), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                Text(Formats.number(context, at.dayOfMonth), style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                Text(at.format(DateTimeFormatter.ofPattern("MMM", Formats.locale(context))), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onPrimaryContainer)
             }
-            Spacer(Modifier.width(12.dp))
+            Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
-                Text(a.doctorName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text(a.doctorName, style = MaterialTheme.typography.titleLarge)
                 listOfNotNull(a.specialty, a.hospital).filter { it.isNotBlank() }.joinToString(" · ").takeIf { it.isNotEmpty() }?.let {
-                    Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Text(
                     Formats.shortDate(context, at.toLocalDate()) + ", " + Formats.time(context, minuteOf(at.toLocalTime())),
-                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium,
+                    style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold,
                 )
-                val extras = buildList {
-                    a.serialNumber?.takeIf { it.isNotBlank() }?.let { add(context.getString(R.string.appt_serial_value, Formats.digits(context, it))) }
-                    a.fee?.let { add(context.getString(R.string.appt_fee_value, Formats.taka(context, it))) }
-                    if (a.status == AppointmentStatus.DONE) add(context.getString(R.string.appt_status_done))
-                    if (a.status == AppointmentStatus.CANCELLED) add(context.getString(R.string.appt_status_cancelled))
+                a.serialNumber?.takeIf { it.isNotBlank() }?.let {
+                    Text(stringResource(R.string.appt_serial_value, Formats.digits(context, it)), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
                 }
-                if (extras.isNotEmpty()) Text(extras.joinToString(" · "), style = MaterialTheme.typography.bodySmall)
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    a.phone?.takeIf { it.isNotBlank() }?.let { phone ->
-                        AssistChip(onClick = { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone"))) }, label = { Text(stringResource(R.string.action_call_short)) }, leadingIcon = { Icon(Icons.Default.Call, null, Modifier.size(16.dp)) })
-                    }
-                    val place = listOfNotNull(a.hospital, a.address).filter { it.isNotBlank() }.joinToString(", ")
-                    if (place.isNotEmpty()) {
-                        AssistChip(onClick = {
-                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=" + Uri.encode(place))))
-                        }, label = { Text(stringResource(R.string.action_map)) }, leadingIcon = { Icon(Icons.Default.Map, null, Modifier.size(16.dp)) })
-                    }
-                    if (a.status == AppointmentStatus.UPCOMING) {
-                        AssistChip(onClick = onDone, label = { Text(stringResource(R.string.action_done)) }, leadingIcon = { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) })
-                    }
+                when (a.status) {
+                    AppointmentStatus.DONE -> Text(stringResource(R.string.appt_status_done), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    AppointmentStatus.CANCELLED -> Text(stringResource(R.string.appt_status_cancelled), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+                    AppointmentStatus.UPCOMING -> Unit
                 }
             }
-            Box {
-                IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.cd_more)) }
-                DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                    DropdownMenuItem(text = { Text(stringResource(R.string.action_edit)) }, onClick = { menu = false; onEdit() })
-                    if (a.status == AppointmentStatus.UPCOMING) DropdownMenuItem(text = { Text(stringResource(R.string.action_cancel_appointment)) }, onClick = { menu = false; onCancel() })
-                    else DropdownMenuItem(text = { Text(stringResource(R.string.action_reopen)) }, onClick = { menu = false; onReopen() })
-                    DropdownMenuItem(text = { Text(stringResource(R.string.action_delete)) }, onClick = { menu = false; onDelete() })
-                }
+        }
+        val phone = a.phone?.takeIf { it.isNotBlank() }
+        val place = listOfNotNull(a.hospital, a.address).filter { it.isNotBlank() }.joinToString(", ")
+        if (upcoming && (phone != null || place.isNotEmpty())) {
+            Spacer(Modifier.height(14.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                if (phone != null) SecondaryButton(stringResource(R.string.action_call_short), onClick = { dial(context, phone) }, icon = Icons.Default.Call, modifier = Modifier.weight(1f))
+                if (place.isNotEmpty()) SecondaryButton(
+                    stringResource(R.string.action_map),
+                    onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=" + Uri.encode(place)))) },
+                    icon = Icons.Default.Map,
+                    modifier = Modifier.weight(1f),
+                )
             }
+        }
+        QuietButton(stringResource(R.string.wiz_more), onClick = onOptions, modifier = Modifier.align(Alignment.End))
+    }
+}
+
+@Composable
+private fun DoctorCard(doctor: Doctor, onBook: () -> Unit, onEdit: () -> Unit) {
+    val context = LocalContext.current
+    MediCard(onClick = onEdit) {
+        Text(doctor.name, style = MaterialTheme.typography.titleLarge)
+        listOfNotNull(doctor.specialty, doctor.hospital, doctor.visitingHours).filter { it.isNotBlank() }.joinToString(" · ").takeIf { it.isNotEmpty() }?.let {
+            Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Spacer(Modifier.height(12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            doctor.phone?.takeIf { it.isNotBlank() }?.let { phone ->
+                SecondaryButton(stringResource(R.string.action_call_short), onClick = { dial(context, phone) }, icon = Icons.Default.Call, modifier = Modifier.weight(1f))
+            }
+            SecondaryButton(stringResource(R.string.action_book_visit), onClick = onBook, icon = Icons.Default.CalendarMonth, modifier = Modifier.weight(1f))
         }
     }
 }
@@ -297,31 +284,32 @@ fun DoctorDialog(doctor: Doctor, onDismiss: () -> Unit, onSave: (Doctor) -> Unit
     var hours by rememberSaveable { mutableStateOf(doctor.visitingHours.orEmpty()) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(if (doctor.id == 0L) R.string.doctor_new else R.string.doctor_edit)) },
+        title = { Text(stringResource(if (doctor.id == 0L) R.string.doctor_new else R.string.doctor_edit), style = MaterialTheme.typography.headlineSmall) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(name, { name = it }, label = { Text(stringResource(R.string.doctor_name)) }, singleLine = true)
-                OutlinedTextField(specialty, { specialty = it }, label = { Text(stringResource(R.string.doctor_specialty)) }, singleLine = true)
+                OutlinedTextField(phone, { phone = it }, label = { Text(stringResource(R.string.doctor_phone)) }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone))
                 OutlinedTextField(hospital, { hospital = it }, label = { Text(stringResource(R.string.doctor_hospital)) }, singleLine = true)
+                OutlinedTextField(specialty, { specialty = it }, label = { Text(stringResource(R.string.doctor_specialty)) }, singleLine = true)
                 OutlinedTextField(address, { address = it }, label = { Text(stringResource(R.string.doctor_address)) }, singleLine = true)
-                OutlinedTextField(phone, { phone = it }, label = { Text(stringResource(R.string.doctor_phone)) }, singleLine = true,
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone))
                 OutlinedTextField(hours, { hours = it }, label = { Text(stringResource(R.string.doctor_hours)) }, singleLine = true)
             }
         },
         confirmButton = {
-            TextButton(enabled = name.isNotBlank(), onClick = {
+            TextButton(enabled = name.isNotBlank(), modifier = Modifier.heightIn(min = 48.dp), onClick = {
                 onSave(doctor.copy(
                     name = name.trim(), specialty = specialty.trim().ifBlank { null }, hospital = hospital.trim().ifBlank { null },
                     address = address.trim().ifBlank { null }, phone = phone.trim().ifBlank { null }, visitingHours = hours.trim().ifBlank { null },
                 ))
                 onDismiss()
-            }) { Text(stringResource(R.string.action_save)) }
+            }) { Text(stringResource(R.string.action_save), style = MaterialTheme.typography.labelLarge) }
         },
         dismissButton = {
             Row {
-                if (onDelete != null) TextButton(onClick = { onDelete(); onDismiss() }) { Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error) }
-                TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+                if (onDelete != null) TextButton(onClick = { onDelete(); onDismiss() }, modifier = Modifier.heightIn(min = 48.dp)) {
+                    Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelLarge)
+                }
+                TextButton(onClick = onDismiss, modifier = Modifier.heightIn(min = 48.dp)) { Text(stringResource(R.string.action_cancel), style = MaterialTheme.typography.labelLarge) }
             }
         },
     )

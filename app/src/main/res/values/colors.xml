@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="brand">#FF10B981</color>
-    <color name="brand_dark">#FF047857</color>
-    <color name="background_light">#FFF8FAFC</color>
-    <color name="background_dark">#FF0F172A</color>
-    <color name="teal_200">#FF80CBC4</color>
-    <color name="teal_700">#FF00796B</color>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <!-- Same calm medical blue as the Compose theme (ui/theme/Color.kt) -->
+    <color name="brand">#FF0369A1</color>
+    <color name="brand_dark">#FF0C4A6E</color>
+    <color name="brand_light">#FF7DD3FC</color>
+    <color name="background_light">#FFF3F6F9</color>
+    <color name="background_dark">#FF0B1117</color>
 </resources>

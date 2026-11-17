@@ -72,15 +72,23 @@ class BanglaTest {
         compose.onNodeWithText("শুরু করুন").performClick()
 
         compose.waitForText("এখনো কোনো ওষুধ নেই")
-        compose.onAllNodesWithText("ওষুধ যোগ করুন").onFirst().performClick()
+        compose.onNodeWithText("ওষুধ যোগ করুন").performClick()
+        compose.waitForText("কোন ওষুধ?")
         compose.onNode(hasSetTextAction()).performTextInput("Napa")
         compose.waitForText("Beximco")
         compose.onAllNodes(hasText("Napa", substring = false) and !hasSetTextAction()).onFirst().performClick()
-        // default pattern ১+০+১ after meal → 8:15 AM and 9:15 PM, written the Bangladeshi way
+        compose.waitForText("এটাই কি আপনার ওষুধ?")
+        compose.onNodeWithText("পরবর্তী").performClick()
+        // the prescription pattern in Bangla digits, next to plain words
+        compose.waitForText("সকালে ও রাতে")
+        compose.waitForText("১+০+১")
+        compose.onNodeWithText("পরবর্তী").performClick()
+        // 1+0+1 after food → 8:15 AM and 9:15 PM, written the Bangladeshi way
         compose.waitForText("সকাল ৮:১৫")
         compose.waitForText("রাত ৯:১৫")
+        compose.onNodeWithText("পরবর্তী").performClick()
         compose.onNodeWithText("ওষুধ সংরক্ষণ").performClick()
-        compose.waitForText("১+০+১ · খাবারের পরে")
+        compose.waitForText("সকালে ও রাতে · খাবারের পরে")
     }
 }
 
@@ -113,7 +121,7 @@ class AlarmScreenTest {
         ActivityScenario.launch(AlarmActivity::class.java).use { scenario ->
             compose.waitForText("Seclo 20 mg")
             compose.waitForText("1 capsule")
-            compose.onAllNodesWithText("Taken").onFirst().performClick()
+            compose.onAllNodesWithText("I've taken it").onFirst().performClick()
 
             // answered → stock used, nothing ringing, the alarm page finishes
             var finishing = false

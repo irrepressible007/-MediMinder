@@ -1,106 +1,122 @@
 package com.example.mediminder.ui.theme
 
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
 
-private val DarkColorScheme = darkColorScheme(
-    primary = GreenPrimaryDark,
-    onPrimary = OnPrimaryDark,
-    primaryContainer = Color(0xFF064E3B),
-    onPrimaryContainer = Color(0xFFD1FAE5),
-    secondary = BlueSecondaryDark,
-    secondaryContainer = Color(0xFF1E3A8A),
-    onSecondaryContainer = Color(0xFFDBEAFE),
-    tertiary = AmberDark,
+private val LightColors = lightColorScheme(
+    primary = Blue700,
+    onPrimary = Color.White,
+    primaryContainer = Blue50,
+    onPrimaryContainer = Blue900,
+    secondary = Color(0xFF0E7490),
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFFCFFAFE),
+    onSecondaryContainer = Color(0xFF164E63),
+    tertiary = Color(0xFFB45309),
+    onTertiary = Color.White,
+    tertiaryContainer = Color(0xFFFEF3C7),
+    onTertiaryContainer = Color(0xFF78350F),
+    error = Color(0xFFB91C1C),
+    onError = Color.White,
+    errorContainer = Color(0xFFFEE2E2),
+    onErrorContainer = Color(0xFF7F1D1D),
+    background = Paper,
+    onBackground = Ink,
+    surface = Card,
+    onSurface = Ink,
+    surfaceVariant = Color(0xFFE7EDF3),
+    onSurfaceVariant = InkSoft,
+    surfaceTint = Blue700,
+    surfaceDim = Color(0xFFDCE3EA),
+    surfaceBright = Card,
+    surfaceContainerLowest = Card,
+    surfaceContainerLow = Color(0xFFF8FAFC),
+    surfaceContainer = Color(0xFFEEF2F6),
+    surfaceContainerHigh = Color(0xFFE6ECF2),
+    surfaceContainerHighest = Color(0xFFDDE5EC),
+    inverseSurface = Color(0xFF1E293B),
+    inverseOnSurface = Mist,
+    inversePrimary = Blue300,
+    outline = Color(0xFF64748B),
+    outlineVariant = Color(0xFFCBD5E1),
+)
+
+private val DarkColors = darkColorScheme(
+    primary = Blue300,
+    onPrimary = Color(0xFF082F49),
+    primaryContainer = Blue900,
+    onPrimaryContainer = Blue50,
+    secondary = Color(0xFF67E8F9),
+    onSecondary = Color(0xFF083344),
+    secondaryContainer = Color(0xFF155E75),
+    onSecondaryContainer = Color(0xFFCFFAFE),
+    tertiary = Color(0xFFFBBF24),
+    onTertiary = Color(0xFF451A03),
     tertiaryContainer = Color(0xFF78350F),
     onTertiaryContainer = Color(0xFFFEF3C7),
-    background = BackgroundDark,
-    onBackground = TextPrimaryDark,
-    surface = SurfaceDark,
-    onSurface = TextPrimaryDark,
-    surfaceVariant = Color(0xFF334155),
-    onSurfaceVariant = Color(0xFFCBD5E1),
-    // Every surface role is set, so no component falls back to Material's default grey/lilac
-    surfaceTint = GreenPrimaryDark,
-    surfaceDim = BackgroundDark,
-    surfaceBright = Color(0xFF334155),
-    surfaceContainerLowest = Color(0xFF0B1222),
-    surfaceContainerLow = Color(0xFF172133),
-    surfaceContainer = Color(0xFF1E293B),
-    surfaceContainerHigh = Color(0xFF273449),
-    surfaceContainerHighest = Color(0xFF243247),
-    inverseSurface = Color(0xFFE2E8F0),
-    inverseOnSurface = Color(0xFF1E293B),
-    inversePrimary = Color(0xFF059669),
-    onSecondary = BackgroundDark,
-    onTertiary = BackgroundDark,
+    error = Color(0xFFFCA5A5),
     onError = Color(0xFF450A0A),
-    error = ErrorDark,
     errorContainer = Color(0xFF7F1D1D),
     onErrorContainer = Color(0xFFFEE2E2),
-    outline = Color(0xFF475569),
+    background = Night,
+    onBackground = Mist,
+    surface = NightCard,
+    onSurface = Mist,
+    surfaceVariant = Color(0xFF1F2933),
+    onSurfaceVariant = MistSoft,
+    surfaceTint = Blue300,
+    surfaceDim = Night,
+    surfaceBright = Color(0xFF2A3540),
+    surfaceContainerLowest = Color(0xFF070B10),
+    surfaceContainerLow = Color(0xFF10161D),
+    surfaceContainer = Color(0xFF18212B),
+    surfaceContainerHigh = Color(0xFF1F2933),
+    surfaceContainerHighest = Color(0xFF27323E),
+    inverseSurface = Color(0xFFE2E8F0),
+    inverseOnSurface = Color(0xFF1E293B),
+    inversePrimary = Blue700,
+    outline = Color(0xFF94A3B8),
     outlineVariant = Color(0xFF334155),
 )
 
-private val LightColorScheme = lightColorScheme(
-    primary = GreenPrimaryLight,
-    onPrimary = OnPrimaryLight,
-    primaryContainer = Color(0xFFD1FAE5),
-    onPrimaryContainer = Color(0xFF064E3B),
-    secondary = BlueSecondaryLight,
-    secondaryContainer = Color(0xFFDBEAFE),
-    onSecondaryContainer = Color(0xFF1E3A8A),
-    tertiary = AmberLight,
-    tertiaryContainer = Color(0xFFFEF3C7),
-    onTertiaryContainer = Color(0xFF78350F),
-    background = BackgroundLight,
-    onBackground = TextPrimaryLight,
-    surface = SurfaceLight,
-    onSurface = TextPrimaryLight,
-    surfaceVariant = Color(0xFFF1F5F9),
-    onSurfaceVariant = Color(0xFF475569),
-    surfaceTint = GreenPrimaryLight,
-    surfaceDim = Color(0xFFE2E8F0),
-    surfaceBright = SurfaceLight,
-    surfaceContainerLowest = SurfaceLight,
-    surfaceContainerLow = BackgroundLight,
-    surfaceContainer = Color(0xFFF1F5F9),
-    surfaceContainerHigh = Color(0xFFE2E8F0),
-    surfaceContainerHighest = Color(0xFFEEF2F7),
-    inverseSurface = Color(0xFF1E293B),
-    inverseOnSurface = Color(0xFFF1F5F9),
-    inversePrimary = Color(0xFF6EE7B7),
-    onSecondary = Color.White,
-    onTertiary = Color(0xFF1C1917),
-    onError = Color.White,
-    error = ErrorLight,
-    errorContainer = Color(0xFFFEE2E2),
-    onErrorContainer = Color(0xFF7F1D1D),
-    outline = Color(0xFFCBD5E1),
-    outlineVariant = Color(0xFFE2E8F0),
+private val AppShapes = Shapes(
+    extraSmall = RoundedCornerShape(8.dp),
+    small = RoundedCornerShape(12.dp),
+    medium = RoundedCornerShape(16.dp),
+    large = RoundedCornerShape(20.dp),
+    extraLarge = RoundedCornerShape(28.dp),
 )
 
+/**
+ * @param textScale the in-app "Text size" choice (1.0 normal, 1.15 large, 1.3 extra large),
+ *   applied on top of the phone's own font-size setting.
+ */
 @Composable
 fun MediMinderTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = false, // keep the MediMinder green by default
-    content: @Composable () -> Unit
+    textScale: Float = 1f,
+    content: @Composable () -> Unit,
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+    val density = LocalDensity.current
+    CompositionLocalProvider(
+        LocalStatusColors provides if (darkTheme) DarkStatusColors else LightStatusColors,
+        LocalDensity provides Density(density.density, density.fontScale * textScale),
+    ) {
+        MaterialTheme(
+            colorScheme = if (darkTheme) DarkColors else LightColors,
+            typography = Typography,
+            shapes = AppShapes,
+            content = content,
+        )
     }
-    MaterialTheme(colorScheme = colorScheme, typography = Typography, content = content)
 }

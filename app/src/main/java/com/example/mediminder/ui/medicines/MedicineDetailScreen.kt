@@ -74,6 +74,18 @@ import com.example.mediminder.domain.MedicationAdherence
 import com.example.mediminder.domain.Stock
 import com.example.mediminder.domain.minuteOf
 import com.example.mediminder.domain.toLocalDateTime
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.Warning
+import com.example.mediminder.ui.components.AppTopBar
+import com.example.mediminder.ui.components.ExpandableSection
+import com.example.mediminder.ui.components.MediCard
+import com.example.mediminder.ui.components.NoticeCard
+import com.example.mediminder.ui.components.PrimaryButton
+import com.example.mediminder.ui.components.QuietButton
+import com.example.mediminder.ui.components.SecondaryButton
+import com.example.mediminder.ui.components.Tone
+import com.example.mediminder.ui.theme.LocalStatusColors
 import com.example.mediminder.ui.components.ConfirmDialog
 import com.example.mediminder.ui.components.InfoRow
 import com.example.mediminder.ui.components.PillAvatar
@@ -163,7 +175,6 @@ class MedicineDetailViewModel @Inject constructor(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MedicineDetailScreen(
     medicationId: Long,
@@ -175,22 +186,15 @@ fun MedicineDetailScreen(
 ) {
     LaunchedEffect(medicationId) { viewModel.load(medicationId) }
     val context = LocalContext.current
+    val status = LocalStatusColors.current
     val ui by viewModel.state.collectAsState()
     var restockOpen by rememberSaveable { mutableStateOf(openRestock) }
     var countOpen by rememberSaveable { mutableStateOf(false) }
     var deleteOpen by rememberSaveable { mutableStateOf(false) }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(ui?.item?.medication?.name.orEmpty(), fontWeight = FontWeight.Bold) },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back)) } },
-                actions = {
-                    IconButton(onClick = onEdit) { Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.action_edit)) }
-                    IconButton(onClick = { deleteOpen = true }) { Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.action_delete)) }
-                },
-            )
-        },
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = { AppTopBar(title = ui?.item?.medication?.name.orEmpty(), onBack = onBack) },
     ) { padding ->
         val state = ui
         if (state == null) {
@@ -227,49 +231,46 @@ fun MedicineDetailScreen(
 
         LazyColumn(
             Modifier.fillMaxSize().padding(padding),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             item {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    PillAvatar(m.name, m.color, size = 56)
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 4.dp)) {
+                    PillAvatar(m.name, m.color, size = 60)
                     Spacer(Modifier.width(16.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(listOf(m.name, m.strength).filter { it.isNotBlank() }.joinToString(" "), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                        Text(scheduleSummary(context, state.item), color = MaterialTheme.colorScheme.primary)
+                        Text(listOf(m.name, m.strength).filter { it.isNotBlank() }.joinToString(" "), style = MaterialTheme.typography.headlineSmall)
+                        m.genericName?.takeIf { it.isNotBlank() }?.let { Text(it, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                        Text(scheduleSummary(context, state.item), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.primary)
                     }
                 }
             }
-            item {
-                Card(shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(16.dp)) {
-                        InfoRow(stringResource(R.string.editor_generic), m.genericName)
-                        InfoRow(stringResource(R.string.detail_form), m.form)
-                        InfoRow(stringResource(R.string.detail_manufacturer), m.manufacturer)
-                        state.catalogueItem?.let { c -> InfoRow(stringResource(R.string.detail_price), priceText(context, c)) }
-                        InfoRow(stringResource(R.string.editor_notes), m.notes)
-                    }
-                }
+            if (m.archived) item {
+                NoticeCard(stringResource(R.string.detail_stopped_notice), Icons.Default.Pause, Tone.INFO)
             }
 
-            // Dose times
+            // When to take it
             if (!m.isAsNeeded && schedules.isNotEmpty()) {
-                item { SectionTitle(stringResource(R.string.detail_times)) }
+                item { SectionTitle(stringResource(R.string.editor_section_schedule)) }
                 item {
-                    Card(shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) {
-                        Column(Modifier.padding(vertical = 8.dp)) {
-                            schedules.forEach { s ->
-                                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        if (s.alertType == AlertType.ALARM) Icons.Default.Alarm else Icons.Default.Notifications,
-                                        contentDescription = stringResource(if (s.alertType == AlertType.ALARM) R.string.alert_alarm else R.string.alert_reminder),
-                                        tint = MaterialTheme.colorScheme.primary,
-                                    )
-                                    Spacer(Modifier.width(12.dp))
-                                    Text(Formats.time(context, s.minuteOfDay), fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-                                    Text(Formats.quantity(context, s.quantity, m.unit))
-                                }
+                    MediCard {
+                        schedules.forEachIndexed { i, s ->
+                            if (i > 0) HorizontalDivider(Modifier.padding(vertical = 10.dp), color = MaterialTheme.colorScheme.outlineVariant)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    if (s.alertType == AlertType.ALARM) Icons.Default.Alarm else Icons.Default.Notifications,
+                                    contentDescription = stringResource(if (s.alertType == AlertType.ALARM) R.string.alert_alarm else R.string.alert_reminder),
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(26.dp),
+                                )
+                                Spacer(Modifier.width(12.dp))
+                                Text(Formats.time(context, s.minuteOfDay), style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                                Text(Formats.quantity(context, s.quantity, m.unit), style = MaterialTheme.typography.bodyLarge)
                             }
+                        }
+                        m.dosePattern?.let {
+                            Spacer(Modifier.height(10.dp))
+                            Text(stringResource(R.string.detail_prescription, Formats.digits(context, it)), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
@@ -278,73 +279,59 @@ fun MedicineDetailScreen(
             // Stock
             item { SectionTitle(stringResource(R.string.editor_section_stock)) }
             item {
-                Card(
-                    shape = RoundedCornerShape(20.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = if (low) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceContainer),
+                MediCard(
+                    containerColor = if (low) status.dueContainer else MaterialTheme.colorScheme.surface,
+                    borderColor = if (low) status.due else MaterialTheme.colorScheme.outlineVariant,
+                    borderWidth = if (low) 2.dp else 1.dp,
                 ) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        if (m.trackStock) {
-                            Text(Formats.quantity(context, m.stock, m.unit), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                            if (daysLeft != null) {
-                                Text(stringResource(R.string.detail_days_left, Formats.number(context, daysLeft)))
-                                LinearProgressIndicator(progress = { (daysLeft.coerceAtMost(30) / 30f).coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth())
+                    if (m.trackStock) {
+                        Text(stringResource(R.string.detail_left, Formats.quantity(context, m.stock, m.unit)), style = MaterialTheme.typography.headlineSmall)
+                        if (daysLeft != null) Text(stringResource(R.string.detail_days_left, Formats.number(context, daysLeft)), style = MaterialTheme.typography.bodyLarge)
+                        if (low) {
+                            Spacer(Modifier.height(6.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Warning, contentDescription = null, tint = status.onDueContainer)
+                                Spacer(Modifier.width(8.dp))
+                                Text(stringResource(R.string.detail_low_stock), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold, color = status.onDueContainer)
                             }
-                            if (low) Text(stringResource(R.string.detail_low_stock), color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.SemiBold)
-                        } else {
-                            Text(stringResource(R.string.detail_stock_not_tracked), color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(onClick = { restockOpen = true }) {
-                                Icon(Icons.Default.ShoppingCart, contentDescription = null)
-                                Spacer(Modifier.width(6.dp))
-                                Text(stringResource(R.string.action_restock))
-                            }
-                            OutlinedButton(onClick = { countOpen = true }) { Text(stringResource(R.string.action_set_count)) }
-                        }
-                    }
-                }
-            }
-            if (state.restocks.isNotEmpty()) {
-                item { SectionTitle(stringResource(R.string.detail_purchases)) }
-                items(state.restocks.take(10), key = { "r${it.id}" }) { r ->
-                    Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) {
-                            Text("+" + Formats.quantity(context, r.quantity, m.unit), fontWeight = FontWeight.SemiBold)
-                            Text(
-                                listOfNotNull(Formats.date(context, r.date.toLocalDateTime().toLocalDate()), r.pharmacy).joinToString(" · "),
-                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        r.pricePaid?.let { Text(Formats.taka(context, it), fontWeight = FontWeight.SemiBold) }
+                        Spacer(Modifier.height(14.dp))
+                        PrimaryButton(stringResource(R.string.detail_bought_more), onClick = { restockOpen = true }, icon = Icons.Default.ShoppingCart)
+                        QuietButton(stringResource(R.string.detail_fix_count), onClick = { countOpen = true }, modifier = Modifier.align(Alignment.CenterHorizontally))
+                    } else {
+                        Text(stringResource(R.string.detail_stock_not_tracked), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(Modifier.height(12.dp))
+                        SecondaryButton(stringResource(R.string.detail_start_counting), onClick = { countOpen = true }, icon = Icons.Default.Inventory2)
                     }
                 }
             }
 
-            // Other brands of the same medicine
-            if (state.alternatives.isNotEmpty()) {
-                item {
-                    SectionTitle(stringResource(R.string.detail_alternatives))
-                    Text(stringResource(R.string.detail_alternatives_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                item {
-                    Card(shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) {
-                        Column {
+            // About this medicine: folded away
+            item {
+                ExpandableSection(stringResource(R.string.detail_about)) {
+                    MediCard {
+                        InfoRow(stringResource(R.string.editor_generic), m.genericName)
+                        InfoRow(stringResource(R.string.detail_form), m.form)
+                        InfoRow(stringResource(R.string.detail_manufacturer), m.manufacturer)
+                        state.catalogueItem?.let { c -> InfoRow(stringResource(R.string.detail_price), priceText(context, c)) }
+                        InfoRow(stringResource(R.string.editor_notes), m.notes)
+                    }
+                    if (state.alternatives.isNotEmpty()) {
+                        Text(stringResource(R.string.detail_alternatives), style = MaterialTheme.typography.titleSmall)
+                        Text(stringResource(R.string.detail_alternatives_hint), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        MediCard {
                             val current = state.catalogueItem?.unitPrice
                             state.alternatives.take(8).forEachIndexed { i, alt ->
-                                if (i > 0) HorizontalDivider()
-                                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                                if (i > 0) HorizontalDivider(Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
+                                Row(verticalAlignment = Alignment.CenterVertically) {
                                     Column(Modifier.weight(1f)) {
-                                        Text("${alt.brandName} ${alt.strength.orEmpty()}", fontWeight = FontWeight.SemiBold)
-                                        Text(listOfNotNull(alt.dosageForm, alt.manufacturer).joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text("${alt.brandName} ${alt.strength.orEmpty()}", style = MaterialTheme.typography.titleSmall)
+                                        Text(listOfNotNull(alt.dosageForm, alt.manufacturer).joinToString(" · "), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                     Column(horizontalAlignment = Alignment.End) {
-                                        priceText(context, alt)?.let { Text(it, style = MaterialTheme.typography.labelMedium) }
+                                        priceText(context, alt)?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
                                         if (current != null && alt.unitPrice != null && alt.unitPrice < current) {
-                                            Text(
-                                                stringResource(R.string.detail_cheaper, Formats.taka(context, current - alt.unitPrice)),
-                                                style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold,
-                                            )
+                                            Text(stringResource(R.string.detail_cheaper, Formats.taka(context, current - alt.unitPrice)), style = MaterialTheme.typography.labelMedium, color = status.taken, fontWeight = FontWeight.Bold)
                                         }
                                     }
                                 }
@@ -354,40 +341,67 @@ fun MedicineDetailScreen(
                 }
             }
 
-            // Adherence & history
-            state.adherence?.rate?.let { rate ->
-                item {
-                    SectionTitle(stringResource(R.string.detail_adherence))
-                    Text(stringResource(R.string.detail_adherence_value, Formats.number(context, rate), Formats.number(context, state.adherence.taken), Formats.number(context, state.adherence.expected)))
-                }
-            }
-            if (state.logs.isNotEmpty()) {
-                item { SectionTitle(stringResource(R.string.detail_history)) }
-                items(state.logs.take(20), key = { "l${it.id}" }) { log ->
-                    val at = log.loggedAt.toLocalDateTime()
-                    Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp)) {
+            // History: folded away
+            item {
+                ExpandableSection(stringResource(R.string.detail_history)) {
+                    state.adherence?.rate?.let { rate ->
                         Text(
-                            Formats.shortDate(context, at.toLocalDate()) + ", " + Formats.time(context, minuteOf(at.toLocalTime())),
-                            style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f),
+                            stringResource(R.string.detail_adherence) + ": " + stringResource(R.string.detail_adherence_value, Formats.number(context, rate), Formats.number(context, state.adherence.taken), Formats.number(context, state.adherence.expected)),
+                            style = MaterialTheme.typography.bodyLarge,
                         )
-                        Text(
-                            stringResource(when (log.status) {
-                                DoseStatus.TAKEN -> R.string.state_taken
-                                DoseStatus.SKIPPED -> R.string.state_skipped
-                                DoseStatus.SNOOZED -> R.string.state_snoozed
-                            }),
-                            color = if (log.status == DoseStatus.TAKEN) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                    }
+                    if (state.logs.isNotEmpty()) MediCard {
+                        state.logs.take(20).forEach { log ->
+                            val at = log.loggedAt.toLocalDateTime()
+                            Row(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                                Text(Formats.shortDate(context, at.toLocalDate()) + ", " + Formats.time(context, minuteOf(at.toLocalTime())), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                                Text(
+                                    stringResource(when (log.status) {
+                                        DoseStatus.TAKEN -> R.string.state_taken
+                                        DoseStatus.SKIPPED -> R.string.state_skipped
+                                        DoseStatus.SNOOZED -> R.string.state_snoozed
+                                    }),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = if (log.status == DoseStatus.TAKEN) status.taken else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                            }
+                        }
+                    }
+                    if (state.restocks.isNotEmpty()) {
+                        Text(stringResource(R.string.detail_purchases), style = MaterialTheme.typography.titleSmall)
+                        MediCard {
+                            state.restocks.take(10).forEach { r ->
+                                Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Column(Modifier.weight(1f)) {
+                                        Text("+" + Formats.quantity(context, r.quantity, m.unit), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+                                        Text(listOfNotNull(Formats.date(context, r.date.toLocalDateTime().toLocalDate()), r.pharmacy).joinToString(" · "), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                    r.pricePaid?.let { Text(Formats.taka(context, it), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold) }
+                                }
+                            }
+                        }
                     }
                 }
             }
 
+            // Actions, spelled out
             item {
-                Spacer(Modifier.height(8.dp))
-                OutlinedButton(onClick = { viewModel.setArchived(!m.archived) }, modifier = Modifier.fillMaxWidth()) {
-                    Icon(if (m.archived) Icons.Default.PlayArrow else Icons.Default.Pause, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(if (m.archived) R.string.action_resume_medicine else R.string.action_stop_medicine))
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 8.dp)) {
+                    SecondaryButton(stringResource(R.string.action_edit_medicine), onClick = onEdit, icon = Icons.Default.Edit)
+                    SecondaryButton(
+                        stringResource(if (m.archived) R.string.action_resume_medicine else R.string.action_stop_medicine),
+                        onClick = { viewModel.setArchived(!m.archived) },
+                        icon = if (m.archived) Icons.Default.PlayArrow else Icons.Default.Pause,
+                        contentColor = MaterialTheme.colorScheme.onSurface,
+                    )
+                    QuietButton(
+                        stringResource(R.string.action_delete_medicine),
+                        onClick = { deleteOpen = true },
+                        icon = Icons.Default.Delete,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.align(Alignment.CenterHorizontally),
+                    )
                 }
             }
         }
@@ -399,7 +413,7 @@ private fun CountDialog(current: Double, onDismiss: () -> Unit, onConfirm: (Doub
     var text by rememberSaveable { mutableStateOf(if (current % 1.0 == 0.0) current.toInt().toString() else current.toString()) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.count_title)) },
+        title = { Text(stringResource(R.string.count_title), style = MaterialTheme.typography.headlineSmall) },
         text = {
             OutlinedTextField(
                 value = text,
@@ -407,6 +421,7 @@ private fun CountDialog(current: Double, onDismiss: () -> Unit, onConfirm: (Doub
                 label = { Text(stringResource(R.string.count_label)) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 singleLine = true,
+                textStyle = MaterialTheme.typography.headlineSmall,
             )
         },
         confirmButton = {

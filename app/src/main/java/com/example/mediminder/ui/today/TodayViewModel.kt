@@ -12,7 +12,6 @@ import com.example.mediminder.data.local.entity.DoseStatus
 import com.example.mediminder.data.local.entity.MealTiming
 import com.example.mediminder.data.local.entity.Medication
 import com.example.mediminder.data.settings.SettingsRepository
-import com.example.mediminder.domain.Adherence
 import com.example.mediminder.domain.DosePlanner
 import com.example.mediminder.domain.DoseState
 import com.example.mediminder.domain.Stock
@@ -64,13 +63,12 @@ data class TodayUi(
     val asNeededTakenToday: Map<Long, Int>,
     val taken: Int,
     val total: Int,
-    val streak: Int,
-    val points: Int,
     val lowStock: Int,
     val nextAppointment: Appointment?,
     val userName: String,
     val hasMedicines: Boolean,
     val nowMinute: Int,
+    val snoozeMinutes: Int,
 )
 
 sealed class TodayEvent {
@@ -103,27 +101,17 @@ class TodayViewModel @Inject constructor(
 
     private val medications = medicines.observeAll()
     private val dayLogs = selectedDate.flatMapLatest { d -> db.doseLogDao().observeRange(d.toEpochDay(), d.toEpochDay()) }
-    private val today = LocalDate.now().toEpochDay()
-    private val recentLogs = db.doseLogDao().observeRange(today - 60, today + 1)
-
-    private val streak = combine(medications, recentLogs, clock) { meds, logs, now ->
-        Adherence.summarise(meds, logs, now.toLocalDate().minusDays(59), now.toLocalDate(), now).streak
-    }
-
     private val extras = combine(
-        streak,
-        db.doseLogDao().observeCount(DoseStatus.TAKEN),
         appointments.observeAppointments(),
         db.activeAlertDao().observeAll(),
         settings.settings,
-    ) { s, takenCount, appts, alerts, prefs -> Extras(s, Adherence.points(takenCount), appts, alerts.map { it.scheduleId to it.scheduledDay }.toSet(), prefs.userName) }
+    ) { appts, alerts, prefs -> Extras(appts, alerts.map { it.scheduleId to it.scheduledDay }.toSet(), prefs.userName, prefs.snoozeMinutes) }
 
     private data class Extras(
-        val streak: Int,
-        val points: Int,
         val appointments: List<Appointment>,
         val ringing: Set<Pair<Long, Long>>,
         val userName: String,
+        val snoozeMinutes: Int,
     )
 
     val state: StateFlow<TodayUi?> = combine(selectedDate, medications, dayLogs, clock, extras) { date, meds, logs, now, extra ->
@@ -160,13 +148,12 @@ class TodayViewModel @Inject constructor(
             asNeededTakenToday = asNeededTaken,
             taken = rows.count { it.state == DoseState.TAKEN },
             total = rows.size,
-            streak = extra.streak,
-            points = extra.points,
             lowStock = meds.count { Stock.isLow(it.medication, it.schedules, todayEpoch) },
             nextAppointment = extra.appointments
                 .filter { it.status == AppointmentStatus.UPCOMING && it.dateTime >= nowMillis - 60 * 60_000 }
                 .minByOrNull { it.dateTime },
             userName = extra.userName,
+            snoozeMinutes = extra.snoozeMinutes,
             hasMedicines = meds.any { !it.medication.archived },
             nowMinute = minuteOf(now.toLocalTime()),
         )

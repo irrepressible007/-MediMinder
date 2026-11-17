@@ -58,6 +58,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TextButton
+import com.example.mediminder.ui.theme.AlarmBackgroundBottom
+import com.example.mediminder.ui.theme.AlarmBackgroundTop
+import com.example.mediminder.ui.theme.AlarmTakenButton
 import com.example.mediminder.R
 import com.example.mediminder.data.local.MediMinderDatabase
 import com.example.mediminder.data.local.entity.Appointment
@@ -96,7 +102,8 @@ class AlarmActivity : AppCompatActivity() {
         // AppCompat's setContentView skips the NavigationEvent owner that BackHandler needs
         initializeViewTreeOwners()
         setContent {
-            MediMinderTheme(darkTheme = true) {
+            // Bigger than the app: this is read at arm's length, often without glasses
+            MediMinderTheme(darkTheme = true, textScale = settings.current.textScale) {
                 when {
                     testMode -> TestAlarm(onDone = { notifier.cancelTest(); finish() })
                     appointmentId > 0 -> AppointmentAlarm(appointmentId)
@@ -167,28 +174,27 @@ class AlarmActivity : AppCompatActivity() {
             ) {
                 items(doses.orEmpty(), key = { "${it.scheduleId}:${it.day}" }) { dose ->
                     Card(
-                        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.08f)),
-                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.12f)),
+                        shape = MaterialTheme.shapes.large,
                     ) {
-                        Column(Modifier.padding(16.dp)) {
-                            Text(dose.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
-                            Text(dose.detail, color = Color.White.copy(alpha = 0.75f), fontSize = 15.sp)
-                            Spacer(Modifier.height(12.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Button(
-                                    onClick = { lifecycleScope.launch { doseActions.take(dose.scheduleId, dose.day) } },
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981)),
-                                    modifier = Modifier.weight(1f),
-                                ) {
-                                    Icon(Icons.Default.Check, contentDescription = null)
-                                    Spacer(Modifier.width(6.dp))
-                                    Text(stringResource(R.string.action_taken))
-                                }
-                                OutlinedButton(
-                                    onClick = { lifecycleScope.launch { doseActions.skip(dose.scheduleId, dose.day) } },
-                                    modifier = Modifier.weight(1f),
-                                ) { Text(stringResource(R.string.action_skip), color = Color.White) }
+                        Column(Modifier.padding(20.dp)) {
+                            Text(dose.name, color = Color.White, style = MaterialTheme.typography.headlineSmall)
+                            Text(dose.detail, color = Color.White.copy(alpha = 0.9f), style = MaterialTheme.typography.bodyLarge)
+                            Spacer(Modifier.height(16.dp))
+                            Button(
+                                onClick = { lifecycleScope.launch { doseActions.take(dose.scheduleId, dose.day) } },
+                                colors = ButtonDefaults.buttonColors(containerColor = AlarmTakenButton, contentColor = Color.White),
+                                shape = MaterialTheme.shapes.medium,
+                                modifier = Modifier.fillMaxWidth().height(68.dp),
+                            ) {
+                                Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(30.dp))
+                                Spacer(Modifier.width(10.dp))
+                                Text(stringResource(R.string.dose_sheet_take), style = MaterialTheme.typography.headlineSmall)
                             }
+                            TextButton(
+                                onClick = { lifecycleScope.launch { doseActions.skip(dose.scheduleId, dose.day) } },
+                                modifier = Modifier.align(Alignment.CenterHorizontally).height(52.dp),
+                            ) { Text(stringResource(R.string.dose_sheet_skip), color = Color.White, style = MaterialTheme.typography.labelLarge) }
                         }
                     }
                 }
@@ -197,20 +203,21 @@ class AlarmActivity : AppCompatActivity() {
             if ((doses?.size ?: 0) > 1) {
                 Button(
                     onClick = { lifecycleScope.launch { doseActions.takeAllRinging() } },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981)),
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                ) { Text(stringResource(R.string.action_take_all), fontSize = 18.sp) }
+                    colors = ButtonDefaults.buttonColors(containerColor = AlarmTakenButton, contentColor = Color.White),
+                    modifier = Modifier.fillMaxWidth().height(64.dp),
+                    shape = MaterialTheme.shapes.medium,
+                ) { Text(stringResource(R.string.action_take_all), style = MaterialTheme.typography.titleLarge) }
                 Spacer(Modifier.height(8.dp))
             }
             OutlinedButton(
                 onClick = { lifecycleScope.launch { doseActions.snoozeAllRinging(); finish() } },
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth().height(64.dp),
+                shape = MaterialTheme.shapes.medium,
+                border = BorderStroke(2.dp, Color.White),
             ) {
-                Icon(Icons.Default.Alarm, contentDescription = null, tint = Color.White)
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.action_snooze, Formats.number(context, snooze)), color = Color.White, fontSize = 17.sp)
+                Icon(Icons.Default.Alarm, contentDescription = null, tint = Color.White, modifier = Modifier.size(28.dp))
+                Spacer(Modifier.width(10.dp))
+                Text(stringResource(R.string.dose_sheet_snooze, Formats.number(context, snooze)), color = Color.White, style = MaterialTheme.typography.titleMedium)
             }
         }
     }
@@ -224,34 +231,37 @@ class AlarmActivity : AppCompatActivity() {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 appointment?.let { a ->
                     val at = a.dateTime.toLocalDateTime()
-                    Text(a.doctorName, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                    a.specialty?.let { Text(it, color = Color.White.copy(alpha = 0.75f)) }
+                    Text(a.doctorName, color = Color.White, style = MaterialTheme.typography.headlineMedium)
+                    a.specialty?.let { Text(it, color = Color.White.copy(alpha = 0.9f), style = MaterialTheme.typography.bodyLarge) }
                     Text(
                         Formats.shortDate(context, at.toLocalDate()) + ", " + Formats.time(context, minuteOf(at.toLocalTime())),
-                        color = Color.White, fontSize = 18.sp,
+                        color = Color.White, style = MaterialTheme.typography.titleLarge,
                     )
-                    a.hospital?.let { Text(it, color = Color.White.copy(alpha = 0.85f)) }
+                    a.hospital?.let { Text(it, color = Color.White.copy(alpha = 0.9f), style = MaterialTheme.typography.bodyLarge) }
                     a.serialNumber?.takeIf { it.isNotBlank() }?.let {
-                        Text(stringResource(R.string.appt_serial_value, Formats.digits(context, it)), color = Color.White, fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.appt_serial_value, Formats.digits(context, it)), color = Color.White, style = MaterialTheme.typography.titleLarge)
                     }
                 }
             }
             appointment?.phone?.takeIf { it.isNotBlank() }?.let { phone ->
                 OutlinedButton(
                     onClick = { unlockThen { startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone"))) } },
-                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    modifier = Modifier.fillMaxWidth().height(64.dp),
+                    shape = MaterialTheme.shapes.medium,
+                    border = BorderStroke(2.dp, Color.White),
                 ) {
                     Icon(Icons.Default.Call, contentDescription = null, tint = Color.White)
                     Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.action_call_chamber), color = Color.White)
+                    Text(stringResource(R.string.action_call_chamber), color = Color.White, style = MaterialTheme.typography.titleMedium)
                 }
                 Spacer(Modifier.height(8.dp))
             }
             Button(
                 onClick = { notifier.cancelAppointment(appointmentId); finish() },
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981)),
-            ) { Text(stringResource(R.string.action_dismiss), fontSize = 18.sp) }
+                modifier = Modifier.fillMaxWidth().height(64.dp),
+                shape = MaterialTheme.shapes.medium,
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = AlarmBackgroundBottom),
+            ) { Text(stringResource(R.string.action_dismiss), style = MaterialTheme.typography.titleLarge) }
         }
     }
 
@@ -260,14 +270,15 @@ class AlarmActivity : AppCompatActivity() {
         AlarmFrame(title = stringResource(R.string.notif_test_title)) {
             Text(
                 stringResource(R.string.alarm_test_body),
-                color = Color.White, fontSize = 18.sp, textAlign = TextAlign.Center,
+                color = Color.White, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center,
                 modifier = Modifier.weight(1f).fillMaxWidth(),
             )
             Button(
                 onClick = onDone,
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981)),
-            ) { Text(stringResource(R.string.action_dismiss), fontSize = 18.sp) }
+                modifier = Modifier.fillMaxWidth().height(64.dp),
+                shape = MaterialTheme.shapes.medium,
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = AlarmBackgroundBottom),
+            ) { Text(stringResource(R.string.action_dismiss), style = MaterialTheme.typography.titleLarge) }
         }
     }
 
@@ -279,7 +290,7 @@ class AlarmActivity : AppCompatActivity() {
         Box(
             Modifier
                 .fillMaxSize()
-                .background(Brush.verticalGradient(listOf(Color(0xFF064E3B), Color(0xFF0F172A))))
+                .background(Brush.verticalGradient(listOf(AlarmBackgroundTop, AlarmBackgroundBottom)))
                 .safeDrawingPadding()
                 .padding(24.dp)
         ) {
@@ -290,8 +301,8 @@ class AlarmActivity : AppCompatActivity() {
                     contentAlignment = Alignment.Center,
                 ) { Icon(Icons.Default.Medication, contentDescription = null, tint = Color.White, modifier = Modifier.size(48.dp)) }
                 Spacer(Modifier.height(16.dp))
-                Text(Formats.time(context, minuteOf(now)), color = Color.White, fontSize = 44.sp, fontWeight = FontWeight.Bold)
-                Text(title, color = Color.White.copy(alpha = 0.9f), fontSize = 20.sp, textAlign = TextAlign.Center)
+                Text(Formats.time(context, minuteOf(now)), color = Color.White, style = MaterialTheme.typography.displayMedium)
+                Text(title, color = Color.White, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
                 Spacer(Modifier.height(24.dp))
                 content()
             }

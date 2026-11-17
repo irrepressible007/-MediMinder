@@ -13,34 +13,27 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
@@ -48,11 +41,16 @@ import androidx.lifecycle.viewModelScope
 import com.example.mediminder.R
 import com.example.mediminder.data.MedicineRepository
 import com.example.mediminder.data.local.MediMinderDatabase
+import com.example.mediminder.data.local.entity.DoseStatus
 import com.example.mediminder.data.settings.SettingsRepository
 import com.example.mediminder.domain.Adherence
 import com.example.mediminder.domain.AdherenceSummary
-import com.example.mediminder.ui.theme.MissedRed
-import com.example.mediminder.ui.theme.TakenGreen
+import com.example.mediminder.ui.components.AppTopBar
+import com.example.mediminder.ui.components.ChoiceChips
+import com.example.mediminder.ui.components.MediCard
+import com.example.mediminder.ui.components.SecondaryButton
+import com.example.mediminder.ui.components.SectionTitle
+import com.example.mediminder.ui.theme.LocalStatusColors
 import com.example.mediminder.util.Formats
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -82,96 +80,121 @@ class StatsViewModel @Inject constructor(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
+    /** Every dose ever taken earns points; shown here rather than on the busy Today screen. */
+    val points: StateFlow<Int> = combine(db.doseLogDao().observeCount(DoseStatus.TAKEN), days) { taken, _ -> Adherence.points(taken) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+
     val userName: String get() = settings.current.userName
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StatsScreen(onBack: () -> Unit, viewModel: StatsViewModel = hiltViewModel()) {
     val context = LocalContext.current
+    val status = LocalStatusColors.current
     val days by viewModel.days.collectAsState()
     val summary by viewModel.summary.collectAsState()
+    val points by viewModel.points.collectAsState()
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.stats_title), fontWeight = FontWeight.Bold) },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back)) } },
-                actions = {
-                    summary?.let { s ->
-                        IconButton(onClick = {
-                            val text = reportText(context, s, days, viewModel.userName)
-                            context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text), null))
-                        }) { Icon(Icons.Default.Share, contentDescription = stringResource(R.string.action_share)) }
-                    }
-                },
-            )
-        },
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = { AppTopBar(title = stringResource(R.string.stats_title), onBack = onBack) },
     ) { padding ->
-        LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        LazyColumn(
+            Modifier.fillMaxSize().padding(padding),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
             item {
-                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                    listOf(7, 30, 90).forEachIndexed { i, n ->
-                        SegmentedButton(days == n, { viewModel.days.value = n }, SegmentedButtonDefaults.itemShape(i, 3)) {
-                            Text(context.resources.getQuantityString(R.plurals.days_count, n, n))
-                        }
-                    }
-                }
+                ChoiceChips(listOf(7, 30, 90), days, { n -> Formats.digits(context, context.resources.getQuantityString(R.plurals.days_count, n, n)) }, { viewModel.days.value = it })
             }
             val s = summary ?: return@LazyColumn
             item {
-                Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f))) {
-                    Column(Modifier.fillMaxWidth().padding(20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(s.rate?.let { Formats.number(context, it) + "%" } ?: "—", style = MaterialTheme.typography.displayLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                        Text(stringResource(R.string.stats_rate_label), style = MaterialTheme.typography.titleMedium)
-                        Spacer(Modifier.height(12.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                            Stat(stringResource(R.string.state_taken), Formats.number(context, s.taken))
-                            Stat(stringResource(R.string.state_missed), Formats.number(context, s.missed))
-                            Stat(stringResource(R.string.state_skipped), Formats.number(context, s.skipped))
-                            Stat(stringResource(R.string.stats_streak), Formats.number(context, s.streak))
-                        }
+                MediCard(containerColor = MaterialTheme.colorScheme.primaryContainer, borderColor = MaterialTheme.colorScheme.primaryContainer) {
+                    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            s.rate?.let { Formats.number(context, it) + "%" } ?: "—",
+                            style = MaterialTheme.typography.displayMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                        Text(stringResource(R.string.stats_rate_label), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimaryContainer, textAlign = TextAlign.Center)
                     }
                 }
             }
             item {
-                Text(stringResource(R.string.stats_by_day), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                MediCard {
+                    StatRow(stringResource(R.string.state_taken), Formats.number(context, s.taken))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    StatRow(stringResource(R.string.state_missed), Formats.number(context, s.missed))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    StatRow(stringResource(R.string.state_skipped), Formats.number(context, s.skipped))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    StatRow(stringResource(R.string.stats_streak), stringResource(R.string.today_streak, Formats.number(context, s.streak)))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    StatRow(stringResource(R.string.stats_points), Formats.number(context, points))
+                }
+            }
+            item {
+                SectionTitle(stringResource(R.string.stats_by_day))
+                Text(stringResource(R.string.stats_by_day_hint), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 DayBars(s)
             }
             if (s.perMedication.isNotEmpty()) {
-                item { Text(stringResource(R.string.stats_by_medicine), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold) }
+                item { SectionTitle(stringResource(R.string.stats_by_medicine)) }
                 items(s.perMedication, key = { it.medicationId }) { m ->
-                    Column {
-                        Row {
-                            Text(m.name, modifier = Modifier.weight(1f), fontWeight = FontWeight.Medium)
-                            Text(
-                                (m.rate?.let { Formats.number(context, it) + "%" } ?: "—") + "  (" + Formats.number(context, m.taken) + "/" + Formats.number(context, m.expected) + ")",
-                            )
+                    MediCard {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(m.name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                            Text(m.rate?.let { Formats.number(context, it) + "%" } ?: "—", style = MaterialTheme.typography.titleMedium)
                         }
-                        LinearProgressIndicator(progress = { (m.rate ?: 0) / 100f }, modifier = Modifier.fillMaxWidth().padding(top = 4.dp))
+                        Text(
+                            stringResource(R.string.stats_doses_of, Formats.number(context, m.taken), Formats.number(context, m.expected)),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        LinearProgressIndicator(
+                            progress = { (m.rate ?: 0) / 100f },
+                            modifier = Modifier.fillMaxWidth().height(10.dp).clip(CircleShape),
+                            color = status.taken,
+                            trackColor = MaterialTheme.colorScheme.surfaceContainer,
+                            strokeCap = StrokeCap.Round,
+                            gapSize = 0.dp,
+                            drawStopIndicator = {},
+                        )
                     }
                 }
             }
             if (s.expected == 0) {
-                item { Text(stringResource(R.string.stats_empty), color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                item { Text(stringResource(R.string.stats_empty), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            }
+            item {
+                SecondaryButton(
+                    stringResource(R.string.stats_share),
+                    onClick = {
+                        val text = reportText(context, s, days, viewModel.userName)
+                        context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text), null))
+                    },
+                    icon = Icons.Default.Share,
+                )
             }
         }
     }
 }
 
 @Composable
-private fun Stat(label: String, value: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        Text(label, style = MaterialTheme.typography.labelMedium)
+private fun StatRow(label: String, value: String) {
+    Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+        Text(value, style = MaterialTheme.typography.titleMedium)
     }
 }
 
-/** One bar per day: green = taken share, red = missed share. */
+/** One bar per day: green from the bottom = taken share, red from the top = missed share. */
 @Composable
 private fun DayBars(s: AdherenceSummary) {
-    val track = MaterialTheme.colorScheme.surfaceVariant
-    Canvas(Modifier.fillMaxWidth().height(120.dp).padding(top = 8.dp)) {
+    val track = MaterialTheme.colorScheme.surfaceContainerHigh
+    val status = LocalStatusColors.current
+    Canvas(Modifier.fillMaxWidth().height(130.dp).padding(top = 10.dp)) {
         val n = s.days.size.coerceAtLeast(1)
         val gap = if (n > 40) 1.dp.toPx() else 4.dp.toPx()
         val w = (size.width - gap * (n - 1)) / n
@@ -181,8 +204,8 @@ private fun DayBars(s: AdherenceSummary) {
             if (d.expected > 0) {
                 val takenH = size.height * d.taken / d.expected
                 val missedH = size.height * d.missed / d.expected
-                drawRoundRect(TakenGreen, Offset(x, size.height - takenH), Size(w, takenH), CornerRadius(w / 4))
-                if (missedH > 0) drawRoundRect(MissedRed.copy(alpha = 0.8f), Offset(x, 0f), Size(w, missedH), CornerRadius(w / 4))
+                drawRoundRect(status.taken, Offset(x, size.height - takenH), Size(w, takenH), CornerRadius(w / 4))
+                if (missedH > 0) drawRoundRect(status.missed, Offset(x, 0f), Size(w, missedH), CornerRadius(w / 4))
             }
         }
     }

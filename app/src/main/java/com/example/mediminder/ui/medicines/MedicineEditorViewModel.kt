@@ -96,7 +96,8 @@ data class EditorState(
     val isNew: Boolean get() = id == 0L
 
     companion object {
-        val COLORS = listOf("#10B981", "#3B82F6", "#EF4444", "#F59E0B", "#8B5CF6", "#EC4899", "#14B8A6", "#64748B")
+        /** Pill colours, to tell medicines apart. Blue first; green is kept for "taken". */
+        val COLORS = listOf("#3B82F6", "#8B5CF6", "#F59E0B", "#EC4899", "#14B8A6", "#EF4444", "#64748B", "#10B981")
         val SHAPES = listOf("Round", "Oval", "Capsule", "Liquid", "Other")
         val DURATIONS = listOf(3, 5, 7, 10, 14, 30, 60, 90)
     }
@@ -139,7 +140,14 @@ class MedicineEditorViewModel @Inject constructor(
         loadedFor = medicationId
         viewModelScope.launch {
             if (medicationId == 0L) {
-                _state.update { it.copy(loading = false, times = planPattern(it.pattern, it.mealTiming, it.alertType, emptyList())) }
+                val count = repository.observeAll().first().size
+                _state.update {
+                    it.copy(
+                        loading = false,
+                        times = planPattern(it.pattern, it.mealTiming, it.alertType, emptyList()),
+                        color = EditorState.COLORS[count % EditorState.COLORS.size],
+                    )
+                }
                 return@launch
             }
             val item = repository.get(medicationId) ?: run { _state.update { it.copy(loading = false) }; return@launch }

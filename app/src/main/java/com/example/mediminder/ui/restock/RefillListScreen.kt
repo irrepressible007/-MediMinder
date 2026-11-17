@@ -43,6 +43,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.compose.foundation.layout.height
+import androidx.compose.material.icons.filled.ShoppingCart
+import com.example.mediminder.ui.components.AppTopBar
+import com.example.mediminder.ui.components.MediCard
+import com.example.mediminder.ui.components.SecondaryButton
+import com.example.mediminder.ui.theme.LocalStatusColors
 import com.example.mediminder.R
 import com.example.mediminder.data.MedicineRepository
 import com.example.mediminder.data.catalogue.CatalogueMedicine
@@ -130,19 +136,7 @@ fun RefillListScreen(onBack: () -> Unit, onOpenMedicine: (Long) -> Unit, viewMod
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.refill_title), fontWeight = FontWeight.Bold) },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back)) } },
-                actions = {
-                    val state = ui
-                    if (state != null && state.low.isNotEmpty()) {
-                        IconButton(onClick = {
-                            val text = shoppingListText(context, state)
-                            context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text), null))
-                        }) { Icon(Icons.Default.Share, contentDescription = stringResource(R.string.action_share)) }
-                    }
-                },
-            )
+            AppTopBar(title = stringResource(R.string.refill_title), onBack = onBack)
         },
     ) { padding ->
         val state = ui ?: return@Scaffold
@@ -157,8 +151,8 @@ fun RefillListScreen(onBack: () -> Unit, onOpenMedicine: (Long) -> Unit, viewMod
         }
         LazyColumn(
             Modifier.fillMaxSize().padding(padding),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item {
                 Text(
@@ -167,7 +161,14 @@ fun RefillListScreen(onBack: () -> Unit, onOpenMedicine: (Long) -> Unit, viewMod
                     style = MaterialTheme.typography.bodyLarge,
                 )
                 state.totalCost?.let {
-                    Text(stringResource(R.string.refill_estimated_total, Formats.taka(context, it)), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    Text(stringResource(R.string.refill_estimated_total, Formats.taka(context, it)), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
+                }
+                if (state.low.isNotEmpty()) {
+                    Spacer(Modifier.height(12.dp))
+                    SecondaryButton(stringResource(R.string.refill_send), onClick = {
+                        val text = shoppingListText(context, state)
+                        context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text), null))
+                    }, icon = Icons.Default.Share)
                 }
             }
             if (state.low.isNotEmpty()) {
@@ -190,32 +191,34 @@ fun RefillListScreen(onBack: () -> Unit, onOpenMedicine: (Long) -> Unit, viewMod
 private fun RefillRow(item: RefillItem, onOpen: () -> Unit, onBought: () -> Unit) {
     val context = LocalContext.current
     val m = item.medication
-    Card(
-        Modifier.fillMaxWidth().clickable(onClick = onOpen),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = if (item.low) MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface),
+    val status = LocalStatusColors.current
+    MediCard(
+        onClick = onOpen,
+        containerColor = if (item.low) status.dueContainer else MaterialTheme.colorScheme.surface,
+        borderColor = if (item.low) status.due else MaterialTheme.colorScheme.outlineVariant,
     ) {
-        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-            PillAvatar(m.name, m.color, size = 40)
-            Spacer(Modifier.width(12.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            PillAvatar(m.name, m.color, size = 48)
+            Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
-                Text(listOf(m.name, m.strength).filter { it.isNotBlank() }.joinToString(" "), fontWeight = FontWeight.SemiBold)
+                Text(listOf(m.name, m.strength).filter { it.isNotBlank() }.joinToString(" "), style = MaterialTheme.typography.titleLarge)
                 val stockText = Formats.quantity(context, m.stock, m.unit)
                 Text(
                     if (item.daysLeft != null) stringResource(R.string.stock_left_days, stockText, Formats.number(context, item.daysLeft)) else stringResource(R.string.stock_left, stockText),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (item.low) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (item.low) status.onDueContainer else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 if (item.buy > 0) {
                     Text(
                         stringResource(R.string.refill_buy, Formats.quantity(context, item.buy.toDouble(), m.unit)) +
                             (item.estimatedCost?.let { " · ≈ " + Formats.taka(context, it) } ?: ""),
-                        style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium,
+                        style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold,
                     )
                 }
             }
-            FilledTonalButton(onClick = onBought) { Text(stringResource(R.string.action_bought)) }
         }
+        Spacer(Modifier.height(12.dp))
+        SecondaryButton(stringResource(R.string.detail_bought_more), onClick = onBought, icon = Icons.Default.ShoppingCart)
     }
 }
 

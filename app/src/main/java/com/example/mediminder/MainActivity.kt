@@ -8,8 +8,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
+import com.example.mediminder.data.settings.SettingsRepository
 import com.example.mediminder.reminders.Notifier
 import com.example.mediminder.reminders.ReminderEngine
 import com.example.mediminder.ui.DeepLink
@@ -17,12 +20,14 @@ import com.example.mediminder.ui.MainNavigation
 import com.example.mediminder.ui.theme.MediMinderTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
     @Inject lateinit var engine: ReminderEngine
+    @Inject lateinit var settings: SettingsRepository
 
     /** Where a tapped notification wants to go. */
     private val deepLink = MutableStateFlow<DeepLink?>(null)
@@ -38,7 +43,8 @@ class MainActivity : AppCompatActivity() {
         // AppCompat's setContentView skips the NavigationEvent owner that Navigation3 needs
         initializeViewTreeOwners()
         setContent {
-            MediMinderTheme {
+            val textScale by settings.settings.map { it.textScale }.collectAsState(initial = settings.current.textScale)
+            MediMinderTheme(textScale = textScale) {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     MainNavigation(deepLink = deepLink, onDeepLinkHandled = { deepLink.value = null })
                 }

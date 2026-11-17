@@ -45,6 +45,11 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.compose.foundation.layout.size
+import com.example.mediminder.ui.components.AppTopBar
+import com.example.mediminder.ui.components.MediCard
+import com.example.mediminder.ui.components.PrimaryButton
+import com.example.mediminder.ui.components.SecondaryButton
 import com.example.mediminder.R
 import com.example.mediminder.data.MedicineRepository
 import com.example.mediminder.data.local.entity.MedicationWithSchedules
@@ -94,24 +99,14 @@ fun MedicalIdScreen(onBack: () -> Unit, viewModel: MedicalIdViewModel = hiltView
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.medical_id_title), fontWeight = FontWeight.Bold) },
-                navigationIcon = { IconButton(onClick = { viewModel.save(current()); onBack() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back)) } },
-                actions = {
-                    IconButton(onClick = {
-                        viewModel.save(current())
-                        val text = medicalIdText(context, viewModel.name, current(), meds)
-                        context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text), null))
-                    }) { Icon(Icons.Default.Share, contentDescription = stringResource(R.string.action_share)) }
-                },
-            )
+            AppTopBar(title = stringResource(R.string.medical_id_title), onBack = { viewModel.save(current()); onBack() })
         },
     ) { padding ->
         Column(
             Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text(stringResource(R.string.medical_id_intro), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.medical_id_intro), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             SectionTitle(stringResource(R.string.medical_id_blood))
             ChoiceChips(BLOOD_GROUPS, blood.ifBlank { null }, { it }, { blood = if (blood == it) "" else it })
             OutlinedTextField(allergies, { allergies = it }, label = { Text(stringResource(R.string.medical_id_allergies)) }, placeholder = { Text(stringResource(R.string.medical_id_allergies_hint)) }, modifier = Modifier.fillMaxWidth())
@@ -128,23 +123,30 @@ fun MedicalIdScreen(onBack: () -> Unit, viewModel: MedicalIdViewModel = hiltView
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone), modifier = Modifier.weight(1f),
                 )
                 if (contactPhone.isNotBlank()) {
-                    IconButton(onClick = { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$contactPhone"))) }) {
+                    IconButton(onClick = { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$contactPhone"))) }, modifier = Modifier.size(56.dp)) {
                         Icon(Icons.Default.Call, contentDescription = stringResource(R.string.action_call_short), tint = MaterialTheme.colorScheme.primary)
                     }
                 }
             }
-            Text(stringResource(R.string.medical_id_allergy_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.medical_id_allergy_note), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
             SectionTitle(stringResource(R.string.medical_id_current_meds))
-            Card(shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
-                Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    if (meds.isEmpty()) Text(stringResource(R.string.medical_id_no_meds))
-                    meds.forEach { item ->
-                        Text("• ${listOf(item.medication.name, item.medication.strength).filter { it.isNotBlank() }.joinToString(" ")} — ${scheduleSummary(context, item)}")
-                    }
+            MediCard {
+                if (meds.isEmpty()) Text(stringResource(R.string.medical_id_no_meds), style = MaterialTheme.typography.bodyLarge)
+                meds.forEach { item ->
+                    Text(
+                        "• ${listOf(item.medication.name, item.medication.strength).filter { it.isNotBlank() }.joinToString(" ")} — ${scheduleSummary(context, item)}",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(vertical = 2.dp),
+                    )
                 }
             }
-            Button(onClick = { viewModel.save(current()); onBack() }, modifier = Modifier.fillMaxWidth().height(52.dp)) { Text(stringResource(R.string.action_save)) }
+            PrimaryButton(stringResource(R.string.action_save), onClick = { viewModel.save(current()); onBack() })
+            SecondaryButton(stringResource(R.string.medical_id_share), onClick = {
+                viewModel.save(current())
+                val text = medicalIdText(context, viewModel.name, current(), meds)
+                context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text), null))
+            }, icon = Icons.Default.Share)
             Spacer(Modifier.height(24.dp))
         }
     }
