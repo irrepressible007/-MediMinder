@@ -6,7 +6,6 @@ import com.example.mediminder.data.local.entity.DoseStatus
 import com.example.mediminder.domain.TestData.item
 import com.example.mediminder.domain.TestData.medication
 import com.example.mediminder.domain.TestData.schedule
-import com.example.mediminder.updater.isNewer
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -123,15 +122,5 @@ class SafetyCheckTest {
         val napa = medication(id = 1, name = "Napa", generic = "Paracetamol")
         assertTrue(SafetyCheck.check("Napa", "Paracetamol", "", listOf(napa), editingId = 1).isEmpty())
         assertTrue(SafetyCheck.check("Ace", "Paracetamol", "", listOf(napa.copy(archived = true))).isEmpty())
-    }
-}
-
-class UpdateVersionTest {
-    @Test fun `only a higher version counts as an update`() {
-        assertTrue(isNewer("v2.0.1", "v2.0.0"))
-        assertTrue(isNewer("v2.0.10", "v2.0.9"))
-        assertTrue(isNewer("v3.0", "v2.9.9"))
-        assertFalse(isNewer("v1.0.10", "v2.0.0"))
-        assertFalse(isNewer("v2.0.0", "v2.0.0"))
     }
 }

@@ -1,5 +1,8 @@
 package com.example.mediminder.ui
 
+import androidx.compose.ui.platform.LocalContext
+import com.example.mediminder.ui.components.UpdateDialogHost
+import com.example.mediminder.updater.Updater
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -236,12 +239,16 @@ fun MainNavigation(
         },
     )
     FeedbackHost(Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp))
+    UpdateDialogHost()
     }
 }
 
 @Composable
 private fun HomeScaffold(tab: HomeTab, onTab: (HomeTab) -> Unit, open: (NavKey) -> Unit) {
     val reduceMotion = rememberReduceMotion()
+    val appContext = LocalContext.current.applicationContext
+    // A newer version on GitHub is recommended automatically (at most every 12 hours)
+    LaunchedEffect(Unit) { Updater.checkOnLaunch(appContext) }
     Scaffold(
         bottomBar = {
             NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) {

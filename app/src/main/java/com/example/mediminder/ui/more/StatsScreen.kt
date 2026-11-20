@@ -225,6 +225,22 @@ private fun DayBars(s: AdherenceSummary) {
             }
         }
     }
+    // Which day each bar is (the week view has room for the day's initial)
+    if (s.days.size in 2..10) {
+        val locale = Formats.locale(LocalContext.current)
+        Row(Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            s.days.forEach { d ->
+                Text(
+                    d.date.dayOfWeek.getDisplayName(java.time.format.TextStyle.SHORT, locale),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+    }
 }
 
 /** A short report to send to a doctor or family member. */

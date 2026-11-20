@@ -89,10 +89,13 @@ fun rememberEntranceState(key: Any? = Unit): EntranceState {
     return remember(key) { EntranceState(!reduce) }
 }
 
-/** Wraps a list item so it arrives with the screen's stagger. */
+/**
+ * Wraps a list item so it arrives with the screen's stagger. A Column, not a Box: an item
+ * may hold several things (a title, a hint, a chart) that must stay one under another.
+ */
 @Composable
 fun Arrive(state: EntranceState, index: Int, content: @Composable () -> Unit) {
-    Box(Modifier.entrance(state, index)) { content() }
+    androidx.compose.foundation.layout.Column(Modifier.entrance(state, index)) { content() }
 }
 
 /**

@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
         
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -37,12 +39,29 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           
+      # The app's updater reads update.json: a higher versionCode means "newer", and the
+      # download is checked against this size and SHA-256 before it is installed.
+      - name: Describe the update
+        run: |
+          APK=app/build/outputs/apk/release/app-release.apk
+          CODE=$(grep -oP 'versionCode = \K[0-9]+' app/build.gradle.kts)
+          NAME=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
+          SHA=$(sha256sum "$APK" | cut -d' ' -f1)
+          SIZE=$(stat -c%s "$APK")
+          printf '{"versionCode":%s,"versionName":"%s","sha256":"%s","size":%s}\n' "$CODE" "$NAME" "$SHA" "$SIZE" > update.json
+          cat update.json
+          git fetch --force origin "refs/tags/${GITHUB_REF_NAME}:refs/tags/${GITHUB_REF_NAME}"
+          git tag -l --format='%(contents)' "${GITHUB_REF_NAME}" > release_notes.md
+          cat release_notes.md
+
       - name: Create GitHub Release and Upload APK
         uses: softprops/action-gh-release@v2
         with:
-          files: app/build/outputs/apk/release/app-release.apk
-          name: Release ${{ github.ref_name }}
-          generate_release_notes: true
+          files: |
+            app/build/outputs/apk/release/app-release.apk
+            update.json
+          name: MediMinder ${{ github.ref_name }}
+          body_path: release_notes.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

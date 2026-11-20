@@ -350,7 +350,6 @@
     <string name="more_version">ভার্সন %1$s</string>
     <string name="update_checking">আপডেট খোঁজা হচ্ছে…</string>
     <string name="update_latest">আপনার কাছে সর্বশেষ ভার্সন আছে।</string>
-    <string name="update_failed">আপডেট দেখা গেল না: %1$s</string>
 
     <!-- Statistics -->
     <string name="stats_title">আমার রিপোর্ট</string>
@@ -617,9 +616,27 @@
     <string name="backup_cannot_write">ফাইলটি লেখা যায়নি। অন্য কোনো জায়গা বেছে নিন।</string>
     <string name="backup_cannot_read">ফাইলটি পড়া যায়নি।</string>
     <string name="update_check_failed">আপডেট দেখা গেল না। ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।</string>
-    <string name="update_downloading_title">MediMinder-এর আপডেট ডাউনলোড হচ্ছে</string>
-    <string name="update_downloading_body">সংস্করণ %1$s</string>
-    <string name="update_downloading">আপডেট ডাউনলোড হচ্ছে… শেষ হলে ইনস্টল করতে বলা হবে।</string>
+    <string name="update_downloading_title">আপডেট ডাউনলোড হচ্ছে</string>
+    <string name="update_downloading">অ্যাপটি ব্যবহার চালিয়ে যেতে পারেন। শেষ হলে ইনস্টল করতে বলা হবে।</string>
     <string name="update_download_failed">আপডেট ডাউনলোড করা যায়নি। ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।</string>
     <string name="update_install_failed">আপডেট ইনস্টল করা যায়নি। আবার চেষ্টা করুন।</string>
+    <string name="update_ready_title">নতুন সংস্করণ এসেছে</string>
+    <string name="update_ready_body">MediMinder %1$s এসেছে। আপডেট করলে আপনার ওষুধ, ইতিহাস ও রিমাইন্ডার যেমন আছে তেমনই থাকবে।</string>
+    <string name="update_size">ডাউনলোডের আকার: প্রায় %1$s এমবি</string>
+    <string name="update_whats_new">নতুন কী আছে</string>
+    <string name="update_now">এখনই আপডেট করুন</string>
+    <string name="update_later">পরে</string>
+    <string name="update_percent">%1$s%% সম্পন্ন</string>
+    <string name="update_keep_using">অ্যাপ ব্যবহার চালিয়ে যান</string>
+    <string name="update_install_title">ইনস্টলের জন্য প্রস্তুত</string>
+    <string name="update_install_body">“ইনস্টল করুন” চাপুন। অ্যান্ড্রয়েড একবার নিশ্চিত করতে বলবে।</string>
+    <string name="update_install">ইনস্টল করুন</string>
+    <string name="update_permission_title">একবারের অনুমতি</string>
+    <string name="update_permission_body">আপডেট ইনস্টল করতে অ্যান্ড্রয়েডের একবার অনুমতি লাগবে। পরের পাতায় “এই উৎস থেকে অনুমতি দিন” চালু করে এখানে ফিরে আসুন।</string>
+    <string name="update_open_settings">সেটিংস খুলুন</string>
+    <string name="update_up_to_date_title">আপনার অ্যাপ হালনাগাদ আছে</string>
+    <string name="update_problem_title">আপডেট করা যায়নি</string>
+    <string name="update_try_again">আবার চেষ্টা করুন</string>
+    <string name="update_available_sub">আপডেট এসেছে: %1$s — ইনস্টল করতে চাপুন</string>
+    <string name="action_ok">ঠিক আছে</string>
 </resources>

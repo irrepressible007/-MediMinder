@@ -1,135 +1,312 @@
 package com.example.mediminder.updater
 
-import com.example.mediminder.R
-import com.example.mediminder.util.AppLocale
-import android.app.DownloadManager
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.net.Uri
-import android.os.Environment
-import android.widget.Toast
-import androidx.core.content.ContextCompat
+import android.os.Build
+import android.provider.Settings
+import androidx.annotation.StringRes
 import androidx.core.content.FileProvider
+import com.example.mediminder.BuildConfig
+import com.example.mediminder.R
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.File
+import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
+import java.security.MessageDigest
+import kotlin.coroutines.coroutineContext
 
-object UpdateManager {
+/*
+ * Updates come from this app's GitHub releases.
+ *
+ *  • On opening the app it checks (at most every 12 hours) and, when a newer build exists,
+ *    recommends it in a friendly dialog. "Later" quiets that version for 3 days.
+ *  • Newer means a higher versionCode, read from the release's update.json (written by the
+ *    release workflow) — never the version name, so renumbering can't hide an update.
+ *  • The APK is downloaded inside the app with a progress bar, checked against its size and
+ *    SHA-256, then handed to Android's installer. If Android needs the one-time "install
+ *    unknown apps" permission, the dialog explains it and opens the right settings page.
+ */
 
-    private const val REPO_URL = "https://api.github.com/repos/irrepressible007/-MediMinder/releases/latest"
+/** The newest release on GitHub. */
+data class UpdateInfo(
+    val versionName: String,
+    val versionCode: Int?,
+    val apkUrl: String,
+    val apkSize: Long,
+    val sha256: String?,
+    val notes: List<String>,
+)
 
-    suspend fun checkForUpdates(context: Context): UpdateResult = withContext(Dispatchers.IO) {
+sealed interface UpdateState {
+    data object Idle : UpdateState
+    data object Checking : UpdateState
+    data object UpToDate : UpdateState
+    data class Available(val info: UpdateInfo) : UpdateState
+    /** [progress] 0..1, or -1 while the size is unknown. */
+    data class Downloading(val info: UpdateInfo, val progress: Float) : UpdateState
+    data class Ready(val info: UpdateInfo, val file: File, val needsPermission: Boolean = false) : UpdateState
+    data class Failed(val info: UpdateInfo?, @StringRes val reason: Int) : UpdateState
+}
+
+object Updater {
+    private const val LATEST = "https://api.github.com/repos/irrepressible007/-MediMinder/releases/latest"
+    private const val PREFS = "mediminder_updates"
+    private const val CHECK_EVERY = 12 * 60 * 60_000L
+    private const val LATER_FOR = 3 * 24 * 60 * 60_000L
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var download: Job? = null
+
+    private val _state = MutableStateFlow<UpdateState>(UpdateState.Idle)
+    val state: StateFlow<UpdateState> = _state
+
+    private val _dialog = MutableStateFlow(false)
+    /** Whether the update dialog is showing. */
+    val dialog: StateFlow<Boolean> = _dialog
+
+    private fun prefs(context: Context) = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+
+    /** Quiet check when the app opens; recommends the update unless "Later" was chosen recently. */
+    fun checkOnLaunch(context: Context) {
+        if (BuildConfig.DEBUG) return   // developer builds (and tests) never call home
+        val app = context.applicationContext
+        val prefs = prefs(app)
+        if (System.currentTimeMillis() - prefs.getLong("lastCheck", 0) < CHECK_EVERY) return
+        if (_state.value !is UpdateState.Idle && _state.value !is UpdateState.UpToDate) return
+        scope.launch {
+            val info = runCatching { fetchLatest() }.getOrNull() ?: return@launch
+            prefs.edit().putLong("lastCheck", System.currentTimeMillis()).apply()
+            if (!isUpdate(info, BuildConfig.VERSION_CODE, BuildConfig.VERSION_NAME)) return@launch
+            _state.value = UpdateState.Available(info)
+            val laterUntil = prefs.getLong("later:${info.versionName}", 0)
+            if (System.currentTimeMillis() > laterUntil) _dialog.value = true
+        }
+    }
+
+    /** "Check for updates" on More: always checks, always answers. */
+    fun checkNow() {
+        when (_state.value) {
+            is UpdateState.Downloading, is UpdateState.Ready -> { _dialog.value = true; return }
+            else -> Unit
+        }
+        _state.value = UpdateState.Checking
+        _dialog.value = true
+        scope.launch {
+            _state.value = try {
+                val info = fetchLatest()
+                if (isUpdate(info, BuildConfig.VERSION_CODE, BuildConfig.VERSION_NAME)) UpdateState.Available(info) else UpdateState.UpToDate
+            } catch (e: Exception) {
+                UpdateState.Failed(null, R.string.update_check_failed)
+            }
+        }
+    }
+
+    /** "Later": hide, and don't recommend this version again for a few days. */
+    fun later(context: Context) {
+        (_state.value as? UpdateState.Available)?.let {
+            prefs(context).edit().putLong("later:${it.info.versionName}", System.currentTimeMillis() + LATER_FOR).apply()
+        }
+        _dialog.value = false
+    }
+
+    fun hide() {
+        _dialog.value = false
+        if (_state.value is UpdateState.UpToDate || _state.value is UpdateState.Checking) _state.value = UpdateState.Idle
+    }
+
+    fun startDownload(context: Context, info: UpdateInfo) {
+        if (download?.isActive == true) return
+        val dir = File(context.applicationContext.cacheDir, "updates").apply { mkdirs() }
+        _state.value = UpdateState.Downloading(info, if (info.apkSize > 0) 0f else -1f)
+        _dialog.value = true
+        download = scope.launch {
+            dir.listFiles()?.forEach { it.delete() }   // earlier downloads
+            val part = File(dir, "MediMinder-${info.versionName}.apk.part")
+            val apk = File(dir, "MediMinder-${info.versionName}.apk")
+            _state.value = try {
+                val sha = downloadTo(info.apkUrl, part, info.apkSize) { p -> _state.value = UpdateState.Downloading(info, p) }
+                if (info.sha256 != null && !sha.equals(info.sha256, ignoreCase = true)) throw IOException("checksum mismatch")
+                if (info.apkSize > 0 && part.length() != info.apkSize) throw IOException("size mismatch")
+                if (!part.renameTo(apk)) throw IOException("rename failed")
+                _dialog.value = true
+                UpdateState.Ready(info, apk)
+            } catch (e: Exception) {
+                part.delete()
+                UpdateState.Failed(info, R.string.update_download_failed)
+            }
+        }
+    }
+
+    /**
+     * Hands the APK to Android's installer, or — when Android needs the one-time permission —
+     * asks for it first. Call again after the person comes back from settings.
+     */
+    fun install(context: Context) {
+        val ready = _state.value as? UpdateState.Ready ?: return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !context.packageManager.canRequestPackageInstalls()) {
+            _state.value = ready.copy(needsPermission = true)
+            return
+        }
         try {
-            val url = URL(REPO_URL)
-            val connection = url.openConnection() as HttpURLConnection
-            connection.requestMethod = "GET"
-            connection.connectTimeout = 10_000
-            connection.readTimeout = 10_000
-            connection.setRequestProperty("Accept", "application/vnd.github.v3+json")
+            val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", ready.file)
+            context.startActivity(
+                Intent(Intent.ACTION_VIEW)
+                    .setDataAndType(uri, "application/vnd.android.package-archive")
+                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK),
+            )
+            _state.value = ready.copy(needsPermission = false)
+        } catch (e: Exception) {
+            _state.value = UpdateState.Failed(ready.info, R.string.update_install_failed)
+        }
+    }
 
-            if (connection.responseCode == HttpURLConnection.HTTP_OK) {
-                val response = connection.inputStream.bufferedReader().use { it.readText() }
-                val json = JSONObject(response)
-                
-                val tagName = json.getString("tag_name")
-                val currentVersion = "v" + com.example.mediminder.BuildConfig.VERSION_NAME
+    /** Opens the "install unknown apps" switch for MediMinder. */
+    fun openInstallPermission(context: Context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        runCatching {
+            context.startActivity(
+                Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:${context.packageName}"))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            )
+        }
+    }
 
-                if (isNewer(tagName, currentVersion)) {
-                    val assets = json.getJSONArray("assets")
-                    for (i in 0 until assets.length()) {
-                        val asset = assets.getJSONObject(i)
-                        if (asset.getString("name").endsWith(".apk")) {
-                            return@withContext UpdateResult.UpdateAvailable(
-                                version = tagName,
-                                downloadUrl = asset.getString("browser_download_url")
-                            )
+    /** Back from settings: if the permission is now on, carry straight on with the install. */
+    fun onResume(context: Context) {
+        val ready = _state.value as? UpdateState.Ready ?: return
+        if (ready.needsPermission && (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || context.packageManager.canRequestPackageInstalls())) {
+            install(context)
+        }
+    }
+
+    // ── Talking to GitHub ───────────────────────────────────────────────────
+
+    private suspend fun fetchLatest(): UpdateInfo = withContext(Dispatchers.IO) {
+        val release = parseRelease(get(LATEST))
+        val meta = release.metaUrl?.let { url -> runCatching { parseMeta(get(url)) }.getOrNull() }
+        release.toInfo(meta) ?: throw IOException("no APK in the latest release")
+    }
+
+    private fun get(url: String): String {
+        val conn = (URL(url).openConnection() as HttpURLConnection).apply {
+            connectTimeout = 15_000
+            readTimeout = 15_000
+            setRequestProperty("Accept", "application/vnd.github+json")
+            setRequestProperty("User-Agent", "MediMinder-Android")
+        }
+        try {
+            if (conn.responseCode !in 200..299) throw IOException("HTTP ${conn.responseCode}")
+            return conn.inputStream.bufferedReader().use { it.readText() }
+        } finally {
+            conn.disconnect()
+        }
+    }
+
+    /** Streams [url] into [dest], reporting progress; returns the file's SHA-256 (hex). */
+    private suspend fun downloadTo(url: String, dest: File, expectedSize: Long, onProgress: (Float) -> Unit): String {
+        val conn = (URL(url).openConnection() as HttpURLConnection).apply {
+            connectTimeout = 20_000
+            readTimeout = 30_000
+            instanceFollowRedirects = true   // GitHub hands the file over from another host
+            setRequestProperty("User-Agent", "MediMinder-Android")
+        }
+        try {
+            if (conn.responseCode !in 200..299) throw IOException("HTTP ${conn.responseCode}")
+            val total = conn.contentLengthLong.takeIf { it > 0 } ?: expectedSize
+            val digest = MessageDigest.getInstance("SHA-256")
+            var done = 0L
+            var lastReported = -1
+            conn.inputStream.use { input ->
+                dest.outputStream().use { out ->
+                    val buffer = ByteArray(64 * 1024)
+                    while (true) {
+                        coroutineContext.ensureActive()
+                        val n = input.read(buffer)
+                        if (n < 0) break
+                        out.write(buffer, 0, n)
+                        digest.update(buffer, 0, n)
+                        done += n
+                        if (total > 0) {
+                            val percent = (done * 100 / total).toInt()
+                            if (percent != lastReported) {
+                                lastReported = percent
+                                onProgress((done.toFloat() / total).coerceIn(0f, 1f))
+                            }
                         }
                     }
                 }
-                return@withContext UpdateResult.UpToDate
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            return@withContext UpdateResult.Error(e.message ?: "Unknown error")
-        }
-        return@withContext UpdateResult.Error("Failed to check for updates")
-    }
-
-    fun downloadAndInstallUpdate(context: Context, downloadUrl: String, versionName: String) {
-        // Strings in the app's language; the app (not the screen) waits for the download
-        val text = AppLocale.localized(context)
-        val app = context.applicationContext
-        val destination = File(app.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "MediMinder-$versionName.apk")
-        if (destination.exists()) {
-            destination.delete()
-        }
-
-        val request = DownloadManager.Request(Uri.parse(downloadUrl))
-            .setTitle(text.getString(R.string.update_downloading_title))
-            .setDescription(text.getString(R.string.update_downloading_body, versionName))
-            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            .setDestinationUri(Uri.fromFile(destination))
-            .setAllowedOverMetered(true)
-            .setAllowedOverRoaming(true)
-
-        val downloadManager = app.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-        val downloadId = downloadManager.enqueue(request)
-
-        val onComplete = object : BroadcastReceiver() {
-            override fun onReceive(ctxt: Context, intent: Intent) {
-                val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
-                if (downloadId != id) return
-                runCatching { app.unregisterReceiver(this) }
-                // "Complete" is also sent when a download fails: only install a finished file
-                if (downloadSucceeded(downloadManager, id) && destination.length() > 0) {
-                    installApk(app, destination, text)
-                } else {
-                    Toast.makeText(app, text.getString(R.string.update_download_failed), Toast.LENGTH_LONG).show()
-                }
-            }
-        }
-
-        ContextCompat.registerReceiver(
-            app,
-            onComplete,
-            IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
-            ContextCompat.RECEIVER_EXPORTED
-        )
-        
-        Toast.makeText(context, text.getString(R.string.update_downloading), Toast.LENGTH_LONG).show()
-    }
-
-    private fun downloadSucceeded(manager: DownloadManager, id: Long): Boolean = runCatching {
-        manager.query(DownloadManager.Query().setFilterById(id))?.use { c ->
-            c.moveToFirst() && c.getInt(c.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS)) == DownloadManager.STATUS_SUCCESSFUL
-        } ?: false
-    }.getOrDefault(false)
-
-    private fun installApk(context: Context, apkFile: File, text: Context) {
-        try {
-            val uri = FileProvider.getUriForFile(
-                context,
-                "${context.packageName}.provider",
-                apkFile
-            )
-
-            val intent = Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(uri, "application/vnd.android.package-archive")
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
-            }
-
-            context.startActivity(intent)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Toast.makeText(context, text.getString(R.string.update_install_failed), Toast.LENGTH_LONG).show()
+            return digest.digest().joinToString("") { "%02x".format(it) }
+        } finally {
+            conn.disconnect()
         }
     }
 }
+
+// ── Parsing (pure, so it can be tested) ─────────────────────────────────────
+
+internal data class Release(val tag: String, val body: String, val apkUrl: String?, val apkSize: Long, val metaUrl: String?)
+
+internal data class UpdateMeta(val versionCode: Int, val versionName: String, val sha256: String?, val size: Long)
+
+internal fun parseRelease(json: String): Release {
+    val o = JSONObject(json)
+    val assets = o.optJSONArray("assets")
+    var apkUrl: String? = null
+    var apkSize = 0L
+    var metaUrl: String? = null
+    for (i in 0 until (assets?.length() ?: 0)) {
+        val a = assets!!.getJSONObject(i)
+        val name = a.optString("name")
+        when {
+            name.endsWith(".apk") && apkUrl == null -> {
+                apkUrl = a.optString("browser_download_url")
+                apkSize = a.optLong("size")
+            }
+            name == "update.json" -> metaUrl = a.optString("browser_download_url")
+        }
+    }
+    return Release(o.optString("tag_name"), o.optString("body"), apkUrl, apkSize, metaUrl)
+}
+
+internal fun parseMeta(json: String): UpdateMeta {
+    val o = JSONObject(json)
+    return UpdateMeta(o.getInt("versionCode"), o.optString("versionName"), o.optString("sha256").ifBlank { null }, o.optLong("size"))
+}
+
+internal fun Release.toInfo(meta: UpdateMeta?): UpdateInfo? {
+    val url = apkUrl ?: return null
+    return UpdateInfo(
+        versionName = meta?.versionName?.ifBlank { null } ?: tag.trimStart('v', 'V'),
+        versionCode = meta?.versionCode,
+        apkUrl = url,
+        apkSize = if (meta != null && meta.size > 0) meta.size else apkSize,
+        sha256 = meta?.sha256,
+        notes = cleanNotes(body),
+    )
+}
+
+/** A higher versionCode wins; releases without update.json fall back to comparing names. */
+internal fun isUpdate(info: UpdateInfo, currentCode: Int, currentName: String): Boolean =
+    if (info.versionCode != null) info.versionCode > currentCode else isNewer(info.versionName, currentName)
+
+/** The release text as short plain lines — without GitHub's automatic changelog links. */
+internal fun cleanNotes(body: String): List<String> = body.lines()
+    .map { it.trim() }
+    .filter { it.isNotEmpty() && !it.contains("Full Changelog", true) && !it.contains("What's Changed", true) && !it.startsWith("#") && !it.contains("http") }
+    .map { it.removePrefix("* ").removePrefix("- ").removePrefix("• ").trim() }
+    .take(12)
 
 /** "v2.1.0" > "v2.0.10"? Compares numeric parts, so an older release is never offered as an update. */
 internal fun isNewer(candidate: String, current: String): Boolean {
@@ -142,10 +319,4 @@ internal fun isNewer(candidate: String, current: String): Boolean {
         if (x != y) return x > y
     }
     return false
-}
-
-sealed class UpdateResult {
-    data class UpdateAvailable(val version: String, val downloadUrl: String) : UpdateResult()
-    object UpToDate : UpdateResult()
-    data class Error(val message: String) : UpdateResult()
 }

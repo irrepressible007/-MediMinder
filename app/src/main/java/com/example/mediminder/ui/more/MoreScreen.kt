@@ -1,5 +1,8 @@
 package com.example.mediminder.ui.more
 
+import androidx.compose.runtime.collectAsState
+import com.example.mediminder.updater.UpdateState
+import com.example.mediminder.updater.Updater
 import androidx.compose.material.icons.filled.Apps
 import com.example.mediminder.ui.theme.Hue
 import android.widget.Toast
@@ -51,8 +54,6 @@ import com.example.mediminder.ui.components.MediCard
 import com.example.mediminder.ui.components.NavRow
 import com.example.mediminder.ui.components.ScreenHeader
 import com.example.mediminder.ui.components.Tone
-import com.example.mediminder.updater.UpdateManager
-import com.example.mediminder.updater.UpdateResult
 import com.example.mediminder.util.Formats
 import kotlinx.coroutines.launch
 
@@ -63,6 +64,7 @@ fun MoreScreen(modifier: Modifier, onOpen: (NavKey) -> Unit) {
     val scope = rememberCoroutineScope()
     var reliable by remember { mutableStateOf(true) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { reliable = Reliability.allCriticalOk(context) }
+    val update by Updater.state.collectAsState()
 
     Column(
         modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, bottom = 24.dp),
@@ -96,17 +98,12 @@ fun MoreScreen(modifier: Modifier, onOpen: (NavKey) -> Unit) {
             NavRow(
                 Icons.Default.SystemUpdate,
                 stringResource(R.string.more_updates),
-                {
-                    scope.launch {
-                        Toast.makeText(context, resources.getString(R.string.update_checking), Toast.LENGTH_SHORT).show()
-                        when (val result = UpdateManager.checkForUpdates(context)) {
-                            is UpdateResult.UpdateAvailable -> UpdateManager.downloadAndInstallUpdate(context, result.downloadUrl, result.version)
-                            is UpdateResult.UpToDate -> Toast.makeText(context, resources.getString(R.string.update_latest), Toast.LENGTH_SHORT).show()
-                            is UpdateResult.Error -> Toast.makeText(context, resources.getString(R.string.update_check_failed), Toast.LENGTH_LONG).show()
-                        }
-                    }
+                { Updater.checkNow() },
+                subtitle = when (val u = update) {
+                    is UpdateState.Available -> stringResource(R.string.update_available_sub, Formats.digits(context, u.info.versionName))
+                    is UpdateState.Ready -> stringResource(R.string.update_available_sub, Formats.digits(context, u.info.versionName))
+                    else -> stringResource(R.string.more_version, Formats.digits(context, BuildConfig.VERSION_NAME))
                 },
-                subtitle = stringResource(R.string.more_version, Formats.digits(context, BuildConfig.VERSION_NAME)),
                 hue = Hue.NIGHT,
             )
         }

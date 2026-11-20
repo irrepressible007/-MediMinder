@@ -352,7 +352,6 @@
     <string name="more_version">Version %1$s</string>
     <string name="update_checking">Checking for updates…</string>
     <string name="update_latest">You have the latest version.</string>
-    <string name="update_failed">Could not check for updates: %1$s</string>
 
     <!-- Statistics -->
     <string name="stats_title">My report</string>
@@ -619,9 +618,27 @@
     <string name="backup_cannot_write">Could not write the file. Please choose another place.</string>
     <string name="backup_cannot_read">Could not read the file.</string>
     <string name="update_check_failed">Could not check for updates. Please check the internet and try again.</string>
-    <string name="update_downloading_title">Downloading the MediMinder update</string>
-    <string name="update_downloading_body">Version %1$s</string>
-    <string name="update_downloading">Downloading the update… you will be asked to install it.</string>
+    <string name="update_downloading_title">Downloading the update</string>
+    <string name="update_downloading">You can keep using the app. We\'ll ask you to install when it\'s done.</string>
     <string name="update_download_failed">The update could not be downloaded. Please check the internet and try again.</string>
     <string name="update_install_failed">The update could not be installed. Please try again.</string>
+    <string name="update_ready_title">A new version is ready</string>
+    <string name="update_ready_body">MediMinder %1$s is ready. Updating keeps your medicines, history and reminders exactly as they are.</string>
+    <string name="update_size">Download size: about %1$s MB</string>
+    <string name="update_whats_new">What\'s new</string>
+    <string name="update_now">Update now</string>
+    <string name="update_later">Later</string>
+    <string name="update_percent">%1$s%% done</string>
+    <string name="update_keep_using">Keep using the app</string>
+    <string name="update_install_title">Ready to install</string>
+    <string name="update_install_body">Tap Install. Android will ask you to confirm once.</string>
+    <string name="update_install">Install</string>
+    <string name="update_permission_title">One-time permission</string>
+    <string name="update_permission_body">To install updates, Android needs your permission once. On the next screen, turn on “Allow from this source”, then come back here.</string>
+    <string name="update_open_settings">Open settings</string>
+    <string name="update_up_to_date_title">You\'re up to date</string>
+    <string name="update_problem_title">Couldn\'t update</string>
+    <string name="update_try_again">Try again</string>
+    <string name="update_available_sub">Update ready: %1$s — tap to install</string>
+    <string name="action_ok">OK</string>
 </resources>
