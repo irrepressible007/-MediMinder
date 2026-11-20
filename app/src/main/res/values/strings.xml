@@ -647,4 +647,9 @@
     <string name="problem_log_hint">If something goes wrong, MediMinder notes it here. Share the log with whoever helps you with the app.</string>
     <string name="problem_log_share">Share the problem log</string>
     <string name="problem_log_clear">Clear the log</string>
+    <string name="editor_discard_title">Stop adding this medicine?</string>
+    <string name="appt_discard_title">Stop adding this visit?</string>
+    <string name="discard_body">What you entered so far will not be saved.</string>
+    <string name="action_discard">Discard</string>
+    <string name="action_keep_going">Keep going</string>
 </resources>

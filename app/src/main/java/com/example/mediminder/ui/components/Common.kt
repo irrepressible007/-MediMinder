@@ -1,5 +1,7 @@
 package com.example.mediminder.ui.components
 
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.material.icons.filled.Close
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.Context
@@ -137,6 +139,8 @@ fun AppTopBar(
     title: String,
     onBack: (() -> Unit)?,
     subtitle: String? = null,
+    /** Task flows (adding a medicine or a visit) show a labelled "✕ Cancel" instead of the back arrow. */
+    cancel: Boolean = false,
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     TopAppBar(
@@ -147,7 +151,13 @@ fun AppTopBar(
             }
         },
         navigationIcon = {
-            if (onBack != null) {
+            if (onBack != null && cancel) {
+                TextButton(onClick = onBack, modifier = Modifier.heightIn(min = 48.dp).padding(start = 4.dp)) {
+                    Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(24.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(stringResource(R.string.action_cancel), style = MaterialTheme.typography.labelLarge)
+                }
+            } else if (onBack != null) {
                 IconButton(onClick = onBack, modifier = Modifier.size(56.dp)) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back), modifier = Modifier.size(28.dp))
                 }
@@ -696,7 +706,14 @@ fun EmptyState(
     action: (@Composable () -> Unit)? = null,
 ) {
     Column(modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        if (art != null) AnimatedArt(art, hue) else SpotIllustration(icon, hue)
+        // Short screens (small phones, landscape) get a smaller picture so the action stays in view
+        val tall = LocalConfiguration.current.screenHeightDp
+        val pictureSize = when {
+            tall < 640 -> 112.dp
+            tall < 760 -> 144.dp
+            else -> 176.dp
+        }
+        if (art != null) AnimatedArt(art, hue, size = pictureSize) else SpotIllustration(icon, hue, size = pictureSize * 0.8f)
         Spacer(Modifier.size(16.dp))
         Text(title, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
         Spacer(Modifier.size(8.dp))
@@ -706,6 +723,26 @@ fun EmptyState(
             action()
         }
     }
+}
+
+/** "Stop adding this …?" — leaving a half-filled task flow. Discard is the destructive choice. */
+@Composable
+fun DiscardDialog(title: String, onDiscard: () -> Unit, onKeep: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onKeep,
+        title = { Text(title, style = MaterialTheme.typography.headlineSmall) },
+        text = { Text(stringResource(R.string.discard_body), style = MaterialTheme.typography.bodyLarge) },
+        confirmButton = {
+            TextButton(onClick = onDiscard, modifier = Modifier.heightIn(min = 48.dp)) {
+                Text(stringResource(R.string.action_discard), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.error)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onKeep, modifier = Modifier.heightIn(min = 48.dp)) {
+                Text(stringResource(R.string.action_keep_going), style = MaterialTheme.typography.labelLarge)
+            }
+        },
+    )
 }
 
 @Composable

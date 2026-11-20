@@ -111,7 +111,8 @@ fun MediMinderTheme(
     CompositionLocalProvider(
         LocalStatusColors provides if (darkTheme) DarkStatusColors else LightStatusColors,
         LocalDarkTheme provides darkTheme,
-        LocalDensity provides Density(density.density, density.fontScale * textScale),
+        // Bigger text on top of the phone's own setting, capped at 2x so layouts never break
+        LocalDensity provides Density(density.density, (density.fontScale * textScale).coerceAtMost(2f)),
     ) {
         MaterialTheme(
             colorScheme = if (darkTheme) DarkColors else LightColors,

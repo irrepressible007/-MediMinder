@@ -1,5 +1,20 @@
 package com.example.mediminder.ui
 
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
+import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.NavigationRailItemDefaults
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.LocalContext
 import com.example.mediminder.ui.components.UpdateDialogHost
 import com.example.mediminder.updater.Updater
@@ -163,8 +178,10 @@ fun MainNavigation(
             .togetherWith(slideOutHorizontally(tween(Motion.MEDIUM)) { it / 3 } + fadeOut(tween(Motion.SHORT)))
     }
 
-    Box(Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
     NavDisplay(
+        // On wide screens the app keeps a readable width, centred
+        modifier = Modifier.widthIn(max = 840.dp).fillMaxSize(),
         backStack = backStack,
         onBack = { back() },
         transitionSpec = { forward() },
@@ -238,7 +255,8 @@ fun MainNavigation(
             entry<HistoryKey> { key -> HistoryScreen(medicationId = key.medicationId, onBack = ::back) }
         },
     )
-    FeedbackHost(Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp))
+    // Below the top bar, so the banner never covers Back or Cancel (even with very large text)
+    FeedbackHost(Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(top = 68.dp, start = 16.dp, end = 16.dp))
     UpdateDialogHost()
     }
 }
@@ -249,78 +267,129 @@ private fun HomeScaffold(tab: HomeTab, onTab: (HomeTab) -> Unit, open: (NavKey) 
     val appContext = LocalContext.current.applicationContext
     // A newer version on GitHub is recommended automatically (at most every 12 hours)
     LaunchedEffect(Unit) { Updater.checkOnLaunch(appContext) }
-    Scaffold(
-        bottomBar = {
-            NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) {
-                HomeTab.entries.forEach { t ->
-                    val (icon, label) = when (t) {
-                        HomeTab.TODAY -> Icons.Default.Today to R.string.tab_today
-                        HomeTab.MEDICINES -> Icons.Default.Medication to R.string.tab_medicines
-                        HomeTab.APPOINTMENTS -> Icons.Default.CalendarMonth to R.string.tab_appointments
-                        HomeTab.MORE -> Icons.Default.MoreHoriz to R.string.tab_more
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        // Phones: tabs along the bottom. Wide screens (tablets, foldables, landscape): a side rail.
+        val wide = maxWidth >= 600.dp
+        Scaffold(bottomBar = { if (!wide) BottomTabs(tab, onTab) }) { padding ->
+            Row(Modifier.fillMaxSize().padding(padding)) {
+                if (wide) SideTabs(tab, onTab)
+                AnimatedContent(
+                    targetState = tab,
+                    modifier = Modifier.weight(1f).fillMaxHeight(),
+                    transitionSpec = {
+                        if (reduceMotion) EnterTransition.None togetherWith ExitTransition.None
+                        else {
+                            val dir = if (targetState.ordinal > initialState.ordinal) 1 else -1
+                            (slideInHorizontally(tween(Motion.MEDIUM, easing = FastOutSlowInEasing)) { dir * it / 6 } + fadeIn(tween(Motion.MEDIUM)))
+                                .togetherWith(slideOutHorizontally(tween(Motion.SHORT)) { -dir * it / 10 } + fadeOut(tween(Motion.SHORT)))
+                        }
+                    },
+                    label = "tabs",
+                ) { tab ->
+                    val modifier = Modifier.fillMaxSize()
+                    when (tab) {
+                        HomeTab.TODAY -> TodayScreen(
+                            modifier = modifier,
+                            onAddMedicine = { open(MedicineEditor()) },
+                            onOpenMedicine = { open(MedicineDetail(it)) },
+                            onOpenRefills = { open(RefillList) },
+                            onOpenReliability = { open(ReliabilityKey) },
+                            onOpenAppointments = { onTab(HomeTab.APPOINTMENTS) },
+                        )
+                        HomeTab.MEDICINES -> MedicinesScreen(
+                            modifier = modifier,
+                            onAdd = { open(MedicineEditor()) },
+                            onOpen = { open(MedicineDetail(it)) },
+                            onOpenRefills = { open(RefillList) },
+                        )
+                        HomeTab.APPOINTMENTS -> AppointmentsScreen(
+                            modifier = modifier,
+                            onNew = { doctorId -> open(AppointmentEditor(doctorId = doctorId)) },
+                            onEdit = { open(AppointmentEditor(appointmentId = it)) },
+                        )
+                        HomeTab.MORE -> MoreScreen(
+                            modifier = modifier,
+                            onOpen = { open(it) },
+                        )
                     }
-                    NavigationBarItem(
-                        selected = tab == t,
-                        onClick = { onTab(t) },
-                        icon = {
-                            val hop by animateFloatAsState(
-                                if (tab == t) 1.12f else 1f,
-                                spring(dampingRatio = 0.4f, stiffness = Spring.StiffnessMediumLow),
-                                label = "tabIcon",
-                            )
-                            Icon(icon, contentDescription = null, modifier = Modifier.size(28.dp).graphicsLayer { scaleX = hop; scaleY = hop })
-                        },
-                        label = { Text(stringResource(label), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold) },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = MaterialTheme.colorScheme.onPrimary,
-                            indicatorColor = MaterialTheme.colorScheme.primary,
-                            selectedTextColor = MaterialTheme.colorScheme.primary,
-                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        ),
-                    )
                 }
             }
-        },
-    ) { padding ->
-        val modifier = Modifier.padding(padding)
-        AnimatedContent(
-            targetState = tab,
-            transitionSpec = {
-                if (reduceMotion) EnterTransition.None togetherWith ExitTransition.None
-                else {
-                    val dir = if (targetState.ordinal > initialState.ordinal) 1 else -1
-                    (slideInHorizontally(tween(Motion.MEDIUM, easing = FastOutSlowInEasing)) { dir * it / 6 } + fadeIn(tween(Motion.MEDIUM)))
-                        .togetherWith(slideOutHorizontally(tween(Motion.SHORT)) { -dir * it / 10 } + fadeOut(tween(Motion.SHORT)))
-                }
-            },
-            label = "tabs",
-        ) { tab ->
-        when (tab) {
-            HomeTab.TODAY -> TodayScreen(
-                modifier = modifier,
-                onAddMedicine = { open(MedicineEditor()) },
-                onOpenMedicine = { open(MedicineDetail(it)) },
-                onOpenRefills = { open(RefillList) },
-                onOpenReliability = { open(ReliabilityKey) },
-                onOpenAppointments = { onTab(HomeTab.APPOINTMENTS) },
-            )
-            HomeTab.MEDICINES -> MedicinesScreen(
-                modifier = modifier,
-                onAdd = { open(MedicineEditor()) },
-                onOpen = { open(MedicineDetail(it)) },
-                onOpenRefills = { open(RefillList) },
-            )
-            HomeTab.APPOINTMENTS -> AppointmentsScreen(
-                modifier = modifier,
-                onNew = { doctorId -> open(AppointmentEditor(doctorId = doctorId)) },
-                onEdit = { open(AppointmentEditor(appointmentId = it)) },
-            )
-            HomeTab.MORE -> MoreScreen(
-                modifier = modifier,
-                onOpen = { open(it) },
+        }
+    }
+}
+
+private class TabSpec(val icon: ImageVector, @StringRes val label: Int)
+
+private fun tabSpec(t: HomeTab) = when (t) {
+    HomeTab.TODAY -> TabSpec(Icons.Default.Today, R.string.tab_today)
+    HomeTab.MEDICINES -> TabSpec(Icons.Default.Medication, R.string.tab_medicines)
+    HomeTab.APPOINTMENTS -> TabSpec(Icons.Default.CalendarMonth, R.string.tab_appointments)
+    HomeTab.MORE -> TabSpec(Icons.Default.MoreHoriz, R.string.tab_more)
+}
+
+/** The chosen tab's icon gives a little hop. */
+@Composable
+private fun TabIcon(icon: ImageVector, selected: Boolean) {
+    val hop by animateFloatAsState(
+        if (selected) 1.12f else 1f,
+        spring(dampingRatio = 0.4f, stiffness = Spring.StiffnessMediumLow),
+        label = "tabIcon",
+    )
+    Icon(icon, contentDescription = null, modifier = Modifier.size(28.dp).graphicsLayer { scaleX = hop; scaleY = hop })
+}
+
+/** Tab names stop growing at 1.15x: they are short words under big icons, and must always fit. */
+@Composable
+private fun TabLabel(@StringRes label: Int) {
+    val density = LocalDensity.current
+    CompositionLocalProvider(LocalDensity provides Density(density.density, density.fontScale.coerceAtMost(1.15f))) {
+        Text(stringResource(label), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+@Composable
+private fun BottomTabs(tab: HomeTab, onTab: (HomeTab) -> Unit) {
+    NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) {
+        HomeTab.entries.forEach { t ->
+            val spec = tabSpec(t)
+            NavigationBarItem(
+                selected = tab == t,
+                onClick = { onTab(t) },
+                icon = { TabIcon(spec.icon, tab == t) },
+                label = { TabLabel(spec.label) },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = MaterialTheme.colorScheme.onPrimary,
+                    indicatorColor = MaterialTheme.colorScheme.primary,
+                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                ),
             )
         }
+    }
+}
+
+@Composable
+private fun SideTabs(tab: HomeTab, onTab: (HomeTab) -> Unit) {
+    NavigationRail(containerColor = MaterialTheme.colorScheme.surface, windowInsets = WindowInsets(0)) {
+        Spacer(Modifier.weight(1f))
+        HomeTab.entries.forEach { t ->
+            val spec = tabSpec(t)
+            NavigationRailItem(
+                selected = tab == t,
+                onClick = { onTab(t) },
+                icon = { TabIcon(spec.icon, tab == t) },
+                label = { TabLabel(spec.label) },
+                modifier = Modifier.padding(vertical = 6.dp),
+                colors = NavigationRailItemDefaults.colors(
+                    selectedIconColor = MaterialTheme.colorScheme.onPrimary,
+                    indicatorColor = MaterialTheme.colorScheme.primary,
+                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                ),
+            )
         }
+        Spacer(Modifier.weight(1f))
     }
 }

@@ -78,8 +78,8 @@ enum class Art(internal val periodMillis: Int, internal val still: Float) {
     SHIELD(3000, 0.62f),
     /** An ID card with a heartbeat line running across it. */
     HEARTBEAT(2600, 0.55f),
-    /** A weekly pill organiser whose lids open in a wave. */
-    PILLBOX(3600, 0.45f),
+    /** A blister strip with one tablet rising out — calm. */
+    BLISTER(3600, 0.5f),
     /** A heart that beats, with dots circling it. */
     HEART(3600, 0f),
     /** A phone that buzzes as a reminder slides in. */
@@ -216,7 +216,7 @@ private fun DrawScope.scene(art: Art, g: Grid, t: Float, c: ArtColors, tracer: T
     Art.TEA -> tea(g, t, c, tracer)
     Art.SHIELD -> shield(g, t, c, tracer)
     Art.HEARTBEAT -> heartbeat(g, t, c, tracer)
-    Art.PILLBOX -> pillbox(g, t, c, tracer)
+    Art.BLISTER -> blister(g, t, c, tracer)
     Art.HEART -> heartScene(g, t, c, tracer)
     Art.PHONE -> phone(g, t, c, tracer)
     Art.SEARCH -> search(g, t, c, tracer)
@@ -688,30 +688,6 @@ private fun gearPath(g: Grid, cx: Float, cy: Float, outer: Float, inner: Float, 
     close()
 }
 
-/** A weekly pill organiser: the lids open in a wave, showing a tablet in each day. */
-private fun DrawScope.pillbox(g: Grid, t: Float, c: ArtColors, tr: Tracer?) {
-    val u = g.u
-    if (tr == null) drawOval(c.shadow, topLeft = g.o(16f, 78f), size = g.s(68f, 5f))
-    part(tr, g.roundRect(14f, 50f, 72f, 28f, 5f), c.main)
-    if (tr != null) {
-        tr.trace(this, g.line(16f, 50f, 84f, 50f))
-        return
-    }
-    val w = 8.4f
-    val gap = 1.6f
-    for (i in 0 until 7) {
-        val x = 17f + i * (w + gap)
-        drawRoundRect(c.paper, topLeft = g.o(x, 53f), size = g.s(w, 15f), cornerRadius = g.r(2f))
-        val open = bump(t, 0.05f + i * 0.06f, 0.5f + i * 0.06f)
-        if (open > 0.05f) drawCircle(c.accent.copy(alpha = open), radius = 2.4f * u, center = g.o(x + w / 2f, 61f))
-        rotate(-75f * open, pivot = g.o(x, 52f)) {
-            drawRoundRect(c.main, topLeft = g.o(x - 0.4f, 47.5f), size = g.s(w + 0.8f, 5f), cornerRadius = g.r(1.6f))
-            drawRect(c.onMain.copy(alpha = 0.35f), topLeft = g.o(x + 1f, 48.6f), size = g.s(w - 2f, 1f))
-        }
-        drawCircle(c.onMain.copy(alpha = 0.8f), radius = 1.1f * u, center = g.o(x + w / 2f, 73f))
-    }
-}
-
 /** A heart that beats (lub-dub), with dots circling it and a ring on each beat. */
 private fun DrawScope.heartScene(g: Grid, t: Float, c: ArtColors, tr: Tracer?) {
     val u = g.u
@@ -1030,4 +1006,35 @@ private fun DrawScope.chart(g: Grid, t: Float, c: ArtColors, tr: Tracer?) {
     val lp = easeOut(clamp01((t - 0.5f) / 0.25f)) * fade
     drawPartial(line, lp, c.accent, 2.4f * u)
     if (lp > 0.98f) tops.forEach { drawCircle(c.accent, radius = 2f * u, center = it) }
+}
+
+/** A blister strip resting calmly; one tablet rises out and settles back. */
+private fun DrawScope.blister(g: Grid, t: Float, c: ArtColors, tr: Tracer?) {
+    val u = g.u
+    val rise = smooth(bump(t, 0.15f, 0.85f))
+    if (tr == null) drawOval(c.shadow, topLeft = g.o(22f, 76f), size = g.s(56f, 5f))
+    rotate(-8f, pivot = g.o(50f, 54f)) {
+        val strip = g.roundRect(20f, 36f, 60f, 36f, 6f)
+        part(tr, strip, c.main.copy(alpha = 0.85f))
+        if (tr != null) return@rotate
+        drawRoundRect(c.onMain.copy(alpha = 0.2f), topLeft = g.o(22f, 38f), size = g.s(56f, 3f), cornerRadius = g.r(1.5f))
+        for (row in 0..1) for (col in 0..3) {
+            val x = 29f + col * 14f
+            val y = 47f + row * 15f
+            drawCircle(c.paper.copy(alpha = 0.92f), radius = 5.4f * u, center = g.o(x, y))
+            val moving = row == 0 && col == 2
+            if (!moving) drawCircle(c.main.copy(alpha = 0.3f), radius = 3.4f * u, center = g.o(x, y))
+            else drawCircle(c.main.copy(alpha = 0.12f * rise), radius = 3.4f * u, center = g.o(x, y))
+        }
+    }
+    if (tr == null) {
+        // the tablet that rises out of its bubble
+        val x = 55f + 6f * rise
+        val y = 41f - 20f * rise
+        rotate(25f * rise, pivot = g.o(x, y)) {
+            drawCircle(c.accent, radius = 4.6f * u, center = g.o(x, y))
+            drawCircle(c.paper.copy(alpha = 0.45f), radius = 1.5f * u, center = g.o(x - 1.4f, y - 1.4f))
+        }
+        if (rise > 0.6f) sparkle(g.o(x + 8f, y - 6f), 3.2f * u * (rise - 0.6f) / 0.4f, c.main.copy(alpha = rise))
+    }
 }

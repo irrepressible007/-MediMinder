@@ -645,4 +645,9 @@
     <string name="problem_log_hint">কিছু ভুল হলে MediMinder এখানে লিখে রাখে। যিনি অ্যাপ নিয়ে আপনাকে সাহায্য করেন, তাঁকে তালিকাটি পাঠান।</string>
     <string name="problem_log_share">সমস্যার তালিকা পাঠান</string>
     <string name="problem_log_clear">তালিকা মুছুন</string>
+    <string name="editor_discard_title">এই ওষুধ যোগ করা বন্ধ করবেন?</string>
+    <string name="appt_discard_title">এই অ্যাপয়েন্টমেন্ট যোগ করা বন্ধ করবেন?</string>
+    <string name="discard_body">এ পর্যন্ত যা লিখেছেন তা সংরক্ষণ হবে না।</string>
+    <string name="action_discard">বাদ দিন</string>
+    <string name="action_keep_going">চালিয়ে যান</string>
 </resources>

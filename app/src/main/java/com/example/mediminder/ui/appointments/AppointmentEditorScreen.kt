@@ -1,5 +1,7 @@
 package com.example.mediminder.ui.appointments
 
+import androidx.activity.compose.BackHandler
+import com.example.mediminder.ui.components.DiscardDialog
 import com.example.mediminder.ui.components.AnimatedArt
 import com.example.mediminder.ui.components.Art
 import com.example.mediminder.ui.theme.Hue
@@ -185,6 +187,13 @@ fun AppointmentEditorScreen(appointmentId: Long, doctorId: Long, onBack: () -> U
     val doctors by viewModel.doctors.collectAsState()
     val context = LocalContext.current
     LaunchedEffect(f.done) { if (f.done) onBack() }
+    // Leaving a new visit that was started asks first
+    val started = appointmentId == 0L && f.doctorName.isNotBlank() && !f.done
+    var confirmLeave by remember { mutableStateOf(false) }
+    BackHandler(enabled = started) { confirmLeave = true }
+    if (confirmLeave) {
+        DiscardDialog(stringResource(R.string.appt_discard_title), onDiscard = { confirmLeave = false; onBack() }, onKeep = { confirmLeave = false })
+    }
     var confirmDelete by remember { mutableStateOf(false) }
     if (confirmDelete) {
         ConfirmDialog(
@@ -199,7 +208,13 @@ fun AppointmentEditorScreen(appointmentId: Long, doctorId: Long, onBack: () -> U
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        topBar = { AppTopBar(title = stringResource(if (appointmentId == 0L) R.string.appt_new else R.string.appt_edit), onBack = onBack) },
+        topBar = {
+            AppTopBar(
+                title = stringResource(if (appointmentId == 0L) R.string.appt_new else R.string.appt_edit),
+                onBack = { if (started) confirmLeave = true else onBack() },
+                cancel = true,
+            )
+        },
         bottomBar = {
             PrimaryButton(
                 text = stringResource(R.string.action_save_appointment),

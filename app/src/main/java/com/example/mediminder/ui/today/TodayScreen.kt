@@ -246,7 +246,7 @@ fun TodayScreen(
                         title = stringResource(R.string.today_empty_title),
                         body = stringResource(R.string.today_empty_body),
                         hue = Hue.CORAL,
-                        art = Art.PILLBOX,
+                        art = Art.PILLS,
                     ) { PrimaryButton(stringResource(R.string.action_add_medicine), onAddMedicine, icon = Icons.Default.Add) }
                 }
                 return@LazyColumn

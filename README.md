@@ -45,7 +45,11 @@ hard to make sure every alarm goes off.
 - Large text with a Text size setting, big touch targets, plain words, and high-contrast colours
   (WCAG AA).
 - One tap for *Taken*, with **Undo** for a slip of the thumb, plus a countdown to the next dose.
+- Multi-step tasks such as adding a medicine have a labelled **Cancel** that asks before discarding
+  anything typed.
 - Photos of the medicine's own box or strip, shown in reminders and alarms.
+- Works on any screen: small phones from 320 dp wide, large phones, foldables and tablets (with a
+  side rail on wide screens), in portrait or landscape, with text up to twice the normal size.
 
 **Everything around the medicines**
 - Medicine history, kept even after a medicine is deleted, and a report of doses taken to share

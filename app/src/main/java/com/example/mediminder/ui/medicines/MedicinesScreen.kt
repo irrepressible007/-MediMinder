@@ -122,7 +122,7 @@ fun MedicinesScreen(
                         title = stringResource(R.string.medicines_empty_title),
                         body = stringResource(R.string.medicines_empty_body),
                         hue = Hue.CORAL,
-                        art = Art.PILLS,
+                        art = Art.BLISTER,
                     )
                 }
                 return@LazyColumn

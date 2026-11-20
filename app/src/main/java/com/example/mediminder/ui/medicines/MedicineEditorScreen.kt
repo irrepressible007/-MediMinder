@@ -1,5 +1,8 @@
 package com.example.mediminder.ui.medicines
 
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.runtime.remember
+import com.example.mediminder.ui.components.DiscardDialog
 import com.example.mediminder.ui.components.AnimatedArt
 import com.example.mediminder.ui.components.Art
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -167,6 +170,13 @@ fun MedicineEditorScreen(
     }
     var step by rememberSaveable { mutableIntStateOf(0) }
     BackHandler(enabled = step > 0) { step-- }
+    // Leaving a new medicine that was started asks first, so nothing is lost by a slip
+    val started = s.isNew && (step > 0 || s.nameConfirmed || s.query.isNotBlank())
+    var confirmLeave by remember { mutableStateOf(false) }
+    BackHandler(enabled = step == 0 && started) { confirmLeave = true }
+    if (confirmLeave) {
+        DiscardDialog(stringResource(R.string.editor_discard_title), onDiscard = { confirmLeave = false; onBack() }, onKeep = { confirmLeave = false })
+    }
 
     val canGoOn = when (step) {
         0 -> s.nameConfirmed || s.query.isNotBlank()
@@ -185,7 +195,8 @@ fun MedicineEditorScreen(
                 AppTopBar(
                     title = stringResource(if (s.isNew) R.string.editor_title_new else R.string.editor_title_edit),
                     subtitle = stringResource(R.string.wiz_step, Formats.number(context, step + 1), Formats.number(context, STEPS)),
-                    onBack = onBack,
+                    onBack = { if (started) confirmLeave = true else onBack() },
+                    cancel = true,
                     actions = {
                         if (!s.isNew) {
                             TextButton(onClick = viewModel::save, enabled = !s.saving, modifier = Modifier.heightIn(min = 48.dp)) {
@@ -256,8 +267,11 @@ fun MedicineEditorScreen(
 private fun StepTitle(title: String, body: String? = null, art: Art, hue: Hue) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            AnimatedArt(art, hue, size = 76.dp)
-            Spacer(Modifier.width(10.dp))
+            // very short screens (a phone on its side) keep the room for the choices
+            if (LocalConfiguration.current.screenHeightDp >= 480) {
+                AnimatedArt(art, hue, size = 76.dp)
+                Spacer(Modifier.width(10.dp))
+            }
             Text(title, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
         }
         body?.let { Text(it, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant) }

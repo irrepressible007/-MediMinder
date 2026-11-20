@@ -104,7 +104,8 @@ class AppSmokeTest {
         waitForText(text(R.string.appt_title))
         compose.onNodeWithText(text(R.string.action_new_appointment)).performClick()
         waitForText(text(R.string.appt_which_doctor))
-        compose.onNodeWithContentDescription(text(R.string.cd_back)).performClick()
+        // task flows leave through a labelled Cancel (nothing entered, so no "discard?" question)
+        compose.onNodeWithText(text(R.string.action_cancel)).performClick()
 
         compose.onNodeWithText(text(R.string.tab_more)).performClick()
         for ((entry, screenText) in listOf(
