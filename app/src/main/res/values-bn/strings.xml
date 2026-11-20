@@ -639,4 +639,10 @@
     <string name="update_try_again">আবার চেষ্টা করুন</string>
     <string name="update_available_sub">আপডেট এসেছে: %1$s — ইনস্টল করতে চাপুন</string>
     <string name="action_ok">ঠিক আছে</string>
+    <string name="problem_log_title">সমস্যার তালিকা</string>
+    <string name="problem_log_none">কোনো সমস্যা ধরা পড়েনি। সব ঠিকঠাক চলছে।</string>
+    <string name="problem_log_some">%1$sটি সমস্যা ধরা পড়েছে, সর্বশেষটি %2$s-এ।</string>
+    <string name="problem_log_hint">কিছু ভুল হলে MediMinder এখানে লিখে রাখে। যিনি অ্যাপ নিয়ে আপনাকে সাহায্য করেন, তাঁকে তালিকাটি পাঠান।</string>
+    <string name="problem_log_share">সমস্যার তালিকা পাঠান</string>
+    <string name="problem_log_clear">তালিকা মুছুন</string>
 </resources>

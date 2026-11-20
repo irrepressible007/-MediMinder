@@ -1,5 +1,6 @@
 package com.example.mediminder.ui.photos
 
+import com.example.mediminder.util.ErrorLog
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
@@ -123,8 +124,8 @@ fun CameraView(capture: ImageCapture?, analyzer: ImageAnalysis.Analyzer?, modifi
                 try {
                     bind(preview, analysis, capture)
                 } catch (e: Exception) {
-                    Log.w("CameraView", "All use cases at once failed; trying without the photo", e)
-                    runCatching { bind(preview, analysis ?: capture) }.onFailure { Log.e("CameraView", "Camera binding failed", it) }
+                    ErrorLog.record("Camera", "All camera uses at once failed; trying without the photo", e)
+                    runCatching { bind(preview, analysis ?: capture) }.onFailure { ErrorLog.record("Camera", "The camera could not start", it) }
                 }
             }, ContextCompat.getMainExecutor(ctx))
             previewView
@@ -143,7 +144,7 @@ suspend fun ImageCapture.takeUprightPhoto(context: Context): Bitmap? = suspendCa
                     if (degrees == 0) raw
                     else Bitmap.createBitmap(raw, 0, 0, raw.width, raw.height, Matrix().apply { postRotate(degrees.toFloat()) }, true)
                 } catch (e: Exception) {
-                    Log.w("CameraView", "Could not read the photo", e)
+                    ErrorLog.record("Camera", "Could not read the photo", e)
                     null
                 } finally {
                     image.close()
@@ -152,7 +153,7 @@ suspend fun ImageCapture.takeUprightPhoto(context: Context): Bitmap? = suspendCa
             }
 
             override fun onError(exception: ImageCaptureException) {
-                Log.w("CameraView", "Photo failed", exception)
+                ErrorLog.record("Camera", "Taking the photo failed", exception)
                 if (cont.isActive) cont.resume(null)
             }
         })

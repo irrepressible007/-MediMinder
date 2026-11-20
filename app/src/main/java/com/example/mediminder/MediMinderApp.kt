@@ -1,5 +1,6 @@
 package com.example.mediminder
 
+import com.example.mediminder.util.ErrorLog
 import android.app.Application
 import android.os.Build
 import androidx.appcompat.app.AppCompatDelegate
@@ -17,6 +18,7 @@ class MediMinderApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        ErrorLog.init(this)
         syncLanguage()
         notifier.ensureChannels()
         SafetyNetWorker.ensureScheduled(this)

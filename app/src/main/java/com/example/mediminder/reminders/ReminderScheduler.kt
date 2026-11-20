@@ -1,5 +1,6 @@
 package com.example.mediminder.reminders
 
+import com.example.mediminder.util.ErrorLog
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
@@ -112,7 +113,7 @@ class ReminderScheduler @Inject constructor(
                 else -> alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, operation)
             }
         } catch (e: SecurityException) {
-            Log.w(TAG, "Exact alarm refused, falling back to inexact", e)
+            ErrorLog.record("Reminders", "Exact alarm refused, falling back to inexact", e)
             alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, operation)
         }
     }

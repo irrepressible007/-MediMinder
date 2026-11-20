@@ -641,4 +641,10 @@
     <string name="update_try_again">Try again</string>
     <string name="update_available_sub">Update ready: %1$s — tap to install</string>
     <string name="action_ok">OK</string>
+    <string name="problem_log_title">Problem log</string>
+    <string name="problem_log_none">No problems recorded. Everything is working.</string>
+    <string name="problem_log_some">%1$s problems recorded, the latest on %2$s.</string>
+    <string name="problem_log_hint">If something goes wrong, MediMinder notes it here. Share the log with whoever helps you with the app.</string>
+    <string name="problem_log_share">Share the problem log</string>
+    <string name="problem_log_clear">Clear the log</string>
 </resources>

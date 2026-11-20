@@ -1,5 +1,6 @@
 package com.example.mediminder.reminders
 
+import com.example.mediminder.util.ErrorLog
 import android.app.AlarmManager
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -43,7 +44,7 @@ internal fun BroadcastReceiver.runAsync(block: suspend () -> Unit) {
             // Receivers get ~10 s; stay well inside that
             withTimeout(8_000) { block() }
         } catch (t: Throwable) {
-            Log.e("MediMinder", "Background work failed", t)
+            ErrorLog.record("Reminders", "Background work failed", t)
         } finally {
             pending.finish()
         }

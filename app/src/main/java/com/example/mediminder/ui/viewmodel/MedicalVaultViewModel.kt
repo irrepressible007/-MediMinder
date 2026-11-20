@@ -57,7 +57,7 @@ class MedicalVaultViewModel @Inject constructor(
                     vaultItemDao.insert(newItem)
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                com.example.mediminder.util.ErrorLog.record("Documents", "Could not save or remove a document", e)
             }
         }
     }
@@ -71,7 +71,7 @@ class MedicalVaultViewModel @Inject constructor(
                 }
                 vaultItemDao.delete(item)
             } catch (e: Exception) {
-                e.printStackTrace()
+                com.example.mediminder.util.ErrorLog.record("Documents", "Could not save or remove a document", e)
             }
         }
     }

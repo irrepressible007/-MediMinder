@@ -1,5 +1,6 @@
 package com.example.mediminder.data.photos
 
+import com.example.mediminder.util.ErrorLog
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -66,7 +67,7 @@ object MedicinePhotos {
             val bitmap = decode({ context.contentResolver.openInputStream(uri) }, MAX_SIDE) ?: return@withContext null
             save(context, bitmap).also { bitmap.recycle() }
         } catch (e: Exception) {
-            Log.w(TAG, "Could not import $uri", e)
+            ErrorLog.record("Photos", "Could not import a gallery picture", e)
             null
         }
     }
@@ -122,7 +123,7 @@ object MedicinePhotos {
             if (upright !== bitmap) bitmap.recycle()
             return upright
         } catch (e: Exception) {
-            Log.w(TAG, "Could not decode photo", e)
+            ErrorLog.record("Photos", "Could not decode a photo", e)
             return null
         } catch (e: OutOfMemoryError) {
             return null

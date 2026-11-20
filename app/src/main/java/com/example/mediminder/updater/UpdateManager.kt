@@ -1,5 +1,6 @@
 package com.example.mediminder.updater
 
+import com.example.mediminder.util.ErrorLog
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -92,7 +93,7 @@ object Updater {
         if (System.currentTimeMillis() - prefs.getLong("lastCheck", 0) < CHECK_EVERY) return
         if (_state.value !is UpdateState.Idle && _state.value !is UpdateState.UpToDate) return
         scope.launch {
-            val info = runCatching { fetchLatest() }.onFailure { Log.w(TAG, "Update check failed", it) }.getOrNull() ?: return@launch
+            val info = runCatching { fetchLatest() }.onFailure { ErrorLog.record("Update", "Automatic update check failed", it) }.getOrNull() ?: return@launch
             prefs.edit().putLong("lastCheck", System.currentTimeMillis()).apply()
             if (!isUpdate(info, BuildConfig.VERSION_CODE, BuildConfig.VERSION_NAME)) return@launch
             _state.value = UpdateState.Available(info)
@@ -114,7 +115,7 @@ object Updater {
                 val info = fetchLatest()
                 if (isUpdate(info, BuildConfig.VERSION_CODE, BuildConfig.VERSION_NAME)) UpdateState.Available(info) else UpdateState.UpToDate
             } catch (e: Exception) {
-                Log.w(TAG, "Update check failed", e)
+                ErrorLog.record("Update", "Update check failed", e)
                 UpdateState.Failed(null, R.string.update_check_failed)
             }
         }
@@ -150,7 +151,7 @@ object Updater {
                 _dialog.value = true
                 UpdateState.Ready(info, apk)
             } catch (e: Exception) {
-                Log.w(TAG, "Update download failed", e)
+                ErrorLog.record("Update", "Update download failed", e)
                 part.delete()
                 UpdateState.Failed(info, R.string.update_download_failed)
             }
@@ -176,7 +177,7 @@ object Updater {
             )
             _state.value = ready.copy(needsPermission = false)
         } catch (e: Exception) {
-            Log.w(TAG, "Could not open the installer", e)
+            ErrorLog.record("Update", "Could not open the installer", e)
             _state.value = UpdateState.Failed(ready.info, R.string.update_install_failed)
         }
     }

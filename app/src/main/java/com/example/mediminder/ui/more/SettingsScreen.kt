@@ -1,5 +1,11 @@
 package com.example.mediminder.ui.more
 
+import android.content.Intent
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Share
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import com.example.mediminder.util.ErrorLog
 import com.example.mediminder.ui.components.AnimatedArt
 import com.example.mediminder.ui.components.Art
 import com.example.mediminder.ui.theme.Hue
@@ -138,6 +144,7 @@ fun SettingsScreen(onBack: () -> Unit, onOpenReliability: () -> Unit, viewModel:
             } catch (e: BackupException) {
                 Toast.makeText(context, resources.getString(e.reason), Toast.LENGTH_LONG).show()
             } catch (e: Exception) {
+                ErrorLog.record("Backup", "Saving the backup failed", e)
                 Toast.makeText(context, resources.getString(R.string.backup_failed), Toast.LENGTH_LONG).show()
             }
         }
@@ -158,6 +165,7 @@ fun SettingsScreen(onBack: () -> Unit, onOpenReliability: () -> Unit, viewModel:
                     } catch (e: BackupException) {
                         Toast.makeText(context, resources.getString(e.reason), Toast.LENGTH_LONG).show()
                     } catch (e: Exception) {
+                        ErrorLog.record("Backup", "Restoring failed", e)
                         Toast.makeText(context, resources.getString(R.string.restore_failed), Toast.LENGTH_LONG).show()
                     }
                 }
@@ -285,6 +293,30 @@ fun SettingsScreen(onBack: () -> Unit, onOpenReliability: () -> Unit, viewModel:
             SecondaryButton(stringResource(R.string.action_backup), onClick = { exportLauncher.launch("mediminder-backup-${LocalDate.now()}.json") }, icon = Icons.Default.CloudUpload)
             SecondaryButton(stringResource(R.string.action_restore), onClick = { importLauncher.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) }, icon = Icons.Default.Restore)
             Text(stringResource(R.string.backup_hint), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+            // ── Problem log ──
+            SectionTitle(stringResource(R.string.problem_log_title))
+            var problems by remember { mutableStateOf(ErrorLog.count()) }
+            LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { problems = ErrorLog.count() }
+            Text(
+                if (problems == 0) stringResource(R.string.problem_log_none)
+                else stringResource(R.string.problem_log_some, Formats.number(context, problems), Formats.digits(context, ErrorLog.lastAt().orEmpty())),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Text(stringResource(R.string.problem_log_hint), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (problems > 0) {
+                SecondaryButton(
+                    stringResource(R.string.problem_log_share),
+                    onClick = {
+                        val send = Intent(Intent.ACTION_SEND).setType("text/plain")
+                            .putExtra(Intent.EXTRA_SUBJECT, "MediMinder problem log")
+                            .putExtra(Intent.EXTRA_TEXT, ErrorLog.report())
+                        context.startActivity(Intent.createChooser(send, null))
+                    },
+                    icon = Icons.Default.Share,
+                )
+                QuietButton(stringResource(R.string.problem_log_clear), onClick = { ErrorLog.clear(); problems = 0 }, icon = Icons.Default.Delete)
+            }
 
             HorizontalDivider(Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
             Text(stringResource(R.string.settings_about, Formats.digits(context, BuildConfig.VERSION_NAME)), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)

@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
   alias(libs.plugins.android.application)
   alias(libs.plugins.kotlin.android)
@@ -7,6 +9,14 @@ plugins {
   alias(libs.plugins.hilt)
 }
 
+val signingProperties = Properties().apply {
+    rootProject.file("keystore.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
+}
+
+/** A signing value from the environment (CI) or keystore.properties (local), else null. */
+fun signingSetting(property: String, env: String): String? =
+    System.getenv(env)?.takeIf { it.isNotBlank() } ?: signingProperties.getProperty(property)?.takeIf { it.isNotBlank() }
+
 android {
     namespace = "com.example.mediminder"
     compileSdk = 36
@@ -14,26 +24,29 @@ android {
         applicationId = "com.example.mediminder"
         minSdk = 24
         targetSdk = 36
-        versionCode = 27
-        versionName = "1.0.4"
+        versionCode = 28
+        versionName = "1.0.5"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Real phones are ARM; the x86 copies of the scanner's native code (22 MB) only serve emulators
         ndk { abiFilters += listOf("armeabi-v7a", "arm64-v8a") }
     }
 
+    // Release signing never lives in this repository: it comes from environment variables (the
+    // release workflow) or a git-ignored keystore.properties (a developer's PC). Without either,
+    // release builds are simply unsigned. tools/sign_release.py then adds the key rotation.
     signingConfigs {
         create("release") {
-            storeFile = file(System.getenv("KEYSTORE_PATH") ?: rootProject.file("mediminder-release.jks").absolutePath)
-            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "mediminder123"
-            keyAlias = System.getenv("KEY_ALIAS") ?: "mediminder"
-            keyPassword = System.getenv("KEY_PASSWORD") ?: "mediminder123"
+            signingSetting("storeFile", "KEYSTORE_PATH")?.let { storeFile = file(it) }
+            storePassword = signingSetting("storePassword", "KEYSTORE_PASSWORD")
+            keyAlias = signingSetting("keyAlias", "KEY_ALIAS")
+            keyPassword = signingSetting("keyPassword", "KEY_PASSWORD")
         }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig = if (signingSetting("storeFile", "KEYSTORE_PATH") != null) signingConfigs.getByName("release") else null
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }

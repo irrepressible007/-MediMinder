@@ -27,18 +27,33 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Decode Keystore
+      - name: Decode signing keys
         run: |
-          echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 --decode > $GITHUB_WORKSPACE/mediminder-release.jks
+          echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 --decode > $RUNNER_TEMP/old.jks
+          echo "${{ secrets.NEW_KEYSTORE_BASE64 }}" | base64 --decode > $RUNNER_TEMP/new.jks
+          echo "${{ secrets.SIGNING_LINEAGE_BASE64 }}" | base64 --decode > $RUNNER_TEMP/lineage.bin
 
       - name: Build Release APK
         run: ./gradlew assembleRelease --stacktrace
         env:
-          KEYSTORE_PATH: ${{ github.workspace }}/mediminder-release.jks
+          KEYSTORE_PATH: ${{ runner.temp }}/old.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           
+      # Android key rotation: the old key (Android 7-8, and the anchor) hands over to the new one
+      - name: Sign with key rotation
+        run: python3 tools/sign_release.py app/build/outputs/apk/release/app-release.apk
+        env:
+          KEYSTORE_PATH: ${{ runner.temp }}/old.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          NEW_KEYSTORE_PATH: ${{ runner.temp }}/new.jks
+          NEW_KEYSTORE_PASSWORD: ${{ secrets.NEW_KEYSTORE_PASSWORD }}
+          NEW_KEY_ALIAS: ${{ secrets.NEW_KEY_ALIAS }}
+          SIGNING_LINEAGE_PATH: ${{ runner.temp }}/lineage.bin
+
       # The app's updater reads update.json through github.com's download links (no API, so no
       # per-address limit): a higher versionCode means "newer"; the APK is checked against this
       # size and SHA-256 before it is installed; the notes come from the tag's message.

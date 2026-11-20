@@ -91,7 +91,7 @@ private fun migrateFrom1x(db: SupportSQLiteDatabase) {
     try {
         convert1xTables(db)
     } catch (e: Exception) {
-        android.util.Log.e("MediMinderDatabase", "Could not convert 1.x data, starting fresh", e)
+        com.example.mediminder.util.ErrorLog.record("Database", "Could not convert 1.x data, starting fresh", e)
         resetToSchema3(db)
     }
 }
