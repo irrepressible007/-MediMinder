@@ -1,5 +1,8 @@
 package com.example.mediminder.ui.components
 
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.PathOperation
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
@@ -75,6 +78,30 @@ enum class Art(internal val periodMillis: Int, internal val still: Float) {
     SHIELD(3000, 0.62f),
     /** An ID card with a heartbeat line running across it. */
     HEARTBEAT(2600, 0.55f),
+    /** A weekly pill organiser whose lids open in a wave. */
+    PILLBOX(3600, 0.45f),
+    /** A heart that beats, with dots circling it. */
+    HEART(3600, 0f),
+    /** A phone that buzzes as a reminder slides in. */
+    PHONE(3000, 0.45f),
+    /** A magnifying glass gliding over a medicine box. */
+    SEARCH(3200, 0.5f),
+    /** A medicine box that gets a check stamp. */
+    BOXCHECK(3000, 0.6f),
+    /** The sun sets and the moon rises. */
+    SUNMOON(4800, 0.25f),
+    /** Tablets drop into three slots, up to a limit. */
+    COUNTER(3600, 0.8f),
+    /** A stethoscope listening to a heartbeat. */
+    STETHOSCOPE(2400, 0.4f),
+    /** A gold medal that swings, with a shine. */
+    MEDAL(2800, 0.3f),
+    /** Two gears turning together. */
+    GEARS(4000, 0f),
+    /** A gift box whose lid pops open. */
+    GIFT(2600, 0.35f),
+    /** Bars that grow, with a trend line. */
+    CHART(3200, 0.8f),
 }
 
 private const val DRAW_IN_MILLIS = 1900
@@ -189,6 +216,18 @@ private fun DrawScope.scene(art: Art, g: Grid, t: Float, c: ArtColors, tracer: T
     Art.TEA -> tea(g, t, c, tracer)
     Art.SHIELD -> shield(g, t, c, tracer)
     Art.HEARTBEAT -> heartbeat(g, t, c, tracer)
+    Art.PILLBOX -> pillbox(g, t, c, tracer)
+    Art.HEART -> heartScene(g, t, c, tracer)
+    Art.PHONE -> phone(g, t, c, tracer)
+    Art.SEARCH -> search(g, t, c, tracer)
+    Art.BOXCHECK -> boxCheck(g, t, c, tracer)
+    Art.SUNMOON -> sunMoon(g, t, c, tracer)
+    Art.COUNTER -> counter(g, t, c, tracer)
+    Art.STETHOSCOPE -> stethoscope(g, t, c, tracer)
+    Art.MEDAL -> medal(g, t, c, tracer)
+    Art.GEARS -> gears(g, t, c, tracer)
+    Art.GIFT -> gift(g, t, c, tracer)
+    Art.CHART -> chart(g, t, c, tracer)
 }
 
 /** Grid units → pixels, and the shapes the scenes are made of. */
@@ -613,4 +652,382 @@ private fun DrawScope.heartbeat(g: Grid, t: Float, c: ArtColors, tr: Tracer?) {
     // the heart beats as the pen crosses the spike
     val beat = 1f + 0.22f * bump(t, 0.3f, 0.5f)
     heart(g.o(71f, 39f), 4.4f * u * beat, c.accent)
+}
+
+// ── More scenes (each place in the app has its own) ─────────────────────────
+
+private fun heartPath(center: Offset, s: Float) = Path().apply {
+    moveTo(center.x, center.y + s * 0.9f)
+    cubicTo(center.x - s * 1.5f, center.y - s * 0.1f, center.x - s * 0.9f, center.y - s * 1.3f, center.x, center.y - s * 0.45f)
+    cubicTo(center.x + s * 0.9f, center.y - s * 1.3f, center.x + s * 1.5f, center.y - s * 0.1f, center.x, center.y + s * 0.9f)
+    close()
+}
+
+private fun DrawScope.star(center: Offset, r: Float, color: Color) {
+    val p = Path()
+    for (i in 0 until 10) {
+        val a = -PI.toFloat() / 2f + i * PI.toFloat() / 5f
+        val rr = if (i % 2 == 0) r else r * 0.45f
+        val x = center.x + cos(a) * rr
+        val y = center.y + sin(a) * rr
+        if (i == 0) p.moveTo(x, y) else p.lineTo(x, y)
+    }
+    p.close()
+    drawPath(p, color)
+}
+
+private fun gearPath(g: Grid, cx: Float, cy: Float, outer: Float, inner: Float, teeth: Int) = Path().apply {
+    val n = teeth * 4
+    for (i in 0 until n) {
+        val a = TAU * i / n
+        val r = if (i % 4 == 1 || i % 4 == 2) outer else inner
+        val x = g.x(cx + cos(a) * r)
+        val y = g.y(cy + sin(a) * r)
+        if (i == 0) moveTo(x, y) else lineTo(x, y)
+    }
+    close()
+}
+
+/** A weekly pill organiser: the lids open in a wave, showing a tablet in each day. */
+private fun DrawScope.pillbox(g: Grid, t: Float, c: ArtColors, tr: Tracer?) {
+    val u = g.u
+    if (tr == null) drawOval(c.shadow, topLeft = g.o(16f, 78f), size = g.s(68f, 5f))
+    part(tr, g.roundRect(14f, 50f, 72f, 28f, 5f), c.main)
+    if (tr != null) {
+        tr.trace(this, g.line(16f, 50f, 84f, 50f))
+        return
+    }
+    val w = 8.4f
+    val gap = 1.6f
+    for (i in 0 until 7) {
+        val x = 17f + i * (w + gap)
+        drawRoundRect(c.paper, topLeft = g.o(x, 53f), size = g.s(w, 15f), cornerRadius = g.r(2f))
+        val open = bump(t, 0.05f + i * 0.06f, 0.5f + i * 0.06f)
+        if (open > 0.05f) drawCircle(c.accent.copy(alpha = open), radius = 2.4f * u, center = g.o(x + w / 2f, 61f))
+        rotate(-75f * open, pivot = g.o(x, 52f)) {
+            drawRoundRect(c.main, topLeft = g.o(x - 0.4f, 47.5f), size = g.s(w + 0.8f, 5f), cornerRadius = g.r(1.6f))
+            drawRect(c.onMain.copy(alpha = 0.35f), topLeft = g.o(x + 1f, 48.6f), size = g.s(w - 2f, 1f))
+        }
+        drawCircle(c.onMain.copy(alpha = 0.8f), radius = 1.1f * u, center = g.o(x + w / 2f, 73f))
+    }
+}
+
+/** A heart that beats (lub-dub), with dots circling it and a ring on each beat. */
+private fun DrawScope.heartScene(g: Grid, t: Float, c: ArtColors, tr: Tracer?) {
+    val u = g.u
+    val beat = maxOf(
+        maxOf(bump(t, 0.02f, 0.12f), 0.7f * bump(t, 0.14f, 0.24f)),
+        maxOf(bump(t, 0.52f, 0.62f), 0.7f * bump(t, 0.64f, 0.74f)),
+    )
+    val s = 1f + 0.09f * beat
+    if (tr == null) {
+        for (k in 0..2) {
+            val a = TAU * (k / 3f + t / 3f) - PI.toFloat() / 2f
+            drawCircle(c.main.copy(alpha = 0.5f), radius = (2f + k * 0.5f) * u, center = g.o(50f + cos(a) * 37f, 52f + sin(a) * 35f))
+        }
+        val q = clamp01((t % 0.5f) / 0.45f)
+        drawCircle(c.main.copy(alpha = (1f - q) * 0.3f), radius = (27f + 12f * q) * u, center = g.o(50f, 52f), style = Stroke(2f * u))
+    }
+    scale(s, s, pivot = g.o(50f, 52f)) {
+        part(tr, heartPath(g.o(50f, 56f), 22f * u), c.main)
+        if (tr != null) return@scale
+        drawRoundRect(c.onMain, topLeft = g.o(47f, 42f), size = g.s(6f, 18f), cornerRadius = g.r(1.5f))
+        drawRoundRect(c.onMain, topLeft = g.o(41f, 48f), size = g.s(18f, 6f), cornerRadius = g.r(1.5f))
+        drawArc(
+            c.onMain.copy(alpha = 0.35f), startAngle = 200f, sweepAngle = 55f, useCenter = false,
+            topLeft = g.o(29f, 33f), size = g.s(22f, 22f), style = Stroke(2.4f * u, cap = StrokeCap.Round),
+        )
+    }
+}
+
+/** A phone that buzzes as a reminder slides in on its screen. */
+private fun DrawScope.phone(g: Grid, t: Float, c: ArtColors, tr: Tracer?) {
+    val u = g.u
+    val buzz = bump(t, 0.12f, 0.36f)
+    val wiggle = sin(TAU * 10f * t) * 4f * buzz
+    if (tr == null && buzz > 0f) {
+        drawArc(c.main.copy(alpha = 0.6f * buzz), 150f, 60f, false, topLeft = g.o(22f, 22f), size = g.s(56f, 56f), style = Stroke(2.4f * u, cap = StrokeCap.Round))
+        drawArc(c.main.copy(alpha = 0.6f * buzz), -30f, 60f, false, topLeft = g.o(22f, 22f), size = g.s(56f, 56f), style = Stroke(2.4f * u, cap = StrokeCap.Round))
+    }
+    rotate(wiggle, pivot = g.o(50f, 50f)) {
+        part(tr, g.roundRect(34f, 18f, 32f, 64f, 6f), c.main)
+        part(tr, g.roundRect(37f, 25f, 26f, 49f, 2.5f), c.paper)
+        if (tr != null) return@rotate
+        drawRoundRect(c.onMain.copy(alpha = 0.6f), topLeft = g.o(45f, 21f), size = g.s(10f, 1.6f), cornerRadius = g.r(0.8f))
+        drawRoundRect(c.onMain.copy(alpha = 0.6f), topLeft = g.o(45f, 77.5f), size = g.s(10f, 1.6f), cornerRadius = g.r(0.8f))
+        drawRoundRect(c.main.copy(alpha = 0.2f), topLeft = g.o(41f, 44f), size = g.s(18f, 24f), cornerRadius = g.r(3f))
+        drawRoundRect(c.main.copy(alpha = 0.5f), topLeft = g.o(45f, 52f), size = g.s(10f, 5f), cornerRadius = g.r(2.5f))
+        val drop = easeOut(clamp01((t - 0.08f) / 0.18f))
+        val fade = 1f - clamp01((t - 0.85f) / 0.12f)
+        if (drop > 0f) {
+            val y = 17f + 10f * drop
+            clipRect(left = g.x(37f), top = g.y(25f), right = g.x(63f), bottom = g.y(74f)) {
+                drawRoundRect(c.soft.copy(alpha = fade), topLeft = g.o(38.5f, y), size = g.s(23f, 11f), cornerRadius = g.r(2.5f))
+                drawCircle(c.main.copy(alpha = fade), radius = 2.6f * u, center = g.o(43f, y + 5.5f))
+                drawLine(c.ink.copy(alpha = 0.35f * fade), g.o(47.5f, y + 4f), g.o(59f, y + 4f), strokeWidth = 1.6f * u, cap = StrokeCap.Round)
+                drawLine(c.ink.copy(alpha = 0.2f * fade), g.o(47.5f, y + 7.5f), g.o(55f, y + 7.5f), strokeWidth = 1.6f * u, cap = StrokeCap.Round)
+            }
+        }
+    }
+}
+
+/** A magnifying glass gliding over a medicine box; a sparkle when it finds the cross. */
+private fun DrawScope.search(g: Grid, t: Float, c: ArtColors, tr: Tracer?) {
+    val u = g.u
+    if (tr == null) drawOval(c.shadow, topLeft = g.o(22f, 76f), size = g.s(46f, 4f))
+    val box = g.roundRect(22f, 36f, 46f, 40f, 4f)
+    part(tr, box, c.paper)
+    if (tr == null) {
+        drawPath(box, c.main.copy(alpha = 0.3f), style = Stroke(1.2f * u))
+        drawRect(c.main, topLeft = g.o(22f, 44f), size = g.s(46f, 7f))
+        drawRoundRect(c.main, topLeft = g.o(41.5f, 55f), size = g.s(7f, 15f), cornerRadius = g.r(1f))
+        drawRoundRect(c.main, topLeft = g.o(37.5f, 59f), size = g.s(15f, 7f), cornerRadius = g.r(1f))
+    }
+    val x = 45f + 18f * sin(TAU * t)
+    val y = 55f + 3f * sin(TAU * 2f * t)
+    if (tr == null) drawCircle(c.soft.copy(alpha = 0.55f), radius = 10f * u, center = g.o(x, y))
+    val lens = g.circle(x, y, 11f)
+    val handle = g.line(x + 8f, y + 8f, x + 17f, y + 17f)
+    if (tr != null) {
+        tr.trace(this, lens)
+        tr.trace(this, handle)
+        return
+    }
+    drawPath(lens, c.main, style = Stroke(3.4f * u))
+    drawPath(handle, c.main, style = Stroke(5f * u, cap = StrokeCap.Round))
+    drawArc(c.paper.copy(alpha = 0.85f), 200f, 50f, false, topLeft = g.o(x - 7f, y - 7f), size = g.s(14f, 14f), style = Stroke(1.8f * u, cap = StrokeCap.Round))
+    val found = bump(t, 0.42f, 0.58f)
+    if (found > 0f) sparkle(g.o(x + 9f, y - 13f), 4.5f * u * found, c.accent.copy(alpha = found))
+}
+
+/** A medicine box that gets a check stamp — "yes, this one". */
+private fun DrawScope.boxCheck(g: Grid, t: Float, c: ArtColors, tr: Tracer?) {
+    val u = g.u
+    val fade = 1f - clamp01((t - 0.9f) / 0.1f)
+    val stamp = easeOutBack(clamp01((t - 0.15f) / 0.25f)) * fade
+    val tick = easeOut(clamp01((t - 0.35f) / 0.25f)) * fade
+    val bounce = 1f + 0.05f * bump(t, 0.15f, 0.35f)
+    if (tr == null) drawOval(c.shadow, topLeft = g.o(24f, 79f), size = g.s(58f, 5f))
+    scale(bounce, bounce, pivot = g.o(52f, 80f)) {
+        val top = Path().apply {
+            moveTo(g.x(24f), g.y(42f)); lineTo(g.x(32f), g.y(33f)); lineTo(g.x(80f), g.y(33f)); lineTo(g.x(72f), g.y(42f)); close()
+        }
+        val side = Path().apply {
+            moveTo(g.x(72f), g.y(42f)); lineTo(g.x(80f), g.y(33f)); lineTo(g.x(80f), g.y(71f)); lineTo(g.x(72f), g.y(80f)); close()
+        }
+        part(tr, top, c.main.copy(alpha = 0.75f))
+        part(tr, side, c.main.copy(alpha = 0.55f))
+        part(tr, g.rect(24f, 42f, 48f, 38f), c.main)
+        if (tr != null) return@scale
+        drawRoundRect(c.paper, topLeft = g.o(29f, 49f), size = g.s(38f, 20f), cornerRadius = g.r(2f))
+        drawLine(c.ink.copy(alpha = 0.25f), g.o(33f, 55f), g.o(58f, 55f), strokeWidth = 2.2f * u, cap = StrokeCap.Round)
+        drawLine(c.ink.copy(alpha = 0.15f), g.o(33f, 61f), g.o(51f, 61f), strokeWidth = 2.2f * u, cap = StrokeCap.Round)
+        if (stamp > 0f) {
+            scale(stamp, stamp, pivot = g.o(68f, 70f)) {
+                drawCircle(c.paper, radius = 12f * u, center = g.o(68f, 70f))
+                drawCircle(c.main, radius = 12f * u, center = g.o(68f, 70f), style = Stroke(3f * u))
+            }
+            val tickPath = Path().apply { moveTo(g.x(62f), g.y(70f)); lineTo(g.x(66.5f), g.y(74.5f)); lineTo(g.x(74.5f), g.y(65.5f)) }
+            drawPartial(tickPath, tick, c.main, 3.6f * u)
+        }
+    }
+}
+
+/** The sun crosses the sky and sets; the moon rises and the stars come out. */
+private fun DrawScope.sunMoon(g: Grid, t: Float, c: ArtColors, tr: Tracer?) {
+    val u = g.u
+    val half = (t * 2f) % 1f
+    val isSun = t < 0.5f
+    val a = PI.toFloat() * (1f - half)
+    val cx = 50f + cos(a) * 30f
+    val cy = 66f - sin(a) * 36f
+    val hill = Path().apply {
+        moveTo(g.x(8f), g.y(70f))
+        cubicTo(g.x(30f), g.y(60f), g.x(70f), g.y(60f), g.x(92f), g.y(70f))
+        lineTo(g.x(92f), g.y(96f)); lineTo(g.x(8f), g.y(96f)); close()
+    }
+    val backdrop = g.circle(50f, 52f, 44f)
+    if (tr != null) {
+        tr.trace(this, g.circle(cx, cy, 9f))
+        clipPath(backdrop) { tr.trace(this, hill) }
+        return
+    }
+    if (!isSun) {
+        val night = bump(half, 0f, 1f)
+        listOf(30f to 30f, 42f to 22f, 66f to 26f, 74f to 42f, 24f to 46f).forEachIndexed { i, (x, y) ->
+            val tw = 0.4f + 0.6f * (0.5f + 0.5f * sin(TAU * (t * 3f + i * 0.2f)))
+            drawCircle(c.main.copy(alpha = 0.7f * tw * night), radius = 1.4f * u, center = g.o(x, y))
+        }
+        val disc = g.circle(cx, cy, 9f)
+        val bite = g.circle(cx + 4.5f, cy - 3f, 8f)
+        drawPath(Path.combine(PathOperation.Difference, disc, bite), c.main)
+    } else {
+        val sun = Color(0xFFFFB547)
+        drawCircle(sun.copy(alpha = 0.3f), radius = 13f * u, center = g.o(cx, cy))
+        drawCircle(sun, radius = 9f * u, center = g.o(cx, cy))
+    }
+    clipPath(backdrop) { drawPath(hill, lerp(c.soft, c.main, 0.45f)) }
+}
+
+/** Tablets drop into three slots, then the day's limit bar fills and glows. */
+private fun DrawScope.counter(g: Grid, t: Float, c: ArtColors, tr: Tracer?) {
+    val u = g.u
+    val fade = 1f - clamp01((t - 0.9f) / 0.1f)
+    if (tr == null) drawOval(c.shadow, topLeft = g.o(22f, 76f), size = g.s(56f, 4f))
+    val card = g.roundRect(20f, 32f, 60f, 42f, 6f)
+    part(tr, card, c.paper)
+    val xs = listOf(34f, 50f, 66f)
+    xs.forEach { x ->
+        val ring = g.circle(x, 48f, 7f)
+        if (tr != null) tr.trace(this, ring) else drawPath(ring, c.main.copy(alpha = 0.35f), style = Stroke(1.8f * u))
+    }
+    if (tr != null) return
+    drawPath(card, c.main.copy(alpha = 0.3f), style = Stroke(1.2f * u))
+    xs.forEachIndexed { i, x ->
+        val land = clamp01((t - 0.08f - i * 0.17f) / 0.14f)
+        if (land > 0f) {
+            val y = 48f - 20f * (1f - easeOutBack(land))
+            drawCircle(c.main.copy(alpha = fade), radius = 5.6f * u, center = g.o(x, y))
+            drawCircle(c.onMain.copy(alpha = 0.35f * fade), radius = 1.6f * u, center = g.o(x - 1.8f, y - 1.8f))
+        }
+    }
+    val fill = easeOut(clamp01((t - 0.6f) / 0.18f)) * fade
+    drawRoundRect(c.main.copy(alpha = 0.18f), topLeft = g.o(28f, 62f), size = g.s(44f, 5f), cornerRadius = g.r(2.5f))
+    if (fill > 0f) drawRoundRect(c.main.copy(alpha = fade), topLeft = g.o(28f, 62f), size = g.s(44f * fill, 5f), cornerRadius = g.r(2.5f))
+    val glow = bump(t, 0.76f, 0.9f)
+    if (glow > 0f) drawRoundRect(c.main.copy(alpha = 0.3f * glow), topLeft = g.o(25f, 59f), size = g.s(50f, 11f), cornerRadius = g.r(5.5f))
+}
+
+/** A stethoscope listening: the chest piece swings, rings and a heart beat. */
+private fun DrawScope.stethoscope(g: Grid, t: Float, c: ArtColors, tr: Tracer?) {
+    val u = g.u
+    val swing = 8f * sin(TAU * t)
+    val beat = maxOf(
+        maxOf(bump(t, 0.1f, 0.2f), 0.7f * bump(t, 0.22f, 0.32f)),
+        maxOf(bump(t, 0.6f, 0.7f), 0.7f * bump(t, 0.72f, 0.82f)),
+    )
+    val tubeL = Path().apply { moveTo(g.x(34f), g.y(22f)); cubicTo(g.x(30f), g.y(40f), g.x(40f), g.y(52f), g.x(50f), g.y(54f)) }
+    val tubeR = Path().apply { moveTo(g.x(66f), g.y(22f)); cubicTo(g.x(70f), g.y(40f), g.x(60f), g.y(52f), g.x(50f), g.y(54f)) }
+    if (tr != null) {
+        tr.trace(this, tubeL)
+        tr.trace(this, tubeR)
+    } else {
+        drawPath(tubeL, c.main, style = Stroke(3.6f * u, cap = StrokeCap.Round))
+        drawPath(tubeR, c.main, style = Stroke(3.6f * u, cap = StrokeCap.Round))
+        drawCircle(c.main, radius = 3f * u, center = g.o(34f, 21f))
+        drawCircle(c.main, radius = 3f * u, center = g.o(66f, 21f))
+    }
+    rotate(swing, pivot = g.o(50f, 54f)) {
+        val tube = Path().apply { moveTo(g.x(50f), g.y(54f)); cubicTo(g.x(50f), g.y(66f), g.x(62f), g.y(63f), g.x(64f), g.y(69f)) }
+        if (tr != null) {
+            tr.trace(this, tube)
+            tr.trace(this, g.circle(66f, 76f, 8.5f))
+            return@rotate
+        }
+        drawPath(tube, c.main, style = Stroke(3.6f * u, cap = StrokeCap.Round))
+        drawCircle(c.main, radius = 8.5f * u, center = g.o(66f, 76f))
+        drawCircle(c.paper, radius = 5f * u, center = g.o(66f, 76f))
+        if (beat > 0f) drawCircle(c.main.copy(alpha = 0.5f * beat), radius = (11f + 6f * beat) * u, center = g.o(66f, 76f), style = Stroke(2f * u))
+    }
+    if (tr == null) drawPath(heartPath(g.o(77f, 44f), (3.6f + 1.4f * beat) * u), c.accent)
+}
+
+/** A gold medal that swings on its ribbon, with a shine sweeping across. */
+private fun DrawScope.medal(g: Grid, t: Float, c: ArtColors, tr: Tracer?) {
+    val u = g.u
+    val swing = 6f * sin(TAU * t)
+    rotate(swing, pivot = g.o(50f, 18f)) {
+        val ribbonL = Path().apply { moveTo(g.x(38f), g.y(16f)); lineTo(g.x(48f), g.y(16f)); lineTo(g.x(55f), g.y(44f)); lineTo(g.x(46f), g.y(46f)); close() }
+        val ribbonR = Path().apply { moveTo(g.x(62f), g.y(16f)); lineTo(g.x(52f), g.y(16f)); lineTo(g.x(45f), g.y(44f)); lineTo(g.x(54f), g.y(46f)); close() }
+        part(tr, ribbonL, c.accent)
+        part(tr, ribbonR, c.accent.copy(alpha = 0.8f))
+        val disc = g.circle(50f, 60f, 17f)
+        part(tr, disc, c.main)
+        if (tr != null) return@rotate
+        drawCircle(c.onMain.copy(alpha = 0.35f), radius = 13f * u, center = g.o(50f, 60f), style = Stroke(1.6f * u))
+        star(g.o(50f, 60f), 8.5f * u, c.onMain)
+        val sweep = clamp01((t - 0.15f) / 0.3f)
+        if (sweep > 0.001f && sweep < 0.999f) {
+            clipPath(disc) {
+                val x = 30f + 40f * sweep
+                drawLine(c.onMain.copy(alpha = 0.5f), g.o(x - 6f, 78f), g.o(x + 6f, 42f), strokeWidth = 4f * u, cap = StrokeCap.Round)
+            }
+        }
+    }
+    if (tr == null) {
+        sparkle(g.o(24f, 54f), 4f * u, c.main.copy(alpha = twinkle(t, 0.2f)))
+        sparkle(g.o(76f, 70f), 3.2f * u, c.main.copy(alpha = twinkle(t, 0.7f)))
+    }
+}
+
+/** Two gears turning together (one tooth each per loop, so it repeats seamlessly). */
+private fun DrawScope.gears(g: Grid, t: Float, c: ArtColors, tr: Tracer?) {
+    val u = g.u
+    rotate(36f * t, pivot = g.o(42f, 56f)) {
+        part(tr, gearPath(g, 42f, 56f, 21f, 16.5f, 10), c.main)
+        if (tr == null) {
+            drawCircle(c.onMain.copy(alpha = 0.3f), radius = 11f * u, center = g.o(42f, 56f), style = Stroke(1.5f * u))
+            drawCircle(c.soft, radius = 6f * u, center = g.o(42f, 56f))
+        }
+    }
+    rotate(-(360f / 7f) * t + 360f / 14f, pivot = g.o(68f, 36f)) {
+        part(tr, gearPath(g, 68f, 36f, 14f, 10.5f, 7), c.main.copy(alpha = 0.75f))
+        if (tr == null) drawCircle(c.soft, radius = 4f * u, center = g.o(68f, 36f))
+    }
+}
+
+/** A gift box whose lid pops up, letting out sparkles — a new version. */
+private fun DrawScope.gift(g: Grid, t: Float, c: ArtColors, tr: Tracer?) {
+    val u = g.u
+    val open = easeOut(clamp01((t - 0.08f) / 0.14f)) - smooth(clamp01((t - 0.65f) / 0.15f))
+    if (tr == null) {
+        drawOval(c.shadow, topLeft = g.o(26f, 80f), size = g.s(48f, 5f))
+        if (open > 0f) for (k in 0..2) {
+            val p = clamp01((t - 0.18f - k * 0.08f) / 0.4f)
+            if (p > 0.001f && p < 0.999f) {
+                sparkle(g.o(40f + k * 10f, 46f - 28f * p), (3f + k) * u, (if (k == 1) c.accent else c.main).copy(alpha = 1f - p))
+            }
+        }
+    }
+    part(tr, g.roundRect(28f, 52f, 44f, 30f, 3f), c.main)
+    if (tr == null) drawRect(c.accent, topLeft = g.o(47f, 52f), size = g.s(6f, 30f))
+    translate(top = -10f * open * u) {
+        rotate(-10f * open, pivot = g.o(25f, 52f)) {
+            part(tr, g.roundRect(25f, 43f, 50f, 10f, 3f), c.main)
+            if (tr != null) return@rotate
+            drawRect(c.onMain.copy(alpha = 0.18f), topLeft = g.o(25f, 49f), size = g.s(50f, 1.6f))
+            drawRect(c.accent, topLeft = g.o(47f, 43f), size = g.s(6f, 10f))
+            drawOval(c.accent, topLeft = g.o(38f, 35f), size = g.s(12f, 9f))
+            drawOval(c.accent, topLeft = g.o(50f, 35f), size = g.s(12f, 9f))
+            drawCircle(c.accent, radius = 2.6f * u, center = g.o(50f, 42f))
+        }
+    }
+}
+
+/** Bars grow one after another, then a trend line draws across their tops. */
+private fun DrawScope.chart(g: Grid, t: Float, c: ArtColors, tr: Tracer?) {
+    val u = g.u
+    val fade = 1f - clamp01((t - 0.9f) / 0.1f)
+    val card = g.roundRect(18f, 26f, 64f, 54f, 6f)
+    part(tr, card, c.paper)
+    val axes = Path().apply { moveTo(g.x(26f), g.y(32f)); lineTo(g.x(26f), g.y(72f)); lineTo(g.x(76f), g.y(72f)) }
+    if (tr != null) {
+        tr.trace(this, axes)
+        return
+    }
+    drawPath(card, c.main.copy(alpha = 0.25f), style = Stroke(1.2f * u))
+    drawPath(axes, c.ink.copy(alpha = 0.3f), style = Stroke(1.8f * u, cap = StrokeCap.Round, join = StrokeJoin.Round))
+    val heights = listOf(14f, 24f, 19f, 32f)
+    val tops = mutableListOf<Offset>()
+    heights.forEachIndexed { i, h ->
+        val grow = easeOutBack(clamp01((t - 0.05f - i * 0.1f) / 0.22f)) * fade
+        val x = 32f + i * 11f
+        val hh = h * grow
+        if (hh > 0.2f) drawRoundRect(c.main, topLeft = g.o(x, 71f - hh), size = g.s(7f, hh), cornerRadius = g.r(1.6f))
+        tops += g.o(x + 3.5f, 71f - h - 4f)
+    }
+    val line = Path().apply { tops.forEachIndexed { i, o -> if (i == 0) moveTo(o.x, o.y) else lineTo(o.x, o.y) } }
+    val lp = easeOut(clamp01((t - 0.5f) / 0.25f)) * fade
+    drawPartial(line, lp, c.accent, 2.4f * u)
+    if (lp > 0.98f) tops.forEach { drawCircle(c.accent, radius = 2f * u, center = it) }
 }

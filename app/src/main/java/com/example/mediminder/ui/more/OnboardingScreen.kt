@@ -106,7 +106,7 @@ fun OnboardingScreen(onFinished: () -> Unit, viewModel: SettingsViewModel = hilt
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             when (page) {
                 0 -> {
-                    AnimatedArt(Art.PILLS, Hue.CORAL, Modifier.align(Alignment.CenterHorizontally), size = 176.dp)
+                    AnimatedArt(Art.HEART, Hue.ROSE, Modifier.align(Alignment.CenterHorizontally), size = 176.dp)
                     Text(stringResource(R.string.onboarding_welcome), style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
                     Text(stringResource(R.string.onboarding_welcome_body), style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
                     SectionTitle(stringResource(R.string.settings_language))
@@ -136,7 +136,7 @@ fun OnboardingScreen(onFinished: () -> Unit, viewModel: SettingsViewModel = hilt
                 }
                 else -> {
                     val status = LocalStatusColors.current
-                    AnimatedArt(Art.BELL, Hue.VIOLET, Modifier.align(Alignment.CenterHorizontally), size = 150.dp)
+                    AnimatedArt(Art.PHONE, Hue.VIOLET, Modifier.align(Alignment.CenterHorizontally), size = 150.dp)
                     Text(stringResource(R.string.onboarding_permissions_title), style = MaterialTheme.typography.headlineMedium)
                     Text(stringResource(R.string.onboarding_permissions_body), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     MediCard {

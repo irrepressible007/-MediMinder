@@ -39,20 +39,29 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           
-      # The app's updater reads update.json: a higher versionCode means "newer", and the
-      # download is checked against this size and SHA-256 before it is installed.
+      # The app's updater reads update.json through github.com's download links (no API, so no
+      # per-address limit): a higher versionCode means "newer"; the APK is checked against this
+      # size and SHA-256 before it is installed; the notes come from the tag's message.
       - name: Describe the update
         run: |
-          APK=app/build/outputs/apk/release/app-release.apk
-          CODE=$(grep -oP 'versionCode = \K[0-9]+' app/build.gradle.kts)
-          NAME=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
-          SHA=$(sha256sum "$APK" | cut -d' ' -f1)
-          SIZE=$(stat -c%s "$APK")
-          printf '{"versionCode":%s,"versionName":"%s","sha256":"%s","size":%s}\n' "$CODE" "$NAME" "$SHA" "$SIZE" > update.json
-          cat update.json
           git fetch --force origin "refs/tags/${GITHUB_REF_NAME}:refs/tags/${GITHUB_REF_NAME}"
           git tag -l --format='%(contents)' "${GITHUB_REF_NAME}" > release_notes.md
-          cat release_notes.md
+          python3 - <<'PY'
+          import hashlib, json, os, re
+          gradle = open("app/build.gradle.kts", encoding="utf-8").read()
+          apk = "app/build/outputs/apk/release/app-release.apk"
+          data = open(apk, "rb").read()
+          tag = os.environ["GITHUB_REF_NAME"]
+          json.dump({
+              "versionCode": int(re.search(r"versionCode = (\d+)", gradle).group(1)),
+              "versionName": re.search(r'versionName = "([^"]+)"', gradle).group(1),
+              "sha256": hashlib.sha256(data).hexdigest(),
+              "size": len(data),
+              "apk": f"https://github.com/{os.environ['GITHUB_REPOSITORY']}/releases/download/{tag}/app-release.apk",
+              "notes": [l.strip() for l in open("release_notes.md", encoding="utf-8") if l.strip()],
+          }, open("update.json", "w", encoding="utf-8"), ensure_ascii=False)
+          PY
+          cat update.json release_notes.md
 
       - name: Create GitHub Release and Upload APK
         uses: softprops/action-gh-release@v2

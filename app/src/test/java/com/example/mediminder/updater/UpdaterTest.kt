@@ -54,6 +54,21 @@ class UpdaterTest {
         assertFalse(isUpdate(info, currentCode = 26, currentName = "1.0.3"))
     }
 
+    @Test fun `update json alone is enough - no GitHub API needed`() {
+        // What the release workflow publishes since 1.0.4: the APK link and the notes travel inside it
+        val full = parseMeta(
+            """{"versionCode":27,"versionName":"1.0.4","sha256":"ab","size":10,"apk":"https://example.org/app.apk","notes":["Updates arrive reliably","","New pictures"]}"""
+        ).toInfo("https://github.com/o/r")
+        assertEquals(27, full.versionCode)
+        assertEquals("https://example.org/app.apk", full.apkUrl)
+        assertEquals(listOf("Updates arrive reliably", "New pictures"), full.notes)
+        // 1.0.3's update.json had neither: the APK is found under the release's tag
+        val plain = parseMeta("""{"versionCode":26,"versionName":"1.0.3","size":5}""").toInfo("https://github.com/o/r")
+        assertEquals("https://github.com/o/r/releases/download/v1.0.3/app-release.apk", plain.apkUrl)
+        assertTrue(plain.notes.isEmpty())
+        assertTrue(isUpdate(plain, currentCode = 25, currentName = "1.0.2"))
+    }
+
     @Test fun `a release without an APK offers nothing`() {
         assertNull(parseRelease("""{"tag_name":"v9.9.9","assets":[]}""").toInfo(null))
     }

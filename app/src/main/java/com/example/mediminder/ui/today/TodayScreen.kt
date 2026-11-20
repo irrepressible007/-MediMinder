@@ -246,7 +246,7 @@ fun TodayScreen(
                         title = stringResource(R.string.today_empty_title),
                         body = stringResource(R.string.today_empty_body),
                         hue = Hue.CORAL,
-                        art = Art.PILLS,
+                        art = Art.PILLBOX,
                     ) { PrimaryButton(stringResource(R.string.action_add_medicine), onAddMedicine, icon = Icons.Default.Add) }
                 }
                 return@LazyColumn
@@ -493,19 +493,14 @@ private fun SummaryCard(state: TodayUi, modifier: Modifier = Modifier) {
                     }
                 }
                 Spacer(Modifier.width(12.dp))
-                ProgressRing(
-                    progress = progress,
-                    color = status.taken,
-                    trackColor = if (allDone) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceContainerHighest,
-                    size = 78.dp,
-                ) {
-                    AnimatedContent(allDone, transitionSpec = { popIn() togetherWith fadeOut(tween(Motion.SHORT)) }, label = "ringIcon") { done ->
-                        Icon(
-                            if (done) Icons.Default.Check else Icons.Default.Medication,
-                            contentDescription = null,
-                            tint = if (done) status.taken else MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(34.dp),
-                        )
+                // The ring fills as doses are taken; a finished day earns a swinging medal
+                AnimatedContent(allDone, transitionSpec = { popIn() togetherWith fadeOut(tween(Motion.SHORT)) }, label = "ringOrMedal") { done ->
+                    if (done) {
+                        AnimatedArt(Art.MEDAL, Hue.SUN, size = 96.dp)
+                    } else {
+                        ProgressRing(progress = progress, color = status.taken, trackColor = MaterialTheme.colorScheme.surfaceContainerHighest, size = 78.dp) {
+                            Icon(Icons.Default.Medication, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(34.dp))
+                        }
                     }
                 }
             }

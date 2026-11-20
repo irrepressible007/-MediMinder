@@ -1,5 +1,8 @@
 package com.example.mediminder.ui.more
 
+import com.example.mediminder.ui.components.AnimatedArt
+import com.example.mediminder.ui.components.Art
+import com.example.mediminder.ui.theme.Hue
 import com.example.mediminder.ui.components.Arrive
 import com.example.mediminder.ui.components.rememberEntranceState
 import com.example.mediminder.ui.components.ProgressRing
@@ -181,7 +184,12 @@ fun StatsScreen(onBack: () -> Unit, viewModel: StatsViewModel = hiltViewModel())
                 }
             }
             if (s.expected == 0) {
-                item { Arrive(arrival, 5) { Text(stringResource(R.string.stats_empty), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant) }}
+                item { Arrive(arrival, 5) {
+                    androidx.compose.foundation.layout.Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                        AnimatedArt(Art.CHART, Hue.SKY, size = 140.dp)
+                        Text(stringResource(R.string.stats_empty), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+                    }
+                }}
             }
             item { Arrive(arrival, 6) {
                 SecondaryButton(

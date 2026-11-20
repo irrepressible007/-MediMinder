@@ -1,5 +1,8 @@
 package com.example.mediminder.ui.appointments
 
+import com.example.mediminder.ui.components.AnimatedArt
+import com.example.mediminder.ui.components.Art
+import com.example.mediminder.ui.theme.Hue
 import com.example.mediminder.ui.components.FeedbackBus
 import com.example.mediminder.ui.components.FeedbackKind
 import androidx.compose.foundation.background
@@ -211,6 +214,7 @@ fun AppointmentEditorScreen(appointmentId: Long, doctorId: Long, onBack: () -> U
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             // Which doctor
+            AnimatedArt(Art.CALENDAR, Hue.TEAL, Modifier.align(Alignment.CenterHorizontally), size = 128.dp)
             SectionTitle(stringResource(R.string.appt_which_doctor))
             if (doctors.isNotEmpty() && f.id == 0L) {
                 ChoiceChips(doctors, doctors.firstOrNull { it.id == f.doctorId }, { it.name }, viewModel::pickDoctor)

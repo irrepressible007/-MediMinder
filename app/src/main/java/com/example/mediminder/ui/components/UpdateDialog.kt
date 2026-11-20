@@ -68,7 +68,8 @@ fun UpdateDialogHost() {
     AlertDialog(
         onDismissRequest = { if (state is UpdateState.Available) Updater.later(context) else if (dismissible) Updater.hide() },
         properties = DialogProperties(dismissOnClickOutside = dismissible),
-        icon = { IconBadge(icon, hue, size = 56.dp) },
+        // A new version arrives as a gift box popping open
+        icon = { if (state is UpdateState.Available) AnimatedArt(Art.GIFT, Hue.VIOLET, size = 104.dp) else IconBadge(icon, hue, size = 56.dp) },
         title = {
             Text(
                 stringResource(

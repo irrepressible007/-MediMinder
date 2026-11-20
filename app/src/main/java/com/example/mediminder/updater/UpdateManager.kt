@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import android.util.Log
 import androidx.annotation.StringRes
 import androidx.core.content.FileProvider
 import com.example.mediminder.BuildConfig
@@ -60,10 +61,16 @@ sealed interface UpdateState {
 }
 
 object Updater {
-    private const val LATEST = "https://api.github.com/repos/irrepressible007/-MediMinder/releases/latest"
+    private const val REPO = "https://github.com/irrepressible007/-MediMinder"
+    /** The newest release's update.json via github.com's download links: no API, so no shared per-address limit. */
+    private const val LATEST_META = "$REPO/releases/latest/download/update.json"
+    /** Fallback for releases made before update.json. The API allows 60 anonymous checks an hour per internet
+     *  address, and many people in Bangladesh share one address — so it is never the first choice. */
+    private const val LATEST_API = "https://api.github.com/repos/irrepressible007/-MediMinder/releases/latest"
     private const val PREFS = "mediminder_updates"
     private const val CHECK_EVERY = 12 * 60 * 60_000L
     private const val LATER_FOR = 3 * 24 * 60 * 60_000L
+    private const val TAG = "MediMinderUpdate"
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var download: Job? = null
@@ -85,7 +92,7 @@ object Updater {
         if (System.currentTimeMillis() - prefs.getLong("lastCheck", 0) < CHECK_EVERY) return
         if (_state.value !is UpdateState.Idle && _state.value !is UpdateState.UpToDate) return
         scope.launch {
-            val info = runCatching { fetchLatest() }.getOrNull() ?: return@launch
+            val info = runCatching { fetchLatest() }.onFailure { Log.w(TAG, "Update check failed", it) }.getOrNull() ?: return@launch
             prefs.edit().putLong("lastCheck", System.currentTimeMillis()).apply()
             if (!isUpdate(info, BuildConfig.VERSION_CODE, BuildConfig.VERSION_NAME)) return@launch
             _state.value = UpdateState.Available(info)
@@ -107,6 +114,7 @@ object Updater {
                 val info = fetchLatest()
                 if (isUpdate(info, BuildConfig.VERSION_CODE, BuildConfig.VERSION_NAME)) UpdateState.Available(info) else UpdateState.UpToDate
             } catch (e: Exception) {
+                Log.w(TAG, "Update check failed", e)
                 UpdateState.Failed(null, R.string.update_check_failed)
             }
         }
@@ -142,6 +150,7 @@ object Updater {
                 _dialog.value = true
                 UpdateState.Ready(info, apk)
             } catch (e: Exception) {
+                Log.w(TAG, "Update download failed", e)
                 part.delete()
                 UpdateState.Failed(info, R.string.update_download_failed)
             }
@@ -167,6 +176,7 @@ object Updater {
             )
             _state.value = ready.copy(needsPermission = false)
         } catch (e: Exception) {
+            Log.w(TAG, "Could not open the installer", e)
             _state.value = UpdateState.Failed(ready.info, R.string.update_install_failed)
         }
     }
@@ -193,16 +203,22 @@ object Updater {
     // ── Talking to GitHub ───────────────────────────────────────────────────
 
     private suspend fun fetchLatest(): UpdateInfo = withContext(Dispatchers.IO) {
-        val release = parseRelease(get(LATEST))
-        val meta = release.metaUrl?.let { url -> runCatching { parseMeta(get(url)) }.getOrNull() }
-        release.toInfo(meta) ?: throw IOException("no APK in the latest release")
+        runCatching { parseMeta(get(LATEST_META)).toInfo(REPO) }
+            .onFailure { Log.i(TAG, "update.json not reachable, asking the API", it) }
+            .getOrNull()
+            ?: run {
+                val release = parseRelease(get(LATEST_API))
+                val meta = release.metaUrl?.let { url -> runCatching { parseMeta(get(url)) }.getOrNull() }
+                release.toInfo(meta) ?: throw IOException("no APK in the latest release")
+            }
     }
 
     private fun get(url: String): String {
         val conn = (URL(url).openConnection() as HttpURLConnection).apply {
             connectTimeout = 15_000
             readTimeout = 15_000
-            setRequestProperty("Accept", "application/vnd.github+json")
+            instanceFollowRedirects = true   // github.com hands files over from another host
+            if (url.startsWith("https://api.github.com")) setRequestProperty("Accept", "application/vnd.github+json")
             setRequestProperty("User-Agent", "MediMinder-Android")
         }
         try {
@@ -258,7 +274,14 @@ object Updater {
 
 internal data class Release(val tag: String, val body: String, val apkUrl: String?, val apkSize: Long, val metaUrl: String?)
 
-internal data class UpdateMeta(val versionCode: Int, val versionName: String, val sha256: String?, val size: Long)
+internal data class UpdateMeta(
+    val versionCode: Int,
+    val versionName: String,
+    val sha256: String?,
+    val size: Long,
+    val apk: String? = null,
+    val notes: List<String> = emptyList(),
+)
 
 internal fun parseRelease(json: String): Release {
     val o = JSONObject(json)
@@ -282,8 +305,26 @@ internal fun parseRelease(json: String): Release {
 
 internal fun parseMeta(json: String): UpdateMeta {
     val o = JSONObject(json)
-    return UpdateMeta(o.getInt("versionCode"), o.optString("versionName"), o.optString("sha256").ifBlank { null }, o.optLong("size"))
+    val notes = o.optJSONArray("notes")
+    return UpdateMeta(
+        versionCode = o.getInt("versionCode"),
+        versionName = o.optString("versionName"),
+        sha256 = o.optString("sha256").ifBlank { null },
+        size = o.optLong("size"),
+        apk = o.optString("apk").ifBlank { null },
+        notes = List(notes?.length() ?: 0) { notes!!.optString(it) }.filter { it.isNotBlank() },
+    )
 }
+
+/** update.json on its own is enough: it names the APK (or it sits under the release's tag). */
+internal fun UpdateMeta.toInfo(repo: String): UpdateInfo = UpdateInfo(
+    versionName = versionName,
+    versionCode = versionCode,
+    apkUrl = apk ?: "$repo/releases/download/v$versionName/app-release.apk",
+    apkSize = size,
+    sha256 = sha256,
+    notes = cleanNotes(notes.joinToString(System.lineSeparator())),
+)
 
 internal fun Release.toInfo(meta: UpdateMeta?): UpdateInfo? {
     val url = apkUrl ?: return null
@@ -293,7 +334,7 @@ internal fun Release.toInfo(meta: UpdateMeta?): UpdateInfo? {
         apkUrl = url,
         apkSize = if (meta != null && meta.size > 0) meta.size else apkSize,
         sha256 = meta?.sha256,
-        notes = cleanNotes(body),
+        notes = meta?.notes?.takeIf { it.isNotEmpty() }?.let { cleanNotes(it.joinToString(System.lineSeparator())) } ?: cleanNotes(body),
     )
 }
 

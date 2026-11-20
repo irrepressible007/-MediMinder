@@ -164,7 +164,7 @@ fun AppointmentsScreen(
                         title = stringResource(R.string.appt_empty_title),
                         body = stringResource(R.string.appt_empty_body),
                         hue = Hue.TEAL,
-                        art = Art.CALENDAR,
+                        art = Art.STETHOSCOPE,
                     )
                 }
             } else {

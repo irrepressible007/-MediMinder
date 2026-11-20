@@ -1,5 +1,8 @@
 package com.example.mediminder.ui.more
 
+import com.example.mediminder.ui.components.AnimatedArt
+import com.example.mediminder.ui.components.Art
+import com.example.mediminder.ui.theme.Hue
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -176,6 +179,7 @@ fun SettingsScreen(onBack: () -> Unit, onOpenReliability: () -> Unit, viewModel:
             Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            AnimatedArt(Art.GEARS, Hue.SLATE, Modifier.align(Alignment.CenterHorizontally), size = 128.dp)
             // ── Reading ──
             SectionTitle(stringResource(R.string.settings_text_size))
             TextSizeChooser(s.textScale) { scale -> viewModel.update { it.copy(textScale = scale) } }
