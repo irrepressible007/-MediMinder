@@ -6,4 +6,10 @@
     <color name="brand_light">#FFA9C1FF</color>
     <color name="background_light">#FFF7F5F2</color>
     <color name="background_dark">#FF11131C</color>
+    <!-- Home-screen widget (night versions in values-night) -->
+    <color name="widget_bg">#FFFFFFFF</color>
+    <color name="widget_text">#FF1A1C24</color>
+    <color name="widget_sub">#FF555A66</color>
+    <color name="widget_accent">#FF2754C5</color>
+    <color name="widget_taken">#FF15803D</color>
 </resources>

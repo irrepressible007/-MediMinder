@@ -1,5 +1,8 @@
 package com.example.mediminder
 
+import androidx.room.InvalidationTracker
+import com.example.mediminder.data.local.MediMinderDatabase
+import com.example.mediminder.widget.NextDoseWidget
 import com.example.mediminder.util.ErrorLog
 import android.app.Application
 import android.os.Build
@@ -15,6 +18,7 @@ import javax.inject.Inject
 class MediMinderApp : Application() {
     @Inject lateinit var settings: SettingsRepository
     @Inject lateinit var notifier: Notifier
+    @Inject lateinit var db: MediMinderDatabase
 
     override fun onCreate() {
         super.onCreate()
@@ -22,6 +26,10 @@ class MediMinderApp : Application() {
         syncLanguage()
         notifier.ensureChannels()
         SafetyNetWorker.ensureScheduled(this)
+        // The home-screen widget redraws whenever a dose is answered or a medicine changes
+        db.invalidationTracker.addObserver(object : InvalidationTracker.Observer(arrayOf("dose_logs", "medications", "schedules")) {
+            override fun onInvalidated(tables: Set<String>) = NextDoseWidget.refresh(this@MediMinderApp)
+        })
     }
 
     /**

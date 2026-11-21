@@ -911,4 +911,10 @@
     <string name="family_someone">Your family member</string>
     <string name="family_sms_missed">MediMinder: %1$s has not marked these medicines as taken: %2$s. Please check in.</string>
     <string name="family_sms_test">MediMinder: this is a test. You will get a message like this if %1$s misses a medicine.</string>
+    <string name="widget_name">Next medicine</string>
+    <string name="widget_description">Your next medicine, with a Taken button when it\'s time</string>
+    <string name="widget_next_label">Next</string>
+    <string name="widget_now">Now</string>
+    <string name="widget_all_done">All done for today</string>
+    <string name="widget_nothing">Nothing more today</string>
 </resources>

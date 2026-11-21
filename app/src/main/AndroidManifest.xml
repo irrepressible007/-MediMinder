@@ -79,6 +79,14 @@
         <receiver android:name=".reminders.ReminderReceiver" android:exported="false" />
         <receiver android:name=".reminders.DoseActionReceiver" android:exported="false" />
 
+        <!-- Home-screen widget: the next dose with a Taken button -->
+        <receiver android:name=".widget.NextDoseWidget" android:exported="false" android:label="@string/widget_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/next_dose_widget" />
+        </receiver>
+
         <receiver android:name=".reminders.SystemEventsReceiver" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />

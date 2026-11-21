@@ -31,6 +31,7 @@ interface ReminderEntryPoint {
     fun doseActions(): DoseActions
     fun notifier(): Notifier
     fun ramadan(): com.example.mediminder.data.RamadanManager
+    fun database(): com.example.mediminder.data.local.MediMinderDatabase
 }
 
 internal fun Context.reminders(): ReminderEntryPoint =
@@ -64,6 +65,8 @@ class ReminderReceiver : BroadcastReceiver() {
                     val day = intent.getLongExtra(ReminderScheduler.EXTRA_DAY, -1)
                     val kind = intent.getStringExtra(ReminderScheduler.EXTRA_KIND) ?: ReminderScheduler.KIND_REGULAR
                     if (scheduleId > 0 && day >= 0) engine.onDoseAlarm(scheduleId, day, kind)
+                    // the widget's dose is due now: show its Taken button
+                    com.example.mediminder.widget.NextDoseWidget.refresh(context)
                 }
                 ReminderScheduler.ACTION_APPOINTMENT -> {
                     val id = intent.getLongExtra(ReminderScheduler.EXTRA_APPOINTMENT_ID, -1)

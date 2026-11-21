@@ -909,4 +909,10 @@
     <string name="family_someone">আপনার পরিবারের সদস্য</string>
     <string name="family_sms_missed">মেডিমাইন্ডার: %1$s এখনো এই ওষুধগুলো খেয়েছেন বলে জানাননি: %2$s। একবার খোঁজ নিন।</string>
     <string name="family_sms_test">মেডিমাইন্ডার: এটি একটি পরীক্ষামূলক বার্তা। %1$s কোনো ওষুধ বাদ দিলে আপনি এমন একটি বার্তা পাবেন।</string>
+    <string name="widget_name">পরের ওষুধ</string>
+    <string name="widget_description">আপনার পরের ওষুধ, সময় হলে খেয়েছি বোতামসহ</string>
+    <string name="widget_next_label">পরেরটি</string>
+    <string name="widget_now">এখন</string>
+    <string name="widget_all_done">আজকের সব হয়ে গেছে</string>
+    <string name="widget_nothing">আজ আর কিছু নেই</string>
 </resources>
