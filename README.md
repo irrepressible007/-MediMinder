@@ -45,6 +45,11 @@ hard to make sure every alarm goes off.
 - Prescription patterns (1+0+0, 1+0+1, 1+1+1…) and before or after food. Dose times are worked out
   from the person's own meal times.
 - Full Bangla and English, including Bangla digits.
+- **Ramadan mode:** medicines taken with meals move to Sehri and Iftar (and after Taraweeh), then
+  back to the usual times the day after the last fast. Today suggests it a few days before.
+- **Add from a prescription photo:** take a photo or pick one from the gallery (for example from
+  WhatsApp). The text is read on the phone, each medicine is found in the catalogue with its
+  pattern (1+0+1, BD, TDS…), food timing and course length, and you tick what to add.
 
 **Creams, drops, inhalers and injections**
 - Each is handled the way it is used: where a cream goes (knees, hands…), which eye, ear or
@@ -80,7 +85,14 @@ hard to make sure every alarm goes off.
 - Stock counting with refill warnings, and a shopping list with prices.
 - Doctor visits with reminders, a Medical ID (blood group, allergies, emergency contact) and a
   documents folder.
+- **A PDF for the doctor:** medicines and how regularly they were taken, health readings with
+  charts, and habits, on A4 pages to print or send.
+- **Tell family about missed doses:** if a medicine is still not taken after 30 minutes to two
+  hours, one SMS tells a son, daughter or anyone chosen (at most five a day).
+- **Home-screen widget:** the next dose, with a Taken button when it is time.
 - Backup and restore to a file, and in-app updates from GitHub Releases.
+- **Optional sign-in** (Google, Facebook or email) keeps a copy of the data in the cloud, so it
+  comes back after a reinstall or on a new phone. Without signing in, nothing leaves the phone.
 
 **Friendly, alive interface**
 
@@ -108,7 +120,9 @@ day. All motion stops when the phone's *Remove animations* setting is on.
 | Reminders | AlarmManager exact alarms, full-screen intents, WorkManager safety net |
 | Camera and scanning | CameraX and ML Kit on-device text recognition |
 | Images | Coil |
-| Testing | JUnit, Robolectric, Compose UI tests (110 tests) |
+| Accounts and cloud | Firebase Authentication (Google via Credential Manager, Facebook, email), Cloud Firestore |
+| Reports and widget | Android PdfDocument, RemoteViews app widget |
+| Testing | JUnit, Robolectric, Compose UI tests (131 tests) |
 | Delivery | GitHub Actions: tests and lint on every push; build, signing with Android key rotation, release and update manifest on each version tag |
 
 ## How it is built
@@ -119,6 +133,9 @@ app/src/main/java/com/example/mediminder/
 ├── domain/      Plain Kotlin logic: dose planning, prescription patterns, stock, adherence, safety checks,
 │                care kinds, injection-site rotation, reading ranges
 ├── reminders/   The alarm engine, scheduler, notifications, full-screen alarm, system receivers
+├── cloud/       Optional sign-in and the cloud copy of the data
+├── report/      The doctor's PDF
+├── widget/      The home-screen widget
 ├── ui/          Compose screens, shared components, theme, motion and illustrations
 ├── updater/     In-app updates from GitHub Releases
 └── util/        Formatting (Bangla digits), app language, problem log
@@ -164,6 +181,27 @@ for the keys it expects) or in environment variables. Then:
 python tools/sign_release.py   # adds the key rotation
 ```
 
+**Sign-in and cloud backup (optional):** builds without Firebase settings simply hide sign-in.
+To turn it on in your own build, create a Firebase project with an Android app
+(`com.example.mediminder`), enable Email/Password and Google sign-in, create a Firestore database,
+and put its `google-services.json` in the project root (it is git-ignored). Firestore rules:
+
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}
+```
+
+Facebook sign-in also needs `appId` and `clientToken` in a git-ignored `facebook.properties`
+(or the `FACEBOOK_APP_ID` / `FACEBOOK_CLIENT_TOKEN` environment variables). Release builds read
+these from the repository secrets `GOOGLE_SERVICES_JSON`, `FACEBOOK_APP_ID` and
+`FACEBOOK_CLIENT_TOKEN`.
+
 **Medicine catalogue:** `python tools/build_catalogue.py` rebuilds
 `app/src/main/assets/database/catalogue.db` from the sources in `medsdatabase/`.
 
@@ -183,6 +221,9 @@ installed apps use to offer the update.
 The medicine catalogue is built from the Directorate General of Drug Administration (DGDA)
 registered product lists and a public price list. MediMinder reminds and records; it does not give
 medical advice. Always follow your doctor's and pharmacist's instructions.
+
+[Privacy policy](docs/legal/privacy.en.md) ([বাংলা](docs/legal/privacy.bn.md)) ·
+[Terms of use](docs/legal/terms.en.md) ([বাংলা](docs/legal/terms.bn.md))
 
 ---
 
