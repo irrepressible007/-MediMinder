@@ -1,5 +1,6 @@
 package com.example.mediminder.data.backup
 
+import com.example.mediminder.data.local.entity.Reading
 import androidx.annotation.StringRes
 import com.example.mediminder.R
 import android.content.Context
@@ -36,6 +37,7 @@ data class Backup(
     val restocks: List<RestockEvent> = emptyList(),
     val doctors: List<Doctor> = emptyList(),
     val appointments: List<Appointment> = emptyList(),
+    val readings: List<Reading> = emptyList(),
     val settings: AppSettings? = null,
 ) {
     companion object {
@@ -71,6 +73,7 @@ class BackupManager @Inject constructor(
         restocks = db.restockDao().getAll(),
         doctors = db.doctorDao().getAll(),
         appointments = db.appointmentDao().getAll(),
+        readings = db.readingDao().getAll(),
         settings = settings.current,
     )
 
@@ -115,6 +118,7 @@ class BackupManager @Inject constructor(
             db.appointmentDao().deleteAll()
             db.doctorDao().deleteAll()
             db.medicationDao().deleteAll()
+            db.readingDao().deleteAll()
 
             db.medicationDao().insertAll(backup.medications)
             val medicationIds = backup.medications.map { it.id }.toSet()
@@ -124,6 +128,7 @@ class BackupManager @Inject constructor(
             db.doctorDao().insertAll(backup.doctors)
             val doctorIds = backup.doctors.map { it.id }.toSet()
             db.appointmentDao().insertAll(backup.appointments.map { if (it.doctorId != null && it.doctorId !in doctorIds) it.copy(doctorId = null) else it })
+            db.readingDao().insertAll(backup.readings)
         }
         backup.settings?.let { restored ->
             // Keep this phone's language and the fact that setup is done

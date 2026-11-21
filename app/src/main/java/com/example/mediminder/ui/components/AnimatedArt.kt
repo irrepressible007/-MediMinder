@@ -102,6 +102,16 @@ enum class Art(internal val periodMillis: Int, internal val still: Float) {
     GIFT(2600, 0.35f),
     /** Bars that grow, with a trend line. */
     CHART(3200, 0.8f),
+    /** A cream tube squeezed, a ribbon of cream curling out. */
+    TUBE(3000, 0.6f),
+    /** An eye-drop bottle: a drop forms, falls, and the eye blinks. */
+    DROPPER(2800, 0.2f),
+    /** A blood-pressure monitor: the bulb pumps and the needle rises and settles. */
+    CUFF(4000, 0.47f),
+    /** A thermometer rising to a fever and cooling back. */
+    THERMO(3600, 0.55f),
+    /** A glass of water with drops falling in. */
+    GLASS(3000, 0.3f),
 }
 
 private const val DRAW_IN_MILLIS = 1900
@@ -228,6 +238,11 @@ private fun DrawScope.scene(art: Art, g: Grid, t: Float, c: ArtColors, tracer: T
     Art.GEARS -> gears(g, t, c, tracer)
     Art.GIFT -> gift(g, t, c, tracer)
     Art.CHART -> chart(g, t, c, tracer)
+    Art.TUBE -> tube(g, t, c, tracer)
+    Art.DROPPER -> dropper(g, t, c, tracer)
+    Art.CUFF -> cuff(g, t, c, tracer)
+    Art.THERMO -> thermo(g, t, c, tracer)
+    Art.GLASS -> glass(g, t, c, tracer)
 }
 
 /** Grid units → pixels, and the shapes the scenes are made of. */
@@ -1038,3 +1053,214 @@ private fun DrawScope.blister(g: Grid, t: Float, c: ArtColors, tr: Tracer?) {
         if (rise > 0.6f) sparkle(g.o(x + 8f, y - 6f), 3.2f * u * (rise - 0.6f) / 0.4f, c.main.copy(alpha = rise))
     }
 }
+
+
+// ── Care products, health checks and habits ─────────────────────────────────
+
+/** A cream tube is squeezed and a ribbon of cream curls out; its cap lies beside it. */
+private fun DrawScope.tube(g: Grid, t: Float, c: ArtColors, tr: Tracer?) {
+    val u = g.u
+    val squeeze = smooth(bump(t, 0.08f, 0.55f))
+    val grow = easeOut(clamp01((t - 0.12f) / 0.4f)) * (1f - smooth(clamp01((t - 0.86f) / 0.14f)))
+    if (tr == null) drawOval(c.shadow, topLeft = g.o(18f, 76f), size = g.s(62f, 5f))
+    val cap = g.roundRect(30f, 68f, 14f, 9f, 2.5f)
+    part(tr, cap, c.accent)
+    rotate(-16f, pivot = g.o(48f, 52f)) {
+        val body = g.roundRect(22f, 42f, 44f, 20f, 5f)
+        scale(1f, 1f - 0.16f * squeeze, pivot = g.o(44f, 52f)) {
+            part(tr, body, c.main)
+            if (tr == null) {
+                drawRoundRect(c.paper.copy(alpha = 0.92f), topLeft = g.o(32f, 46f), size = g.s(22f, 12f), cornerRadius = g.r(2.5f))
+                drawLine(c.main, g.o(43f, 48.5f), g.o(43f, 55.5f), strokeWidth = 2.2f * u, cap = StrokeCap.Round)
+                drawLine(c.main, g.o(39.5f, 52f), g.o(46.5f, 52f), strokeWidth = 2.2f * u, cap = StrokeCap.Round)
+            }
+        }
+        val crimp = g.roundRect(16f, 40f, 7f, 24f, 1.6f)
+        part(tr, crimp, c.main.copy(alpha = 0.75f))
+        val neck = g.roundRect(66f, 47.5f, 7f, 9f, 1.6f)
+        part(tr, neck, c.paper)
+        if (tr != null) return@rotate
+        for (i in 0..2) drawLine(c.onMain.copy(alpha = 0.45f), g.o(17.8f + i * 2f, 42f), g.o(17.8f + i * 2f, 62f), strokeWidth = 0.8f * u)
+        drawRoundRect(c.main.copy(alpha = 0.35f), topLeft = g.o(66f, 47.5f), size = g.s(7f, 9f), cornerRadius = g.r(1.6f), style = Stroke(1.1f * u))
+        // the cream, coming out of the nozzle and curling at the end
+        val len = 14f * grow
+        if (len > 0.4f) {
+            drawRoundRect(c.paper, topLeft = g.o(72f, 48.8f), size = g.s(len, 6.4f), cornerRadius = g.r(3.2f))
+            drawRoundRect(c.main.copy(alpha = 0.25f), topLeft = g.o(72f, 48.8f), size = g.s(len, 6.4f), cornerRadius = g.r(3.2f), style = Stroke(0.9f * u))
+            if (grow > 0.7f) {
+                val curl = (grow - 0.7f) / 0.3f
+                drawCircle(c.paper, radius = 3.6f * u * curl, center = g.o(72f + len, 49f))
+                drawCircle(c.main.copy(alpha = 0.25f), radius = 3.6f * u * curl, center = g.o(72f + len, 49f), style = Stroke(0.9f * u))
+            }
+        }
+    }
+    if (tr == null && grow > 0.9f) sparkle(g.o(86f, 30f), 3.4f * u * (grow - 0.9f) / 0.1f, c.main)
+}
+
+/** An eye-drop bottle is pressed; a drop forms, falls, and the eye below blinks. */
+private fun DrawScope.dropper(g: Grid, t: Float, c: ArtColors, tr: Tracer?) {
+    val u = g.u
+    val press = smooth(bump(t, 0.04f, 0.34f))
+    scale(1f - 0.07f * press, 1f, pivot = g.o(50f, 32f)) {
+        val body = g.roundRect(39f, 12f, 22f, 30f, 6f)
+        part(tr, body, c.main)
+        if (tr == null) drawRoundRect(c.paper.copy(alpha = 0.9f), topLeft = g.o(42.5f, 20f), size = g.s(15f, 11f), cornerRadius = g.r(2f))
+    }
+    val nozzle = Path().apply {
+        moveTo(g.x(43f), g.y(42f)); lineTo(g.x(57f), g.y(42f))
+        lineTo(g.x(52.5f), g.y(53f)); lineTo(g.x(47.5f), g.y(53f)); close()
+    }
+    part(tr, nozzle, c.paper)
+    val eye = Path().apply {
+        moveTo(g.x(32f), g.y(80f))
+        quadraticTo(g.x(50f), g.y(66f), g.x(68f), g.y(80f))
+        quadraticTo(g.x(50f), g.y(94f), g.x(32f), g.y(80f))
+        close()
+    }
+    val blink = bump(t, 0.6f, 0.76f)
+    scale(1f, 1f - 0.85f * blink, pivot = g.o(50f, 80f)) { part(tr, eye, c.paper) }
+    if (tr != null) return
+    drawPath(nozzle, c.main.copy(alpha = 0.35f), style = Stroke(1.1f * u, join = StrokeJoin.Round))
+    scale(1f, 1f - 0.85f * blink, pivot = g.o(50f, 80f)) {
+        drawPath(eye, c.main.copy(alpha = 0.5f), style = Stroke(1.6f * u, join = StrokeJoin.Round))
+        clipPath(eye) {
+            drawCircle(c.main, radius = 6f * u, center = g.o(50f, 80f))
+            drawCircle(c.ink.copy(alpha = 0.8f), radius = 2.6f * u, center = g.o(50f, 80f))
+            drawCircle(c.paper.copy(alpha = 0.85f), radius = 1.2f * u, center = g.o(48.3f, 78.4f))
+        }
+    }
+    // the drop: forms at the tip, then falls into the eye
+    val form = clamp01(t / 0.34f)
+    val fall = easeOutIn(clamp01((t - 0.36f) / 0.24f))
+    if (t < 0.6f) {
+        val r = 2.8f * smooth(form)
+        val y = 55f + r + 18f * fall
+        if (r > 0.2f) drop(g.o(50f, y), r * u, c.accent)
+    }
+    val ring = clamp01((t - 0.6f) / 0.3f)
+    if (ring > 0f && ring < 1f) drawCircle(c.accent.copy(alpha = (1f - ring) * 0.5f), radius = (6f + 10f * ring) * u, center = g.o(50f, 80f), style = Stroke(1.4f * u))
+}
+
+/** A blood-pressure monitor: the bulb pumps, the needle rises, then settles; a heart beats. */
+private fun DrawScope.cuff(g: Grid, t: Float, c: ArtColors, tr: Tracer?) {
+    val u = g.u
+    val band = g.roundRect(12f, 24f, 32f, 20f, 5f)
+    part(tr, band, c.main)
+    val hose = Path().apply {
+        moveTo(g.x(44f), g.y(34f)); cubicTo(g.x(52f), g.y(34f), g.x(50f), g.y(44f), g.x(52f), g.y(44f))
+        moveTo(g.x(64f), g.y(62f)); cubicTo(g.x(64f), g.y(74f), g.x(42f), g.y(64f), g.x(32f), g.y(70f))
+    }
+    if (tr != null) tr.trace(this, hose) else drawPath(hose, c.ink.copy(alpha = 0.45f), style = Stroke(2.2f * u, cap = StrokeCap.Round))
+    val dial = g.circle(66f, 44f, 18f)
+    part(tr, dial, c.paper)
+    val pump = (sin(t * TAU * 3f) * 0.5f + 0.5f) * (1f - smooth(clamp01((t - 0.4f) / 0.1f)))
+    val bulb = Path().apply { addOval(Rect(g.x(22f), g.y(68f), g.x(38f), g.y(88f))) }
+    scale(1f - 0.18f * pump, 1f - 0.1f * pump, pivot = g.o(30f, 78f)) { part(tr, bulb, c.accent) }
+    if (tr != null) return
+    for (i in 0..2) drawLine(c.onMain.copy(alpha = 0.4f), g.o(18f + i * 9f, 28f), g.o(18f + i * 9f, 40f), strokeWidth = 1.4f * u, cap = StrokeCap.Round)
+    drawCircle(c.main, radius = 18f * u, center = g.o(66f, 44f), style = Stroke(2.4f * u))
+    for (i in 0..8) {
+        val a = (-220f + i * 32.5f) * PI.toFloat() / 180f
+        val r1 = if (i % 2 == 0) 12.5f else 14f
+        drawLine(c.ink.copy(alpha = 0.4f), g.o(66f + cos(a) * r1, 44f + sin(a) * r1), g.o(66f + cos(a) * 15.5f, 44f + sin(a) * 15.5f), strokeWidth = 1.2f * u, cap = StrokeCap.Round)
+    }
+    // the needle climbs while pumping, then slowly falls back
+    val up = smooth(clamp01(t / 0.45f))
+    val down = smooth(clamp01((t - 0.5f) / 0.45f))
+    val deg = -220f + 230f * up - 230f * down
+    val a = deg * PI.toFloat() / 180f
+    drawLine(c.accent, g.o(66f, 44f), g.o(66f + cos(a) * 12f, 44f + sin(a) * 12f), strokeWidth = 2.2f * u, cap = StrokeCap.Round)
+    drawCircle(c.ink.copy(alpha = 0.7f), radius = 2.2f * u, center = g.o(66f, 44f))
+    val beat = 1f + 0.25f * bump(t, 0.55f, 0.66f) + 0.25f * bump(t, 0.72f, 0.83f)
+    heart(g.o(66f, 53.5f), 2.6f * u * beat, c.accent)
+    drawRoundRect(c.ink.copy(alpha = 0.5f), topLeft = g.o(28.5f, 64.5f), size = g.s(3f, 4.5f), cornerRadius = g.r(1f))
+}
+
+/** A thermometer: the line climbs to a fever, holds, then cools back down. */
+private fun DrawScope.thermo(g: Grid, t: Float, c: ArtColors, tr: Tracer?) {
+    val u = g.u
+    val tube = g.roundRect(43f, 14f, 14f, 62f, 7f)
+    part(tr, tube, c.paper)
+    val bulb = g.circle(50f, 79f, 10f)
+    part(tr, bulb, c.accent)
+    if (tr != null) return
+    drawRoundRect(c.main.copy(alpha = 0.5f), topLeft = g.o(43f, 14f), size = g.s(14f, 62f), cornerRadius = g.r(7f), style = Stroke(1.6f * u))
+    val rise = smooth(clamp01((t - 0.05f) / 0.4f)) * (1f - smooth(clamp01((t - 0.72f) / 0.26f)))
+    val top = 70f - 44f * rise
+    drawRoundRect(c.accent, topLeft = g.o(47f, top), size = g.s(6f, 76f - top), cornerRadius = g.r(3f))
+    drawCircle(c.paper.copy(alpha = 0.5f), radius = 2.6f * u, center = g.o(47f, 76f))
+    for (i in 0..5) {
+        val y = 24f + i * 8f
+        drawLine(c.ink.copy(alpha = 0.35f), g.o(59f, y), g.o(if (i % 2 == 0) 65f else 62f, y), strokeWidth = 1.4f * u, cap = StrokeCap.Round)
+    }
+    // warmth rising beside it at the top of the fever
+    for (i in 0..1) {
+        val ph = (t * 2f + i * 0.5f) % 1f
+        val x = 30f + i * 6f
+        val alpha = sin(PI.toFloat() * ph) * 0.7f * rise
+        val wisp = Path().apply {
+            moveTo(g.x(x), g.y(52f - ph * 10f))
+            quadraticTo(g.x(x - 3f), g.y(47f - ph * 10f), g.x(x), g.y(42f - ph * 10f))
+            quadraticTo(g.x(x + 3f), g.y(37f - ph * 10f), g.x(x), g.y(32f - ph * 10f))
+        }
+        drawPath(wisp, c.main.copy(alpha = alpha), style = Stroke(2.2f * u, cap = StrokeCap.Round))
+    }
+}
+
+/** A glass of water: drops fall in, rings spread, bubbles rise and the water sways. */
+private fun DrawScope.glass(g: Grid, t: Float, c: ArtColors, tr: Tracer?) {
+    val u = g.u
+    val cup = Path().apply {
+        moveTo(g.x(30f), g.y(30f)); lineTo(g.x(70f), g.y(30f))
+        lineTo(g.x(64f), g.y(84f)); lineTo(g.x(36f), g.y(84f)); close()
+    }
+    if (tr != null) { tr.trace(this, cup); tr.trace(this, g.line(36f, 84f, 64f, 84f)); return }
+    drawOval(c.shadow, topLeft = g.o(30f, 82f), size = g.s(40f, 5f))
+    drawPath(cup, c.paper.copy(alpha = 0.92f))
+    val level = 50f + 1.6f * sin(t * TAU)
+    clipPath(cup) {
+        val water = Path().apply {
+            moveTo(g.x(26f), g.y(level))
+            var x = 26f
+            while (x <= 74f) {
+                lineTo(g.x(x), g.y(level + 1.4f * sin((x / 8f) + t * TAU * 2f)))
+                x += 2f
+            }
+            lineTo(g.x(74f), g.y(90f)); lineTo(g.x(26f), g.y(90f)); close()
+        }
+        drawPath(water, c.main.copy(alpha = 0.55f))
+        for (i in 0..2) {
+            val ph = (t + i / 3f) % 1f
+            val y = 80f - (80f - level - 3f) * ph
+            drawCircle(c.paper.copy(alpha = 0.7f * (1f - ph)), radius = (1f + i * 0.4f) * u, center = g.o(42f + i * 8f, y))
+        }
+    }
+    drawPath(cup, c.main.copy(alpha = 0.6f), style = Stroke(1.8f * u, join = StrokeJoin.Round))
+    drawLine(c.paper.copy(alpha = 0.8f), g.o(35f, 36f), g.o(38.5f, 74f), strokeWidth = 2.2f * u, cap = StrokeCap.Round)
+    // two drops a loop, each landing with a ring
+    for (i in 0..1) {
+        val ph = (t * 2f + i * 0.5f) % 1f
+        val falling = clamp01(ph / 0.45f)
+        if (ph < 0.45f) drop(g.o(50f + (i * 2 - 1) * 5f, 10f + (level - 12f) * easeOutIn(falling)), 2.6f * u, c.main)
+        val ring = clamp01((ph - 0.45f) / 0.4f)
+        if (ring > 0f && ring < 1f) {
+            val w = 4f + 12f * ring
+            drawOval(c.main.copy(alpha = (1f - ring) * 0.7f), topLeft = g.o(50f + (i * 2 - 1) * 5f - w / 2f, level - 1.2f), size = g.s(w, 2.6f), style = Stroke(1.2f * u))
+        }
+    }
+}
+
+/** A falling drop: round below, pointed on top. */
+private fun DrawScope.drop(center: Offset, r: Float, color: Color) {
+    val p = Path().apply {
+        moveTo(center.x, center.y - r * 2.2f)
+        cubicTo(center.x + r * 0.4f, center.y - r * 1.2f, center.x + r, center.y - r * 0.6f, center.x + r, center.y)
+        cubicTo(center.x + r, center.y + r * 1.35f, center.x - r, center.y + r * 1.35f, center.x - r, center.y)
+        cubicTo(center.x - r, center.y - r * 0.6f, center.x - r * 0.4f, center.y - r * 1.2f, center.x, center.y - r * 2.2f)
+        close()
+    }
+    drawPath(p, color)
+}
+
+/** Slow at both ends, for something that falls and lands. */
+private fun easeOutIn(v: Float) = v * v

@@ -1,5 +1,7 @@
 package com.example.mediminder.data.local
 
+import com.example.mediminder.data.local.dao.ReadingDao
+import com.example.mediminder.data.local.entity.Reading
 import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
@@ -34,9 +36,9 @@ import java.util.TimeZone
 @Database(
     entities = [
         Medication::class, Schedule::class, DoseLog::class, RestockEvent::class,
-        Doctor::class, Appointment::class, ActiveAlert::class, VaultItem::class,
+        Doctor::class, Appointment::class, ActiveAlert::class, VaultItem::class, Reading::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 abstract class MediMinderDatabase : RoomDatabase() {
@@ -48,6 +50,7 @@ abstract class MediMinderDatabase : RoomDatabase() {
     abstract fun appointmentDao(): AppointmentDao
     abstract fun activeAlertDao(): ActiveAlertDao
     abstract fun vaultItemDao(): VaultItemDao
+    abstract fun readingDao(): ReadingDao
 
     companion object {
         const val FILE_NAME = "mediminder.db"
@@ -65,7 +68,34 @@ abstract class MediMinderDatabase : RoomDatabase() {
  * taken-history are kept.
  */
 /** Every upgrade path, oldest first. */
-val ALL_MIGRATIONS: Array<Migration> get() = arrayOf(MIGRATION_1_3, MIGRATION_2_3, MIGRATION_3_4)
+val ALL_MIGRATIONS: Array<Migration> get() = arrayOf(MIGRATION_1_3, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+
+/**
+ * 4 → 5: creams, drops, sprays and injections get their own handling, and health checks and
+ * habits join medicines. Existing medicines get their kind from their unit; readings get a table.
+ */
+val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE medications ADD COLUMN kind TEXT NOT NULL DEFAULT 'PILL'")
+        db.execSQL("ALTER TABLE medications ADD COLUMN site TEXT")
+        db.execSQL("ALTER TABLE medications ADD COLUMN openedAt INTEGER")
+        db.execSQL("ALTER TABLE medications ADD COLUMN useWithinDays INTEGER")
+        db.execSQL("ALTER TABLE medications ADD COLUMN subtype TEXT")
+        db.execSQL(
+            "UPDATE medications SET kind = CASE unit " +
+                "WHEN 'ml' THEN 'LIQUID' WHEN 'spoon' THEN 'LIQUID' WHEN 'drop' THEN 'DROPS' WHEN 'puff' THEN 'INHALED' " +
+                "WHEN 'injection' THEN 'INJECTION' WHEN 'unit' THEN 'INJECTION' WHEN 'suppository' THEN 'SUPPOSITORY' " +
+                "WHEN 'application' THEN 'TOPICAL' ELSE 'PILL' END"
+        )
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `readings` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `medicationId` INTEGER, " +
+                "`type` TEXT NOT NULL, `value` REAL NOT NULL, `value2` REAL, `pulse` INTEGER, `timing` TEXT, " +
+                "`takenAt` INTEGER NOT NULL, `note` TEXT)"
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_readings_takenAt` ON `readings` (`takenAt`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_readings_medicationId` ON `readings` (`medicationId`)")
+    }
+}
 
 /** 3 → 4: "delete but keep the history" marks a medicine instead of removing it. */
 val MIGRATION_3_4 = object : Migration(3, 4) {

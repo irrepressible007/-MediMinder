@@ -1,5 +1,24 @@
 package com.example.mediminder.ui.components
 
+import com.example.mediminder.domain.CareKind
+import com.example.mediminder.domain.HabitType
+import com.example.mediminder.domain.MeasureType
+import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
+import androidx.compose.material.icons.filled.Air
+import androidx.compose.material.icons.filled.Bedtime
+import androidx.compose.material.icons.filled.Bloodtype
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Fingerprint
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.Healing
+import androidx.compose.material.icons.filled.LocalDrink
+import androidx.compose.material.icons.filled.Medication
+import androidx.compose.material.icons.filled.MonitorHeart
+import androidx.compose.material.icons.filled.MonitorWeight
+import androidx.compose.material.icons.filled.Thermostat
+import androidx.compose.material.icons.filled.Vaccines
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.material.icons.filled.Close
 import android.app.DatePickerDialog
@@ -493,6 +512,33 @@ fun <T> ChoiceChips(options: List<T>, selected: T?, label: @Composable (T) -> St
     }
 }
 
+/** Like [ChoiceChips], but any number can be on (a cream for the knees and the hands). */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun <T> MultiChoiceChips(options: List<T>, selected: Set<T>, label: @Composable (T) -> String, onToggle: (T) -> Unit, modifier: Modifier = Modifier) {
+    FlowRow(modifier, horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        options.forEach { option ->
+            val on = option in selected
+            FilterChip(
+                selected = on,
+                onClick = { onToggle(option) },
+                label = { Text(label(option), style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(vertical = 10.dp)) },
+                leadingIcon = if (on) ({ Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(20.dp)) }) else null,
+                shape = MaterialTheme.shapes.small,
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                    selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimary,
+                ),
+                border = FilterChipDefaults.filterChipBorder(
+                    enabled = true, selected = on,
+                    borderColor = MaterialTheme.colorScheme.outline, borderWidth = 1.dp,
+                ),
+            )
+        }
+    }
+}
+
 /** − value + with 48dp buttons. */
 @Composable
 fun Stepper(value: String, onMinus: () -> Unit, onPlus: () -> Unit, modifier: Modifier = Modifier, minusEnabled: Boolean = true, plusEnabled: Boolean = true) {
@@ -646,11 +692,19 @@ fun PillAvatar(name: String, colorHex: String, modifier: Modifier = Modifier, si
  * Rounded-square so a photo and a badge sit the same way in a list.
  */
 @Composable
-fun MedicineImage(photo: String?, name: String, colorHex: String, modifier: Modifier = Modifier, size: Int = 48) {
+fun MedicineImage(
+    photo: String?,
+    name: String,
+    colorHex: String,
+    modifier: Modifier = Modifier,
+    size: Int = 48,
+    kind: CareKind = CareKind.PILL,
+    subtype: String? = null,
+) {
     val context = LocalContext.current
     val model = remember(photo) { MedicinePhotos.model(context, photo) }
     if (model == null) {
-        PillAvatar(name, colorHex, modifier, size)
+        if (kind == CareKind.PILL) PillAvatar(name, colorHex, modifier, size) else CareAvatar(kind, subtype, colorHex, modifier, size)
         return
     }
     val shape = RoundedCornerShape((size * 0.28f).dp)
@@ -661,6 +715,38 @@ fun MedicineImage(photo: String?, name: String, colorHex: String, modifier: Modi
         modifier = modifier.size(size.dp).clip(shape).border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape),
         error = { PillAvatar(name, colorHex, size = size) },
     )
+}
+
+/** Without a photo, a cream, drops, a health check or a habit shows what it is. */
+@Composable
+fun CareAvatar(kind: CareKind, subtype: String?, colorHex: String, modifier: Modifier = Modifier, size: Int = 48) {
+    Box(modifier.size(size.dp).clip(CircleShape).background(parseColor(colorHex)), contentAlignment = Alignment.Center) {
+        Icon(careIcon(kind, subtype), contentDescription = null, tint = Color.White, modifier = Modifier.size((size * 0.52f).dp))
+    }
+}
+
+fun careIcon(kind: CareKind, subtype: String?): ImageVector = when (kind) {
+    CareKind.PILL, CareKind.SUPPOSITORY -> Icons.Default.Medication
+    CareKind.LIQUID -> Icons.Default.LocalDrink
+    CareKind.TOPICAL -> Icons.Default.Healing
+    CareKind.DROPS -> Icons.Default.WaterDrop
+    CareKind.INHALED -> Icons.Default.Air
+    CareKind.INJECTION -> Icons.Default.Vaccines
+    CareKind.MEASURE -> when (MeasureType.entries.firstOrNull { it.name == subtype }) {
+        MeasureType.BLOOD_SUGAR -> Icons.Default.Bloodtype
+        MeasureType.WEIGHT -> Icons.Default.MonitorWeight
+        MeasureType.TEMPERATURE -> Icons.Default.Thermostat
+        MeasureType.OXYGEN -> Icons.Default.Fingerprint
+        else -> Icons.Default.MonitorHeart
+    }
+    CareKind.HABIT -> when (HabitType.entries.firstOrNull { it.name == subtype }) {
+        HabitType.WATER -> Icons.Default.LocalDrink
+        HabitType.WALK -> Icons.AutoMirrored.Filled.DirectionsWalk
+        HabitType.EXERCISE -> Icons.Default.FitnessCenter
+        HabitType.FOOT_CHECK -> Icons.Default.Visibility
+        HabitType.SLEEP -> Icons.Default.Bedtime
+        else -> Icons.Default.Favorite
+    }
 }
 
 fun parseColor(hex: String, fallback: Color = Color(0xFF2754C5)): Color =

@@ -1,5 +1,9 @@
 package com.example.mediminder.ui.medicines
 
+import com.example.mediminder.domain.OpenedItems
+import androidx.compose.material.icons.filled.Autorenew
+import androidx.compose.ui.text.font.FontWeight
+import kotlinx.coroutines.flow.map
 import com.example.mediminder.ui.components.Art
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
@@ -80,6 +84,7 @@ import javax.inject.Inject
 @HiltViewModel
 class MedicinesViewModel @Inject constructor(repository: MedicineRepository) : ViewModel() {
     val medicines: StateFlow<List<MedicationWithSchedules>?> = repository.observeAll()
+        .map { list -> list.filter { it.medication.kind.isMedicine } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 }
 
@@ -183,7 +188,7 @@ fun MedicineRow(item: MedicationWithSchedules, today: Long, modifier: Modifier =
         borderWidth = if (glow.value > 0.02f) 2.dp else 1.dp,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            MedicineImage(m.photoUri, m.name, m.color, size = 64)
+            MedicineImage(m.photoUri, m.name, m.color, size = 64, kind = m.kind)
             Spacer(Modifier.width(16.dp))
             Column(Modifier.weight(1f)) {
                 Text(listOf(m.name, m.strength).filter { it.isNotBlank() }.joinToString(" "), style = MaterialTheme.typography.titleLarge)
@@ -197,6 +202,14 @@ fun MedicineRow(item: MedicationWithSchedules, today: Long, modifier: Modifier =
                     Spacer(Modifier.width(6.dp))
                     Text(scheduleSummary(context, item), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
+            }
+        }
+        if (!m.archived && OpenedItems.needsReplacing(m, LocalDate.now().toEpochDay())) {
+            Spacer(Modifier.height(10.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Autorenew, contentDescription = null, tint = status.due, modifier = Modifier.size(22.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.replace_chip), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold, color = status.due)
             }
         }
         if (m.trackStock) {

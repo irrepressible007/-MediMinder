@@ -1,5 +1,7 @@
 package com.example.mediminder.reminders
 
+import com.example.mediminder.domain.CareSites
+import com.example.mediminder.domain.OpenedItems
 import com.example.mediminder.data.local.dao.ActiveAlertDao
 import com.example.mediminder.data.local.dao.AppointmentDao
 import com.example.mediminder.data.local.dao.DoseLogDao
@@ -260,7 +262,7 @@ class ReminderEngine @Inject constructor(
 
     suspend fun hasActiveMedicines(): Boolean = medicationDao.getActiveWithSchedules().isNotEmpty()
 
-    fun doseInfo(medication: Medication, schedule: Schedule, day: Long) = DoseInfo(
+    suspend fun doseInfo(medication: Medication, schedule: Schedule, day: Long) = DoseInfo(
         scheduleId = schedule.id,
         day = day,
         minuteOfDay = schedule.minuteOfDay,
@@ -272,6 +274,10 @@ class ReminderEngine @Inject constructor(
         mealTiming = medication.mealTiming,
         alertType = schedule.alertType,
         photo = medication.photoUri,
+        kind = medication.kind,
+        subtype = medication.subtype,
+        site = if (medication.site == CareSites.ROTATE) CareSites.siteFor(medication, scheduleDao.forMedication(medication.id), schedule, day)
+        else medication.site,
     )
 
     // ── Stock ───────────────────────────────────────────────────────────────
@@ -311,6 +317,10 @@ class ReminderEngine @Inject constructor(
             notifier.showRefillSummary(low.map { it.medication.name })
             low.forEach { medicationDao.setLowStockAlertDay(it.medication.id, today) }
         }
+        // Opened too long ago: on the day, then weekly until a new one is opened
+        medicationDao.getActiveWithSchedules().map { it.medication }
+            .filter { OpenedItems.remindToday(it, today) }
+            .forEach { notifier.showReplace(it.id, it.name) }
         armRefillCheck(LocalDateTime.now())
     }
 

@@ -1,5 +1,13 @@
 package com.example.mediminder.ui.medicines
 
+import com.example.mediminder.domain.CareKind
+import com.example.mediminder.domain.OpenedItems
+import com.example.mediminder.data.local.entity.Medication
+import com.example.mediminder.util.CareText
+import com.example.mediminder.ui.components.CareAvatar
+import com.example.mediminder.ui.components.showDatePicker
+import androidx.compose.material.icons.filled.Autorenew
+import androidx.compose.material.icons.filled.Today
 import com.example.mediminder.ui.components.Arrive
 import com.example.mediminder.ui.components.rememberEntranceState
 import com.example.mediminder.ui.components.FeedbackBus
@@ -200,6 +208,11 @@ class MedicineDetailViewModel @Inject constructor(
 
     fun setStock(count: Double) = viewModelScope.launch { id.value?.let { repository.setStock(it, count) } }
 
+    fun setOpened(date: LocalDate, announce: Boolean) = viewModelScope.launch {
+        id.value?.let { repository.setOpened(it, date.toEpochDay()) }
+        if (announce) FeedbackBus.show(FeedbackKind.SAVED, R.string.feedback_opened_new)
+    }
+
     fun setArchived(archived: Boolean) = viewModelScope.launch {
         id.value?.let { medId ->
             repository.setArchived(medId, archived)
@@ -294,7 +307,7 @@ fun MedicineDetailScreen(
             item { Arrive(arrival, 1) {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 4.dp)) {
                     if (!hasPhoto) {
-                        PillAvatar(m.name, m.color, size = 60)
+                        if (m.kind == CareKind.PILL) PillAvatar(m.name, m.color, size = 60) else CareAvatar(m.kind, m.subtype, m.color, size = 60)
                         Spacer(Modifier.width(16.dp))
                     }
                     Column(Modifier.weight(1f)) {
@@ -324,15 +337,25 @@ fun MedicineDetailScreen(
                                 )
                                 Spacer(Modifier.width(12.dp))
                                 Text(Formats.time(context, s.minuteOfDay), style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
-                                Text(Formats.quantity(context, s.quantity, m.unit), style = MaterialTheme.typography.bodyLarge)
+                                if (m.kind != CareKind.TOPICAL) Text(Formats.quantity(context, s.quantity, m.unit), style = MaterialTheme.typography.bodyLarge)
                             }
                         }
                         m.dosePattern?.let {
                             Spacer(Modifier.height(10.dp))
                             Text(stringResource(R.string.detail_prescription, Formats.digits(context, it)), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
+                        CareText.siteSummary(context, m.kind, m.site)?.let { where ->
+                            Spacer(Modifier.height(10.dp))
+                            Text(stringResource(R.string.detail_where) + ": " + where, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                        }
                     }
                 }}
+            }
+
+            // Creams, drops, syrups, inhalers: they only last so long once opened
+            if (CareKind.lastsOnceOpened(m.kind)) {
+                item { Arrive(arrival, 5) { SectionTitle(stringResource(R.string.wiz_opened_heading)) }}
+                item { Arrive(arrival, 5) { OpenedSection(m, onOpenedNew = { viewModel.setOpened(LocalDate.now(), announce = true) }, onPick = { viewModel.setOpened(it, announce = false) }) }}
             }
 
             // Stock
@@ -472,6 +495,52 @@ fun MedicineDetailScreen(
  * "Delete Napa?" with one choice: also delete its intake history. Unticked by default,
  * so the record stays (e.g. to show a doctor) unless the user asks otherwise.
  */
+@Composable
+private fun OpenedSection(m: Medication, onOpenedNew: () -> Unit, onPick: (LocalDate) -> Unit) {
+    val context = LocalContext.current
+    val status = LocalStatusColors.current
+    val today = LocalDate.now().toEpochDay()
+    val replace = OpenedItems.needsReplacing(m, today)
+    MediCard(
+        containerColor = if (replace) status.dueContainer else MaterialTheme.colorScheme.surface,
+        borderColor = if (replace) status.due else MaterialTheme.colorScheme.outlineVariant,
+        borderWidth = if (replace) 2.dp else 1.dp,
+    ) {
+        val opened = m.openedAt
+        if (opened == null) {
+            Text(stringResource(R.string.detail_opened_unknown), style = MaterialTheme.typography.bodyLarge)
+            Spacer(Modifier.height(12.dp))
+            SecondaryButton(stringResource(R.string.wiz_opened_today), onClick = onOpenedNew, icon = Icons.Default.Today)
+            QuietButton(
+                stringResource(R.string.detail_opened_set),
+                onClick = { showDatePicker(context, LocalDate.now(), onPicked = onPick) },
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+            )
+            return@MediCard
+        }
+        val day = LocalDate.ofEpochDay(opened)
+        Text(stringResource(R.string.detail_opened, Formats.date(context, day)), style = MaterialTheme.typography.titleMedium)
+        OpenedItems.replaceOn(m)?.let { until ->
+            if (replace) {
+                Spacer(Modifier.height(6.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Warning, contentDescription = null, tint = status.onDueContainer)
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        stringResource(R.string.detail_replace_now, Formats.number(context, (today - opened).toInt())),
+                        style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold, color = status.onDueContainer,
+                    )
+                }
+            } else {
+                Text(stringResource(R.string.detail_replace_by, Formats.date(context, LocalDate.ofEpochDay(until))), style = MaterialTheme.typography.bodyLarge)
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        if (replace) PrimaryButton(stringResource(R.string.detail_opened_new), onClick = onOpenedNew, icon = Icons.Default.Autorenew)
+        else SecondaryButton(stringResource(R.string.detail_opened_new), onClick = onOpenedNew, icon = Icons.Default.Autorenew)
+    }
+}
+
 @Composable
 private fun DeleteMedicineDialog(name: String, onConfirm: (alsoHistory: Boolean) -> Unit, onDismiss: () -> Unit) {
     var alsoHistory by rememberSaveable { mutableStateOf(false) }

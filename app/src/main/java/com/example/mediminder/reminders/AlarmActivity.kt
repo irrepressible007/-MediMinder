@@ -1,5 +1,9 @@
 package com.example.mediminder.reminders
 
+import com.example.mediminder.MainActivity
+import com.example.mediminder.domain.CareKind
+import com.example.mediminder.domain.CareSites
+import com.example.mediminder.util.CareText
 import android.app.KeyguardManager
 import android.content.Context
 import android.content.Intent
@@ -143,7 +147,16 @@ class AlarmActivity : AppCompatActivity() {
         val name: String,
         val detail: String,
         val photo: String?,
+        val kind: CareKind,
+        val answer: String,
+        val medicationId: Long,
     )
+
+    /** Opens the app at "write down a reading" for a health check that was just answered. */
+    private fun recordIntent(medicationId: Long) = Intent(this, MainActivity::class.java)
+        .setAction(Intent.ACTION_VIEW)
+        .setData(Uri.parse(Notifier.DEEP_LINK_READING + medicationId))
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
 
     @Composable
     private fun DoseAlarm() {
@@ -154,16 +167,22 @@ class AlarmActivity : AppCompatActivity() {
                 val schedules = medications.flatMap { m -> m.schedules.map { it to m.medication } }.associateBy { it.first.id }
                 alerts.mapNotNull { alert ->
                     val (schedule, medication) = schedules[alert.scheduleId] ?: return@mapNotNull null
+                    val all = medications.firstOrNull { it.medication.id == medication.id }?.schedules.orEmpty()
+                    val site = CareSites.siteFor(medication, all, schedule, alert.scheduledDay)
+                    val shownName = CareText.name(context, medication.kind, medication.subtype, medication.name)
                     RingingDose(
                         scheduleId = alert.scheduleId,
                         day = alert.scheduledDay,
-                        name = listOf(medication.name, medication.strength).filter { it.isNotBlank() }.joinToString(" "),
+                        name = listOf(shownName, medication.strength).filter { it.isNotBlank() }.joinToString(" "),
                         detail = buildList {
-                            add(Formats.quantity(context, schedule.quantity, medication.unit))
+                            add(CareText.line(context, medication.kind, schedule.quantity, medication.unit, site))
                             add(Formats.time(context, schedule.minuteOfDay))
-                            if (medication.mealTiming != MealTiming.ANY) add(Formats.mealTiming(context, medication.mealTiming))
+                            if (medication.mealTiming != MealTiming.ANY && medication.kind.isMedicine) add(Formats.mealTiming(context, medication.mealTiming))
                         }.joinToString(" · "),
                         photo = medication.photoUri,
+                        kind = medication.kind,
+                        answer = CareText.answer(context, medication.kind),
+                        medicationId = medication.id,
                     )
                 }
             }
@@ -173,7 +192,8 @@ class AlarmActivity : AppCompatActivity() {
         LaunchedEffect(doses) { if (doses?.isEmpty() == true) finish() }
         BackHandler { lifecycleScope.launch { doseActions.snoozeAllRinging(); finish() } }
 
-        AlarmFrame(title = stringResource(R.string.alarm_title)) {
+        val allOral = doses.orEmpty().all { CareText.isOral(it.kind) }
+        AlarmFrame(title = stringResource(if (allOral) R.string.alarm_title else R.string.alarm_title_any)) {
             LazyColumn(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -191,14 +211,20 @@ class AlarmActivity : AppCompatActivity() {
                             Text(dose.detail, color = Color.White.copy(alpha = 0.9f), style = MaterialTheme.typography.bodyLarge)
                             Spacer(Modifier.height(16.dp))
                             Button(
-                                onClick = { lifecycleScope.launch { doseActions.take(dose.scheduleId, dose.day) } },
+                                onClick = {
+                                    lifecycleScope.launch {
+                                        doseActions.take(dose.scheduleId, dose.day)
+                                        // a health check: the alarm stops, then the reading is written down in the app
+                                        if (dose.kind == CareKind.MEASURE) unlockThen { startActivity(recordIntent(dose.medicationId)) }
+                                    }
+                                },
                                 colors = ButtonDefaults.buttonColors(containerColor = AlarmTakenButton, contentColor = Color.White),
                                 shape = MaterialTheme.shapes.medium,
                                 modifier = Modifier.fillMaxWidth().height(68.dp),
                             ) {
                                 Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(30.dp))
                                 Spacer(Modifier.width(10.dp))
-                                Text(stringResource(R.string.dose_sheet_take), style = MaterialTheme.typography.headlineSmall)
+                                Text(if (CareText.isOral(dose.kind)) stringResource(R.string.dose_sheet_take) else dose.answer, style = MaterialTheme.typography.headlineSmall)
                             }
                             TextButton(
                                 onClick = { lifecycleScope.launch { doseActions.skip(dose.scheduleId, dose.day) } },
@@ -215,7 +241,7 @@ class AlarmActivity : AppCompatActivity() {
                     colors = ButtonDefaults.buttonColors(containerColor = AlarmTakenButton, contentColor = Color.White),
                     modifier = Modifier.fillMaxWidth().height(64.dp),
                     shape = MaterialTheme.shapes.medium,
-                ) { Text(stringResource(R.string.action_take_all), style = MaterialTheme.typography.titleLarge) }
+                ) { Text(stringResource(if (allOral) R.string.action_take_all else R.string.care_all_done), style = MaterialTheme.typography.titleLarge) }
                 Spacer(Modifier.height(8.dp))
             }
             OutlinedButton(

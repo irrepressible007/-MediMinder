@@ -1,5 +1,7 @@
 package com.example.mediminder.data.local.entity
 
+import androidx.room.ColumnInfo
+import com.example.mediminder.domain.CareKind
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -58,6 +60,18 @@ data class Medication(
     val archived: Boolean = false,
     /** Deleted from the list, with its intake history kept (epoch millis). Hidden everywhere else. */
     val deletedAt: Long? = null,
+
+    /** What it is: a medicine form, a health check or a habit. */
+    @ColumnInfo(defaultValue = "PILL")
+    val kind: CareKind = CareKind.PILL,
+    /** Where or how: a body area for a cream, "left"/"right"/"both" for drops, "rotate" for injections. */
+    val site: String? = null,
+    /** Opened on (epoch day), for things that only last so long once opened. */
+    val openedAt: Long? = null,
+    /** Use within this many days of opening, as the label says. */
+    val useWithinDays: Int? = null,
+    /** A health check's MeasureType or a habit's HabitType (by name). */
+    val subtype: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
 )

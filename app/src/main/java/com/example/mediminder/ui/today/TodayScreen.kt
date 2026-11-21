@@ -1,5 +1,8 @@
 package com.example.mediminder.ui.today
 
+import com.example.mediminder.domain.CareKind
+import com.example.mediminder.util.CareText
+import androidx.compose.material.icons.filled.Autorenew
 import com.example.mediminder.reminders.CheckResult
 import com.example.mediminder.reminders.SetupNudge
 import com.example.mediminder.ui.components.FeedbackBus
@@ -167,6 +170,7 @@ fun TodayScreen(
     onOpenRefills: () -> Unit,
     onOpenReliability: () -> Unit,
     onOpenAppointments: () -> Unit,
+    onRecord: (scheduleId: Long, day: Long) -> Unit = { _, _ -> },
     viewModel: TodayViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
@@ -190,14 +194,26 @@ fun TodayScreen(
     val undoLabel = stringResource(R.string.action_undo)
     // A slip of the thumb is easy to put right: every Taken / Skip offers Undo for a few seconds
     fun offerUndo(row: DoseRow, taken: Boolean) {
-        val name = listOf(row.name, row.strength).filter { it.isNotBlank() }.joinToString(" ")
-        val message = resources.getString(if (taken) R.string.today_undo_taken else R.string.today_undo_skipped, name)
+        val name = listOf(CareText.name(context, row.kind, row.subtype, row.name), row.strength).filter { it.isNotBlank() }.joinToString(" ")
+        val message = resources.getString(
+            when {
+                !taken -> R.string.today_undo_skipped
+                CareText.isOral(row.kind) -> R.string.today_undo_taken
+                else -> R.string.today_undo_done
+            },
+            name,
+        )
         scope.launch {
             snackbar.currentSnackbarData?.dismiss()
             if (snackbar.showSnackbar(message, actionLabel = undoLabel, duration = SnackbarDuration.Long) == SnackbarResult.ActionPerformed) {
                 viewModel.undo(row)
             }
         }
+    }
+    // A health check is answered by writing the reading down; everything else is one tap
+    fun answer(row: DoseRow) {
+        if (row.kind == CareKind.MEASURE) onRecord(row.scheduleId, row.day)
+        else { viewModel.take(row); offerUndo(row, taken = true) }
     }
     var limitDialog by remember { mutableStateOf<TodayEvent.LimitReached?>(null) }
     var sheetFor by remember { mutableStateOf<DoseRow?>(null) }
@@ -238,7 +254,7 @@ fun TodayScreen(
             canSnooze = state.isToday && live.state != DoseState.UPCOMING,
             snoozeMinutes = state.snoozeMinutes,
             onDismiss = { sheetFor = null },
-            onTake = { viewModel.take(live); offerUndo(live, taken = true); sheetFor = null },
+            onTake = { answer(live); sheetFor = null },
             onSnooze = { viewModel.snooze(live); sheetFor = null },
             onSkip = { viewModel.skip(live); offerUndo(live, taken = false); sheetFor = null },
             onUndo = { viewModel.undo(live); sheetFor = null },
@@ -289,6 +305,19 @@ fun TodayScreen(
                     onClick = onOpenRefills,
                 )
             }
+            if (state.isToday) items(state.replace, key = { "replace-${it.id}" }) { m ->
+                NoticeCard(
+                    text = stringResource(
+                        R.string.today_replace_banner,
+                        m.name,
+                        Formats.number(context, (LocalDate.now().toEpochDay() - (m.openedAt ?: 0L)).toInt()),
+                    ),
+                    icon = Icons.Default.Autorenew,
+                    tone = Tone.WARNING,
+                    onClick = { onOpenMedicine(m.id) },
+                    modifier = Modifier.animateItem(),
+                )
+            }
             state.nextAppointment?.takeIf { state.isToday }?.let { appt ->
                 item {
                     val at = appt.dateTime.toLocalDateTime()
@@ -329,7 +358,7 @@ fun TodayScreen(
                     DoseCard(
                         row = row,
                         actionable = state.isToday && row.state in ACTIONABLE,
-                        onTake = { viewModel.take(row); offerUndo(row, taken = true) },
+                        onTake = { answer(row) },
                         onOptions = { sheetFor = row },
                         modifier = Modifier.animateItem().entrance(entrance, first + i),
                     )
@@ -476,7 +505,13 @@ private fun SummaryCard(state: TodayUi, modifier: Modifier = Modifier) {
                 Column(Modifier.weight(1f)) {
                     RollingContent(state.taken to state.total) { (taken, total) ->
                         Text(
-                            stringResource(if (state.isToday) R.string.today_summary else R.string.day_summary, Formats.number(context, taken), Formats.number(context, total)),
+                            stringResource(
+                                when {
+                                    state.rows.all { CareText.isOral(it.kind) } -> if (state.isToday) R.string.today_summary else R.string.day_summary
+                                    else -> if (state.isToday) R.string.today_summary_done else R.string.day_summary_done
+                                },
+                                Formats.number(context, taken), Formats.number(context, total),
+                            ),
                             style = MaterialTheme.typography.headlineSmall,
                             color = onColor,
                         )
@@ -556,9 +591,16 @@ private fun DayPartHeader(part: DayPart) {
 private fun doseDetail(row: DoseRow): String {
     val context = LocalContext.current
     return buildList {
-        add(Formats.quantity(context, row.quantity, row.unit))
-        if (row.mealTiming != MealTiming.ANY) add(Formats.mealTiming(context, row.mealTiming))
+        add(CareText.line(context, row.kind, row.quantity, row.unit, row.site))
+        if (row.mealTiming != MealTiming.ANY && row.kind.isMedicine) add(Formats.mealTiming(context, row.mealTiming))
     }.joinToString(" · ")
+}
+
+/** "Napa 500 mg", or a health check or habit in the app's language. */
+@Composable
+private fun rowName(row: DoseRow): String {
+    val context = LocalContext.current
+    return listOf(CareText.name(context, row.kind, row.subtype, row.name), row.strength).filter { it.isNotBlank() }.joinToString(" ")
 }
 
 @Composable
@@ -573,7 +615,11 @@ private fun DoseCard(row: DoseRow, actionable: Boolean, onTake: () -> Unit, onOp
     }
     val chipLabel = when {
         row.state == DoseState.TAKEN && row.loggedAt != null ->
-            stringResource(R.string.today_taken_at, Formats.time(context, minuteOf(row.loggedAt.toLocalDateTime().toLocalTime())))
+            stringResource(
+                if (CareText.isOral(row.kind)) R.string.today_taken_at else R.string.today_done_at,
+                Formats.time(context, minuteOf(row.loggedAt.toLocalDateTime().toLocalTime())),
+            )
+        row.state == DoseState.TAKEN && !CareText.isOral(row.kind) -> stringResource(R.string.state_done)
         row.state == DoseState.SNOOZED && row.snoozedUntil != null ->
             stringResource(R.string.state_snoozed_until, Formats.time(context, minuteOf(row.snoozedUntil.toLocalDateTime().toLocalTime())))
         else -> stateLabel(row.state)
@@ -628,13 +674,14 @@ private fun DoseCard(row: DoseRow, actionable: Boolean, onTake: () -> Unit, onOp
                 MedicineImage(
                     row.photo, row.name, row.color, size = 64,
                     modifier = Modifier.graphicsLayer { scaleX = bounce.value; scaleY = bounce.value },
+                    kind = row.kind, subtype = row.subtype,
                 )
                 if (burst) BurstEffect(status.taken, Modifier.matchParentSize(), onFinished = { burst = false })
                 DoneMark(answered, skipped = row.state == DoseState.SKIPPED, Modifier.align(Alignment.BottomEnd).offset(x = 6.dp, y = 6.dp))
             }
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
-                Text(listOf(row.name, row.strength).filter { it.isNotBlank() }.joinToString(" "), style = MaterialTheme.typography.titleLarge)
+                Text(rowName(row), style = MaterialTheme.typography.titleLarge)
                 Text(doseDetail(row), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
@@ -646,7 +693,7 @@ private fun DoseCard(row: DoseRow, actionable: Boolean, onTake: () -> Unit, onOp
         ) {
             Column {
                 Spacer(Modifier.height(16.dp))
-                TakenButton(onClick = onTake)
+                TakenButton(onClick = onTake, text = CareText.answer(context, row.kind))
                 QuietButton(
                     stringResource(R.string.dose_snooze_or_skip),
                     onClick = onOptions,
@@ -739,7 +786,7 @@ private fun DoseOptionsSheet(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             MedicinePhoto(row.photo, stringResource(R.string.cd_medicine_photo, row.name), Modifier.fillMaxWidth().height(180.dp))
-            Text(listOf(row.name, row.strength).filter { it.isNotBlank() }.joinToString(" "), style = MaterialTheme.typography.headlineSmall)
+            Text(rowName(row), style = MaterialTheme.typography.headlineSmall)
             Text(
                 Formats.time(context, row.minuteOfDay) + " · " + doseDetail(row),
                 style = MaterialTheme.typography.bodyLarge,
@@ -747,7 +794,14 @@ private fun DoseOptionsSheet(
             )
             Spacer(Modifier.height(4.dp))
             if (canAct && !answered) {
-                TakenButton(onClick = onTake, text = stringResource(R.string.dose_sheet_take))
+                TakenButton(
+                    onClick = onTake,
+                    text = when {
+                        CareText.isOral(row.kind) -> stringResource(R.string.dose_sheet_take)
+                        row.kind == CareKind.HABIT -> stringResource(R.string.dose_sheet_done)
+                        else -> CareText.answer(context, row.kind)
+                    },
+                )
                 if (canSnooze) SecondaryButton(stringResource(R.string.dose_sheet_snooze, Formats.number(context, snoozeMinutes)), onSnooze, icon = Icons.Default.Snooze)
                 SecondaryButton(stringResource(R.string.dose_sheet_skip), onSkip, icon = Icons.Default.Block, contentColor = MaterialTheme.colorScheme.onSurfaceVariant)
             }

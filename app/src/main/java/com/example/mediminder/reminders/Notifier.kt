@@ -1,5 +1,7 @@
 package com.example.mediminder.reminders
 
+import com.example.mediminder.domain.CareKind
+import com.example.mediminder.util.CareText
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Notification
@@ -46,6 +48,11 @@ data class DoseInfo(
     val alertType: AlertType,
     /** Photo of the box or strip (MedicinePhotos reference), or null. */
     val photo: String? = null,
+    val kind: CareKind = CareKind.PILL,
+    /** A health check's or habit's type. */
+    val subtype: String? = null,
+    /** Where it goes this time (a body area, "eye_left", or this dose's injection site). */
+    val site: String? = null,
 )
 
 /** Builds and posts every notification the app shows. */
@@ -117,8 +124,10 @@ class Notifier @Inject constructor(
     /** A normal reminder with Taken / Snooze / Skip buttons, one per dose. */
     fun showDoseReminder(dose: DoseInfo, snoozeMinutes: Int, repeatCount: Int) {
         val ctx = context
-        val title = ctx.getString(R.string.notif_dose_title, doseName(dose))
+        val title = CareText.title(ctx, dose.kind, dose.subtype, doseName(dose))
         val text = doseLine(ctx, dose)
+        // A health check is answered by writing the reading down, which needs the app
+        val record = if (dose.kind == CareKind.MEASURE) openApp("$DEEP_LINK_RECORD${dose.scheduleId}/${dose.day}") else null
         val builder = NotificationCompat.Builder(ctx, CHANNEL_DOSES)
             .setSmallIcon(R.drawable.ic_stat_pill)
             .setColor(ContextCompat.getColor(appContext, R.color.brand))
@@ -132,8 +141,8 @@ class Notifier @Inject constructor(
             .setAutoCancel(false)
             .setGroup(GROUP_DOSES)
             .setWhen(System.currentTimeMillis())
-            .setContentIntent(openApp(DEEP_LINK_TODAY))
-            .addAction(0, ctx.getString(R.string.action_taken), answer(DoseActionReceiver.ACTION_TAKE, dose))
+            .setContentIntent(record ?: openApp(DEEP_LINK_TODAY))
+            .addAction(0, CareText.answer(ctx, dose.kind), record ?: answer(DoseActionReceiver.ACTION_TAKE, dose))
             .addAction(0, ctx.getString(R.string.action_snooze, Formats.number(ctx, snoozeMinutes)), answer(DoseActionReceiver.ACTION_SNOOZE, dose))
             .addAction(0, ctx.getString(R.string.action_skip), answer(DoseActionReceiver.ACTION_SKIP, dose))
         if (repeatCount > 0) builder.setSubText(ctx.getString(R.string.notif_dose_repeat))
@@ -155,7 +164,7 @@ class Notifier @Inject constructor(
             return
         }
         val ctx = context
-        val title = if (doses.size == 1) ctx.getString(R.string.notif_dose_title, doseName(doses.first()))
+        val title = if (doses.size == 1) doses.first().let { CareText.title(ctx, it.kind, it.subtype, doseName(it)) }
         else ctx.getString(R.string.notif_alarm_many, Formats.number(ctx, doses.size))
         val lines = doses.map { "${doseName(it)} — ${doseLine(ctx, it)}" }
         val style = NotificationCompat.InboxStyle().also { s -> lines.forEach(s::addLine) }
@@ -179,7 +188,7 @@ class Notifier @Inject constructor(
             .setFullScreenIntent(fullScreen, true)
             .setContentIntent(fullScreen)
             .setTimeoutAfter(ringMinutes * 60_000L)
-            .addAction(0, ctx.getString(if (doses.size == 1) R.string.action_taken else R.string.action_take_all), answerAll(DoseActionReceiver.ACTION_TAKE_ALL))
+            .addAction(0, allDoneLabel(ctx, doses), answerAll(DoseActionReceiver.ACTION_TAKE_ALL))
             .addAction(0, ctx.getString(R.string.action_snooze, Formats.number(ctx, snoozeMinutes)), answerAll(DoseActionReceiver.ACTION_SNOOZE_ALL))
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
             builder.setSound(alarmSound(), AudioManager.STREAM_ALARM)
@@ -233,6 +242,22 @@ class Notifier @Inject constructor(
             .also { b -> MedicinePhotos.thumbnail(appContext, photo)?.let(b::setLargeIcon) }
             .build()
         post("stock:$medicationId".hashCode(), notification)
+    }
+
+    /** Something opened too long ago (eye drops, a cream, an inhaler): time for a new one. */
+    fun showReplace(medicationId: Long, name: String) {
+        val ctx = context
+        val text = ctx.getString(R.string.notif_replace_text)
+        val notification = NotificationCompat.Builder(ctx, CHANNEL_REFILLS)
+            .setSmallIcon(R.drawable.ic_stat_pill)
+            .setColor(ContextCompat.getColor(appContext, R.color.brand))
+            .setContentTitle(ctx.getString(R.string.notif_replace_title, name))
+            .setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+            .setAutoCancel(true)
+            .setContentIntent(openApp("$DEEP_LINK_MEDICINE$medicationId"))
+            .build()
+        post("replace:$medicationId".hashCode(), notification)
     }
 
     fun showRefillSummary(names: List<String>) {
@@ -361,13 +386,22 @@ class Notifier @Inject constructor(
         }
     }
 
-    private fun doseName(dose: DoseInfo) = listOf(dose.name, dose.strength).filter { it.isNotBlank() }.joinToString(" ")
+    private fun doseName(dose: DoseInfo) =
+        listOf(CareText.name(context, dose.kind, dose.subtype, dose.name), dose.strength).filter { it.isNotBlank() }.joinToString(" ")
 
     private fun doseLine(ctx: Context, dose: DoseInfo): String = buildList {
-        add(ctx.getString(R.string.notif_dose_take, Formats.quantity(ctx, dose.quantity, dose.unit)))
+        add(CareText.line(ctx, dose.kind, dose.quantity, dose.unit, dose.site))
         add(Formats.time(ctx, dose.minuteOfDay))
-        if (dose.mealTiming != MealTiming.ANY) add(Formats.mealTiming(ctx, dose.mealTiming))
+        if (dose.mealTiming != MealTiming.ANY && dose.kind.isMedicine) add(Formats.mealTiming(ctx, dose.mealTiming))
     }.joinToString(" · ")
+
+    /** "Taken" for one tablet, "Applied" for one cream; "Take all" or "All done" for several. */
+    private fun allDoneLabel(ctx: Context, doses: List<DoseInfo>): String = when {
+        doses.size == 1 -> CareText.answer(ctx, doses.first().kind).takeIf { doses.first().kind != CareKind.MEASURE }
+            ?: ctx.getString(R.string.care_answer_habit)
+        doses.all { CareText.isOral(it.kind) } -> ctx.getString(R.string.action_take_all)
+        else -> ctx.getString(R.string.care_all_done)
+    }
 
     private fun answer(action: String, dose: DoseInfo): PendingIntent =
         PendingIntent.getBroadcast(
@@ -416,6 +450,10 @@ class Notifier @Inject constructor(
         const val DEEP_LINK_MEDICINE = "mediminder://open/medicine/"
         const val DEEP_LINK_RESTOCK = "mediminder://open/restock/"
         const val DEEP_LINK_RELIABILITY = "mediminder://open/reliability"
+        /** + "<scheduleId>/<day>": write down the reading a reminder asked for. */
+        const val DEEP_LINK_RECORD = "mediminder://open/record/"
+        /** + "<medicationId>": write down a reading for a health check (already answered). */
+        const val DEEP_LINK_READING = "mediminder://open/reading/"
 
         fun doseNotificationId(scheduleId: Long, day: Long) = "dose:$scheduleId:$day".hashCode()
     }

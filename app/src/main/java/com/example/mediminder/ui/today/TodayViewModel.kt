@@ -1,5 +1,8 @@
 package com.example.mediminder.ui.today
 
+import com.example.mediminder.domain.CareKind
+import com.example.mediminder.domain.CareSites
+import com.example.mediminder.domain.OpenedItems
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mediminder.data.AppointmentRepository
@@ -56,6 +59,10 @@ data class DoseRow(
     val snoozedUntil: Long? = null,
     /** Photo of the box or strip, if the user took one. */
     val photo: String? = null,
+    val kind: CareKind = CareKind.PILL,
+    val subtype: String? = null,
+    /** Where it goes this time (a body area, "eye_left", or this dose's injection site). */
+    val site: String? = null,
 )
 
 data class TodayUi(
@@ -72,6 +79,8 @@ data class TodayUi(
     val hasMedicines: Boolean,
     val nowMinute: Int,
     val snoozeMinutes: Int,
+    /** Opened too long ago: time for a new one. */
+    val replace: List<Medication> = emptyList(),
 )
 
 sealed class TodayEvent {
@@ -126,6 +135,7 @@ class TodayViewModel @Inject constructor(
 
     val state: StateFlow<TodayUi?> = combine(dayLogs, medications, clock, extras) { (date, logs), meds, now, extra ->
         val logByOccurrence = logs.filter { it.scheduleId != null }.associateBy { it.scheduleId!! }
+        val schedulesOf = meds.associate { it.medication.id to it.schedules }
         val rows = DosePlanner.occurrencesOn(meds, date).map { occ ->
             val log = logByOccurrence[occ.schedule.id]
             DoseRow(
@@ -145,6 +155,9 @@ class TodayViewModel @Inject constructor(
                 ringing = (occ.schedule.id to occ.day) in extra.ringing,
                 snoozedUntil = log?.takeIf { it.status == DoseStatus.SNOOZED }?.snoozedUntil,
                 photo = occ.medication.photoUri,
+                kind = occ.medication.kind,
+                subtype = occ.medication.subtype,
+                site = CareSites.siteFor(occ.medication, schedulesOf[occ.medication.id].orEmpty(), occ.schedule, occ.day),
             )
         }
         val todayEpoch = now.toLocalDate().toEpochDay()
@@ -167,6 +180,7 @@ class TodayViewModel @Inject constructor(
             snoozeMinutes = extra.snoozeMinutes,
             hasMedicines = meds.any { !it.medication.archived },
             nowMinute = minuteOf(now.toLocalTime()),
+            replace = meds.map { it.medication }.filter { !it.archived && OpenedItems.needsReplacing(it, todayEpoch) },
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 

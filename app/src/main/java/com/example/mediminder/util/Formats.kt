@@ -16,7 +16,10 @@ import java.util.Locale
 /** Text formatting shared by the screens and the notifications. */
 object Formats {
     /** Units a dose can be measured in; the key is what is stored in Medication.unit. */
-    val UNITS = listOf("tablet", "capsule", "ml", "spoon", "drop", "puff", "injection", "sachet", "suppository", "application")
+    val UNITS = listOf("tablet", "capsule", "ml", "spoon", "drop", "puff", "injection", "unit", "sachet", "suppository", "application")
+
+    /** Counted one at a time: no "½ drop" or "¼ puff". (Insulin is counted in whole units.) */
+    fun isWholeUnit(unit: String) = unit in setOf("drop", "puff", "injection", "unit", "suppository", "application")
 
     private val BANGLA_DIGITS = charArrayOf('০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯')
 
@@ -72,6 +75,7 @@ object Formats {
             "drop" -> if (plural) R.string.unit_drop_plural else R.string.unit_drop
             "puff" -> if (plural) R.string.unit_puff_plural else R.string.unit_puff
             "injection" -> if (plural) R.string.unit_injection_plural else R.string.unit_injection
+            "unit" -> if (plural) R.string.unit_unit_plural else R.string.unit_unit
             "sachet" -> if (plural) R.string.unit_sachet_plural else R.string.unit_sachet
             "suppository" -> if (plural) R.string.unit_suppository_plural else R.string.unit_suppository
             "application" -> if (plural) R.string.unit_application_plural else R.string.unit_application

@@ -1,5 +1,12 @@
 package com.example.mediminder.ui.medicines
 
+import com.example.mediminder.domain.CareKind
+import com.example.mediminder.domain.CareSites
+import com.example.mediminder.domain.OpenedItems
+import com.example.mediminder.util.CareText
+import com.example.mediminder.ui.components.MultiChoiceChips
+import androidx.compose.material.icons.filled.Today
+import java.time.LocalDate
 import com.example.mediminder.ui.components.AlarmPermissionNote
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.runtime.remember
@@ -500,6 +507,30 @@ private fun ColumnScope.WhenStep(s: EditorState, vm: MedicineEditorViewModel) {
         }
     }
 
+    when (s.kind) {
+        CareKind.TOPICAL -> {
+            WhereTitle(stringResource(R.string.wiz_where_topical), stringResource(R.string.wiz_where_topical_sub), Art.TUBE, Hue.TEAL)
+            MultiChoiceChips(CareSites.BODY, CareSites.bodyParts(s.site).toSet(), { CareText.bodyName(context, it) }, vm::toggleBodyPart)
+        }
+        CareKind.DROPS -> {
+            WhereTitle(stringResource(R.string.wiz_where_drops), null, Art.DROPPER, Hue.SKY)
+            ChoiceChips(CareSites.ORGANS, CareSites.dropOrganOf(s.site), { CareText.organName(context, it) }, vm::onDropOrgan)
+            Text(stringResource(R.string.wiz_which_side), style = MaterialTheme.typography.titleSmall)
+            ChoiceChips(CareSites.SIDES, CareSites.dropSideOf(s.site), { CareText.sideName(context, it) }, vm::onDropSide)
+        }
+        CareKind.INJECTION -> MediCard {
+            SwitchRow(
+                title = stringResource(R.string.wiz_rotate_title),
+                subtitle = stringResource(R.string.wiz_rotate_sub),
+                checked = s.site == CareSites.ROTATE,
+                onChange = vm::onRotate,
+            )
+        }
+        else -> Unit
+    }
+    // Food doesn't matter for a cream, drops or an inhaler
+    if (s.kind == CareKind.TOPICAL || s.kind == CareKind.DROPS || s.kind == CareKind.INHALED) return
+
     SectionTitle(stringResource(R.string.wiz_food_title))
     val mainFood = listOf(MealTiming.AFTER_MEAL, MealTiming.BEFORE_MEAL, MealTiming.ANY)
     mainFood.forEach { timing ->
@@ -549,15 +580,18 @@ private fun ColumnScope.TimesStep(s: EditorState, vm: MedicineEditorViewModel) {
                     Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_remove), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
-            Spacer(Modifier.height(10.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(R.string.wiz_amount), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-                Stepper(
-                    value = Formats.quantity(context, t.quantity, s.unit),
-                    onMinus = { vm.onQuantityChanged(t.key, if (t.quantity <= 1.0) -0.25 else -0.5) },
-                    onPlus = { vm.onQuantityChanged(t.key, if (t.quantity < 1.0) 0.25 else 0.5) },
-                    minusEnabled = t.quantity > 0.25,
-                )
+            if (s.kind != CareKind.TOPICAL) {
+                Spacer(Modifier.height(10.dp))
+                val whole = Formats.isWholeUnit(s.unit)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.wiz_amount), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                    Stepper(
+                        value = Formats.quantity(context, t.quantity, s.unit),
+                        onMinus = { vm.onQuantityChanged(t.key, if (whole) -1.0 else if (t.quantity <= 1.0) -0.25 else -0.5) },
+                        onPlus = { vm.onQuantityChanged(t.key, if (whole) 1.0 else if (t.quantity < 1.0) 0.25 else 0.5) },
+                        minusEnabled = t.quantity > (if (whole) 1.0 else 0.25),
+                    )
+                }
             }
         }
     }
@@ -615,7 +649,10 @@ private fun ColumnScope.FinishStep(s: EditorState, vm: MedicineEditorViewModel) 
         }
     }
 
-    // Stock
+    if (CareKind.lastsOnceOpened(s.kind)) OpenedCard(s, vm)
+
+    // Stock (a cream or drops are not counted one by one)
+    if (s.kind != CareKind.TOPICAL && s.kind != CareKind.DROPS) {
     SectionTitle(stringResource(R.string.wiz_count_heading))
     MediCard {
         SwitchRow(
@@ -650,6 +687,7 @@ private fun ColumnScope.FinishStep(s: EditorState, vm: MedicineEditorViewModel) 
             }
             SwitchRow(title = stringResource(R.string.editor_refill_reminders), checked = s.refillReminders, onChange = vm::onRefillReminders)
         }
+    }
     }
 
     // Everything else, folded away
@@ -706,6 +744,55 @@ private fun ColumnScope.FinishStep(s: EditorState, vm: MedicineEditorViewModel) 
     if (s.warnings.isNotEmpty()) {
         NoticeCard(stringResource(R.string.safety_title), Icons.Default.Warning, Tone.DANGER)
     }
+}
+
+/** A heading for "where it goes", with its own little picture. */
+@Composable
+private fun WhereTitle(title: String, body: String?, art: Art, hue: Hue) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
+        if (LocalConfiguration.current.screenHeightDp >= 480) {
+            AnimatedArt(art, hue, size = 64.dp)
+            Spacer(Modifier.width(10.dp))
+        }
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleLarge)
+            body?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        }
+    }
+}
+
+/** Creams, drops, syrups and inhalers: when it was opened and how long it lasts after. */
+@Composable
+private fun OpenedCard(s: EditorState, vm: MedicineEditorViewModel) {
+    val context = LocalContext.current
+    SectionTitle(stringResource(R.string.wiz_opened_heading))
+    MediCard {
+        Text(stringResource(R.string.wiz_opened_body), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(8.dp))
+        val opened = s.openedAt
+        if (opened == null) {
+            SecondaryButton(stringResource(R.string.wiz_opened_today), onClick = { vm.onOpenedAt(LocalDate.now()) }, icon = Icons.Default.Today)
+            QuietButton(
+                stringResource(R.string.detail_opened_set),
+                onClick = { showDatePicker(context, LocalDate.now()) { vm.onOpenedAt(it) } },
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+            )
+        } else {
+            ValueRow(stringResource(R.string.wiz_opened_on), Formats.date(context, opened), onClick = { showDatePicker(context, opened) { vm.onOpenedAt(it) } })
+        }
+        Spacer(Modifier.height(8.dp))
+        Text(stringResource(R.string.wiz_use_within), style = MaterialTheme.typography.titleSmall)
+        Spacer(Modifier.height(6.dp))
+        ChoiceChips(listOf(0) + OpenedItems.CHOICES, s.useWithinDays ?: 0, { useWithinLabel(context, it) }, { vm.onUseWithin(it.takeIf { d -> d > 0 }) })
+    }
+}
+
+internal fun useWithinLabel(context: android.content.Context, days: Int): String = when {
+    days <= 0 -> context.getString(R.string.use_within_unknown)
+    days == 28 -> context.getString(R.string.use_within_weeks, Formats.number(context, 4))
+    days == 30 -> context.getString(R.string.use_within_month_one)
+    days % 30 == 0 -> context.getString(R.string.use_within_months, Formats.number(context, days / 30))
+    else -> Formats.digits(context, context.resources.getQuantityString(R.plurals.days_count, days, days))
 }
 
 @Composable

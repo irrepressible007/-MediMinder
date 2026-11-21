@@ -1,5 +1,7 @@
 package com.example.mediminder.ui.medicines
 
+import com.example.mediminder.domain.CareKind
+import com.example.mediminder.domain.CareSites
 import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -66,6 +68,12 @@ data class EditorState(
     val form: String = "Tablet",
     val manufacturer: String = "",
     val unit: String = "tablet",
+    /** Tablet, cream, drops… follows the unit; decides what else is asked. */
+    val kind: CareKind = CareKind.PILL,
+    /** Body areas for a cream, "eye_left" for drops, "rotate" for injections. */
+    val site: String? = null,
+    val openedAt: LocalDate? = null,
+    val useWithinDays: Int? = null,
 
     // How to take it
     val mode: ScheduleMode = ScheduleMode.PATTERN,
@@ -180,6 +188,10 @@ class MedicineEditorViewModel @Inject constructor(
                     form = m.form,
                     manufacturer = m.manufacturer.orEmpty(),
                     unit = m.unit,
+                    kind = m.kind,
+                    site = m.site,
+                    openedAt = m.openedAt?.let(LocalDate::ofEpochDay),
+                    useWithinDays = m.useWithinDays,
                     mode = mode,
                     pattern = m.dosePattern ?: it.pattern,
                     mealTiming = m.mealTiming,
@@ -212,9 +224,11 @@ class MedicineEditorViewModel @Inject constructor(
     fun onQuery(text: String) = _state.update { it.copy(query = text, nameConfirmed = false, error = null) }
 
     fun pick(medicine: CatalogueMedicine) {
-        val unit = Formats.unitForForm(medicine.dosageForm)
+        // insulin is dosed in units, whatever the pack says
+        val insulin = medicine.genericName.orEmpty().contains("insulin", ignoreCase = true)
+        val unit = if (insulin) "unit" else Formats.unitForForm(medicine.dosageForm)
         _state.update {
-            it.copy(
+            withKind(it.copy(site = null, openedAt = null, useWithinDays = null), unit, medicine.dosageForm.orEmpty(), insulin).copy(
                 query = medicine.brandName,
                 nameConfirmed = true,
                 catalogueItem = medicine,
@@ -223,7 +237,6 @@ class MedicineEditorViewModel @Inject constructor(
                 strength = medicine.strength.orEmpty(),
                 form = medicine.dosageForm ?: it.form,
                 manufacturer = medicine.manufacturer.orEmpty(),
-                unit = unit,
                 shape = when (unit) { "capsule" -> "Capsule"; "ml", "drop", "spoon" -> "Liquid"; "tablet" -> "Round"; else -> "Other" },
                 results = emptyList(),
                 error = null,
@@ -264,7 +277,41 @@ class MedicineEditorViewModel @Inject constructor(
     fun onName(v: String) { _state.update { it.copy(name = v) }; refreshWarnings() }
     fun onGeneric(v: String) { _state.update { it.copy(genericName = v) }; refreshWarnings() }
     fun onStrength(v: String) = _state.update { it.copy(strength = v) }
-    fun onUnit(v: String) = _state.update { it.copy(unit = v) }
+    fun onUnit(v: String) = _state.update { withKind(it, v, it.form, insulin = false) }
+
+    /**
+     * The unit says what kind of thing it is. A cream, drops or an inhaler is not about food;
+     * drops start in both eyes (or ears, or nostrils, from the form); insulin moves around.
+     */
+    private fun withKind(s: EditorState, unit: String, form: String, insulin: Boolean): EditorState {
+        val kind = CareKind.forUnit(unit)
+        val changed = kind != s.kind
+        val site = when {
+            !changed && s.site != null -> s.site
+            kind == CareKind.DROPS -> CareSites.dropSite(CareSites.dropOrgan(form), "both")
+            kind == CareKind.INJECTION && insulin -> CareSites.ROTATE
+            else -> null
+        }
+        val noFood = kind == CareKind.TOPICAL || kind == CareKind.DROPS || kind == CareKind.INHALED
+        val meal = if (noFood) MealTiming.ANY else if (changed && s.mealTiming == MealTiming.ANY && s.isNew) MealTiming.AFTER_MEAL else s.mealTiming
+        val times = s.times.map { t -> if (Formats.isWholeUnit(unit)) t.copy(quantity = Math.round(t.quantity).toDouble().coerceAtLeast(1.0)) else t }
+        val next = s.copy(unit = unit, kind = kind, site = site, mealTiming = meal, times = times)
+        return if (next.mode == ScheduleMode.PATTERN && meal != s.mealTiming) next.copy(times = planPattern(next.pattern, meal, next.alertType, next.times)) else next
+    }
+
+    // ── Where it goes, and once opened ──────────────────────────────────────
+
+    fun toggleBodyPart(part: String) = _state.update { s ->
+        val parts = CareSites.bodyParts(s.site).toMutableSet()
+        if (!parts.add(part)) parts.remove(part)
+        s.copy(site = CareSites.bodySite(parts))
+    }
+
+    fun onDropOrgan(organ: String) = _state.update { it.copy(site = CareSites.dropSite(organ, CareSites.dropSideOf(it.site))) }
+    fun onDropSide(side: String) = _state.update { it.copy(site = CareSites.dropSite(CareSites.dropOrganOf(it.site), side)) }
+    fun onRotate(on: Boolean) = _state.update { it.copy(site = if (on) CareSites.ROTATE else null) }
+    fun onOpenedAt(date: LocalDate?) = _state.update { it.copy(openedAt = date) }
+    fun onUseWithin(days: Int?) = _state.update { it.copy(useWithinDays = days) }
 
     // ── Schedule ────────────────────────────────────────────────────────────
 
@@ -293,7 +340,7 @@ class MedicineEditorViewModel @Inject constructor(
     }
 
     fun onQuantityChanged(key: Long, delta: Double) = _state.update { s ->
-        s.copy(times = s.times.map { if (it.key == key) it.copy(quantity = (it.quantity + delta).coerceIn(0.25, 50.0)) else it })
+        s.copy(times = s.times.map { if (it.key == key) it.copy(quantity = (it.quantity + delta).coerceIn(if (Formats.isWholeUnit(s.unit)) 1.0 else 0.25, 100.0)) else it })
     }
 
     fun toggleTimeAlert(key: Long) = _state.update { s ->
@@ -391,6 +438,10 @@ class MedicineEditorViewModel @Inject constructor(
             trackStock = s.trackStock && stock != null,
             stock = if (s.trackStock && stock != null) stock else original?.stock ?: 0.0,
             unit = s.unit,
+            kind = s.kind,
+            site = s.site,
+            openedAt = s.openedAt?.toEpochDay()?.takeIf { CareKind.lastsOnceOpened(s.kind) },
+            useWithinDays = s.useWithinDays?.takeIf { CareKind.lastsOnceOpened(s.kind) },
             refillThresholdDays = s.refillThresholdDays,
             refillReminders = s.refillReminders,
             lowStockAlertDay = if (stock != null && stock != original?.stock) null else original?.lowStockAlertDay,

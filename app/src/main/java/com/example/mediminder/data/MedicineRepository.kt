@@ -102,6 +102,12 @@ class MedicineRepository @Inject constructor(
     }
 
     /** Sets the count directly (after counting the strip / bottle). */
+    /** A new tube, bottle or inhaler was opened on [day] (epoch day). */
+    suspend fun setOpened(medicationId: Long, day: Long) {
+        val medication = medicationDao.getById(medicationId) ?: return
+        medicationDao.update(medication.copy(openedAt = day, updatedAt = System.currentTimeMillis()))
+    }
+
     suspend fun setStock(medicationId: Long, stock: Double) {
         val medication = medicationDao.getById(medicationId) ?: return
         medicationDao.update(medication.copy(trackStock = true, stock = stock.coerceAtLeast(0.0), lowStockAlertDay = null, updatedAt = System.currentTimeMillis()))
