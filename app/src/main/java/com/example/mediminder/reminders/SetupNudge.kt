@@ -33,10 +33,10 @@ object SetupNudge {
             now - clockStartedAt >= NUDGE_EVERY && now - lastNudge >= NUDGE_EVERY
 
     /**
-     * Android can switch off "full-screen alarm" on its own (it happens after updates of apps
-     * installed outside the Play Store). Alarms still ring, but no longer show over the lock
-     * screen, so this is said straight away, not after days: at most once a day, and only
-     * while there are alarm-type doses.
+     * "Full-screen alarm" can end up switched off (what turns it off on some phones isn't known
+     * yet). Without it alarms can't show over the lock screen, and on a Pixel 6 they didn't ring
+     * either, so this is said straight away, not after days: at most once a day, and only while
+     * there are alarm-type doses.
      */
     fun checkFullScreen(context: Context, notifier: Notifier, hasAlarmDoses: Boolean) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return

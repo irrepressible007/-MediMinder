@@ -995,7 +995,7 @@
     <string name="vault_saved">Document saved</string>
     <string name="vault_failed">The picture could not be saved. Please try another.</string>
     <string name="fsi_lost_title">Full-screen alarms are off</string>
-    <string name="fsi_lost_text">Android switched off MediMinder\'s full-screen alarm, so alarms won\'t show over the lock screen. They still ring. Tap to turn it back on.</string>
+    <string name="fsi_lost_text">MediMinder\'s full-screen alarm is switched off, so alarms can\'t show over the lock screen and may not ring. Tap to turn it back on.</string>
     <string name="fsi_lost_action">Turn on</string>
     <string name="channel_alarm_setup">Alarm problems</string>
     <string name="channel_alarm_setup_desc">When the phone switches off something alarms need</string>
