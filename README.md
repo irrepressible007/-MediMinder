@@ -6,6 +6,7 @@
 Gentle reminders or loud full-screen alarms that ring on time, in বাংলা and English.
 
 [![Android](https://img.shields.io/badge/Android-7.0%2B-3DDC84?logo=android&logoColor=white)](https://github.com/irrepressible007/-MediMinder/releases/latest)
+[![Tests](https://github.com/irrepressible007/-MediMinder/actions/workflows/ci.yml/badge.svg)](https://github.com/irrepressible007/-MediMinder/actions/workflows/ci.yml)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.0-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org)
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?logo=jetpackcompose&logoColor=white)](https://developer.android.com/compose)
 [![Download](https://img.shields.io/badge/Download-latest%20APK-2754C5)](https://github.com/irrepressible007/-MediMinder/releases/latest)
@@ -108,7 +109,7 @@ day. All motion stops when the phone's *Remove animations* setting is on.
 | Camera and scanning | CameraX and ML Kit on-device text recognition |
 | Images | Coil |
 | Testing | JUnit, Robolectric, Compose UI tests (110 tests) |
-| Delivery | GitHub Actions: build, signing with Android key rotation, release, update manifest |
+| Delivery | GitHub Actions: tests and lint on every push; build, signing with Android key rotation, release and update manifest on each version tag |
 
 ## How it is built
 
