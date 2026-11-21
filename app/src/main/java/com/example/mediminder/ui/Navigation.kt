@@ -1,5 +1,6 @@
 package com.example.mediminder.ui
 
+import com.example.mediminder.ui.prescription.PrescriptionScreen
 import com.example.mediminder.ui.more.FamilyAlertScreen
 import com.example.mediminder.ui.more.RamadanScreen
 import com.example.mediminder.domain.CareKind
@@ -132,6 +133,8 @@ import javax.inject.Inject
 @Serializable data class ReadingsKey(val type: String) : NavKey
 @Serializable data object RamadanKey : NavKey
 @Serializable data object FamilyAlertKey : NavKey
+@Serializable data object PrescriptionKey : NavKey
+@Serializable data object PrescriptionPhotoKey : NavKey
 
 enum class HomeTab { TODAY, MEDICINES, APPOINTMENTS, MORE }
 
@@ -165,6 +168,8 @@ fun MainNavigation(
     // Handed back to the medicine editor: the brand read by the scanner and/or a photo of the box
     var scannedCatalogueId by rememberSaveable { mutableStateOf<Long?>(null) }
     var capturedPhoto by rememberSaveable { mutableStateOf<String?>(null) }
+    // A photo of a prescription, handed back to the prescription reader
+    var prescriptionPhoto by rememberSaveable { mutableStateOf<String?>(null) }
 
     val link by deepLink.collectAsState()
     LaunchedEffect(link) {
@@ -232,6 +237,7 @@ fun MainNavigation(
                     capturedPhoto = capturedPhoto,
                     onScanConsumed = { scannedCatalogueId = null; capturedPhoto = null },
                     onScan = { open(Scanner) },
+                    onScanPrescription = { back(); open(PrescriptionKey) },
                     onTakePhoto = { open(PhotoCapture) },
                     onBack = ::back,
                     onSaved = { id ->
@@ -298,6 +304,23 @@ fun MainNavigation(
                 )
             }
             entry<FamilyAlertKey> { FamilyAlertScreen(onBack = ::back) }
+            entry<PrescriptionKey> {
+                PrescriptionScreen(
+                    capturedPhoto = prescriptionPhoto,
+                    onPhotoConsumed = { prescriptionPhoto = null },
+                    onTakePhoto = { open(PrescriptionPhotoKey) },
+                    // a medicine without a dose: the wizard, starting from it
+                    onSetUp = { id -> scannedCatalogueId = id; open(MedicineEditor()) },
+                    onBack = ::back,
+                    onDone = { back(); tab = HomeTab.MEDICINES },
+                )
+            }
+            entry<PrescriptionPhotoKey> {
+                PhotoCaptureScreen(onBack = ::back, onCaptured = { ref ->
+                    prescriptionPhoto = ref
+                    back()
+                })
+            }
             entry<ReadingsKey> { key ->
                 ReadingsScreen(type = key.type, onBack = ::back, onRecord = { open(RecordKey(type = it)) })
             }

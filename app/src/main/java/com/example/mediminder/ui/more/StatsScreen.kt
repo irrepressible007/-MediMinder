@@ -248,6 +248,7 @@ fun StatsScreen(onBack: () -> Unit, viewModel: StatsViewModel = hiltViewModel())
             }
             item { Arrive(arrival, 6) {
                 val scope = rememberCoroutineScope()
+                val failedText = stringResource(R.string.pdf_failed)
                 PrimaryButton(
                     stringResource(R.string.stats_pdf),
                     onClick = {
@@ -262,7 +263,7 @@ fun StatsScreen(onBack: () -> Unit, viewModel: StatsViewModel = hiltViewModel())
                                 }
                                 .onFailure { e ->
                                     com.example.mediminder.util.ErrorLog.record("Report", "Could not make the PDF", e)
-                                    android.widget.Toast.makeText(context, context.getString(R.string.pdf_failed), android.widget.Toast.LENGTH_LONG).show()
+                                    android.widget.Toast.makeText(context, failedText, android.widget.Toast.LENGTH_LONG).show()
                                 }
                         }
                     },

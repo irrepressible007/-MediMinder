@@ -937,4 +937,24 @@
     <string name="stats_pdf">Share a PDF for the doctor</string>
     <string name="pdf_failed">The PDF could not be made. Please try again.</string>
     <string name="pdf_reading_single">Latest %1$s · %2$s</string>
+    <string name="rx_title">Read a prescription</string>
+    <string name="rx_from_prescription">Add from a prescription photo</string>
+    <string name="rx_intro">Take a photo of a printed prescription, or choose one from your gallery, like one sent on WhatsApp. The app finds the medicines and how to take them; you check each one before it is added.</string>
+    <string name="rx_camera">Take a photo</string>
+    <string name="rx_gallery">Choose a photo</string>
+    <string name="rx_handwriting">Works best with printed prescriptions. Handwriting is often not read. The photo is read on this phone and is not kept.</string>
+    <string name="rx_reading">Reading the prescription…</string>
+    <string name="rx_nothing">No medicines were found in this photo. Try a sharper photo in good light, with the whole prescription in view.</string>
+    <string name="rx_failed">The photo could not be read. Please try another one.</string>
+    <string name="rx_check">Check each one. Ticked medicines will be added with times from your meal times.</string>
+    <string name="rx_no_dose">No dose found: set it up yourself</string>
+    <string name="rx_set_up">Set it up</string>
+    <string name="rx_read_as">Read: %1$s</string>
+    <string name="rx_add">Add the ticked medicines (%1$s)</string>
+    <string name="rx_added">Added from the prescription: %1$s</string>
+    <string name="rx_another">Try another photo</string>
+    <plurals name="rx_found">
+        <item quantity="one">Found %d medicine</item>
+        <item quantity="other">Found %d medicines</item>
+    </plurals>
 </resources>

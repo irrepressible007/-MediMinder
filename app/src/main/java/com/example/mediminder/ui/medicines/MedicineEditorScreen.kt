@@ -1,5 +1,6 @@
 package com.example.mediminder.ui.medicines
 
+import androidx.compose.material.icons.filled.Description
 import com.example.mediminder.domain.CareKind
 import com.example.mediminder.domain.CareSites
 import com.example.mediminder.domain.OpenedItems
@@ -151,6 +152,7 @@ fun MedicineEditorScreen(
     capturedPhoto: String?,
     onScanConsumed: () -> Unit,
     onScan: () -> Unit,
+    onScanPrescription: () -> Unit = {},
     onTakePhoto: () -> Unit,
     onBack: () -> Unit,
     onSaved: (Long) -> Unit,
@@ -260,7 +262,7 @@ fun MedicineEditorScreen(
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 when (page) {
-                    0 -> NameStep(s, viewModel, onScan, onTakePhoto)
+                    0 -> NameStep(s, viewModel, onScan, onTakePhoto, onScanPrescription)
                     1 -> WhenStep(s, viewModel)
                     2 -> TimesStep(s, viewModel)
                     else -> FinishStep(s, viewModel)
@@ -289,7 +291,7 @@ private fun StepTitle(title: String, body: String? = null, art: Art, hue: Hue) {
 // ── 1. Which medicine ───────────────────────────────────────────────────────
 
 @Composable
-private fun ColumnScope.NameStep(s: EditorState, vm: MedicineEditorViewModel, onScan: () -> Unit, onTakePhoto: () -> Unit) {
+private fun ColumnScope.NameStep(s: EditorState, vm: MedicineEditorViewModel, onScan: () -> Unit, onTakePhoto: () -> Unit, onScanPrescription: () -> Unit) {
     val context = LocalContext.current
     val gallery = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> uri?.let(vm::importPhoto) }
     if (!s.nameConfirmed) {
@@ -306,6 +308,8 @@ private fun ColumnScope.NameStep(s: EditorState, vm: MedicineEditorViewModel, on
         )
         if (s.query.trim().length < 2) {
             SecondaryButton(stringResource(R.string.wiz_scan), onClick = onScan, icon = Icons.Default.CameraAlt)
+            // several medicines at once, from the doctor's prescription
+            if (s.isNew) SecondaryButton(stringResource(R.string.rx_from_prescription), onClick = onScanPrescription, icon = Icons.Default.Description)
             Text(stringResource(R.string.editor_catalogue_hint), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         if (s.searching && s.results.isEmpty()) {

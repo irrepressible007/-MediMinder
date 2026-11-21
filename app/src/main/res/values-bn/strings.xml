@@ -935,4 +935,24 @@
     <string name="stats_pdf">ডাক্তারের জন্য পিডিএফ শেয়ার করুন</string>
     <string name="pdf_failed">পিডিএফ তৈরি করা যায়নি। আবার চেষ্টা করুন।</string>
     <string name="pdf_reading_single">সর্বশেষ %1$s · %2$s</string>
+    <string name="rx_title">প্রেসক্রিপশন পড়ুন</string>
+    <string name="rx_from_prescription">প্রেসক্রিপশনের ছবি থেকে যোগ করুন</string>
+    <string name="rx_intro">ছাপানো প্রেসক্রিপশনের ছবি তুলুন, অথবা গ্যালারি থেকে বেছে নিন (যেমন হোয়াটসঅ্যাপে পাওয়া ছবি)। অ্যাপ ওষুধ আর খাওয়ার নিয়ম খুঁজে বের করবে; যোগ করার আগে আপনি প্রতিটি দেখে নেবেন।</string>
+    <string name="rx_camera">ছবি তুলুন</string>
+    <string name="rx_gallery">ছবি বেছে নিন</string>
+    <string name="rx_handwriting">ছাপানো প্রেসক্রিপশনে সবচেয়ে ভালো কাজ করে। হাতের লেখা অনেক সময় পড়া যায় না। ছবিটি এই ফোনেই পড়া হয় এবং রাখা হয় না।</string>
+    <string name="rx_reading">প্রেসক্রিপশন পড়া হচ্ছে…</string>
+    <string name="rx_nothing">এই ছবিতে কোনো ওষুধ পাওয়া যায়নি। ভালো আলোয়, পুরো প্রেসক্রিপশন রেখে আরেকটি পরিষ্কার ছবি তুলুন।</string>
+    <string name="rx_failed">ছবিটি পড়া যায়নি। আরেকটি ছবি দিয়ে চেষ্টা করুন।</string>
+    <string name="rx_check">প্রতিটি দেখে নিন। টিক দেওয়া ওষুধগুলো আপনার খাবারের সময় অনুযায়ী যোগ হবে।</string>
+    <string name="rx_no_dose">ডোজ পাওয়া যায়নি: নিজে ঠিক করুন</string>
+    <string name="rx_set_up">ঠিক করুন</string>
+    <string name="rx_read_as">পড়া হয়েছে: %1$s</string>
+    <string name="rx_add">টিক দেওয়া ওষুধ যোগ করুন (%1$s)</string>
+    <string name="rx_added">প্রেসক্রিপশন থেকে যোগ হয়েছে: %1$sটি</string>
+    <string name="rx_another">আরেকটি ছবি দিন</string>
+    <plurals name="rx_found">
+        <item quantity="one">%dটি ওষুধ পাওয়া গেছে</item>
+        <item quantity="other">%dটি ওষুধ পাওয়া গেছে</item>
+    </plurals>
 </resources>

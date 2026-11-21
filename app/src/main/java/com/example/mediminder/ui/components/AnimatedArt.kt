@@ -116,6 +116,8 @@ enum class Art(internal val periodMillis: Int, internal val still: Float) {
     CRESCENT(4000, 0.25f),
     /** A speech bubble that types, then sends a heart. */
     MESSAGE(2800, 0.2f),
+    /** A prescription whose lines write themselves under a scanning beam. */
+    PRESCRIPTION(3400, 0.7f),
 }
 
 private const val DRAW_IN_MILLIS = 1900
@@ -249,6 +251,7 @@ private fun DrawScope.scene(art: Art, g: Grid, t: Float, c: ArtColors, tracer: T
     Art.GLASS -> glass(g, t, c, tracer)
     Art.CRESCENT -> crescent(g, t, c, tracer)
     Art.MESSAGE -> message(g, t, c, tracer)
+    Art.PRESCRIPTION -> prescription(g, t, c, tracer)
 }
 
 /** Grid units → pixels, and the shapes the scenes are made of. */
@@ -1326,4 +1329,33 @@ private fun DrawScope.message(g: Grid, t: Float, c: ArtColors, tr: Tracer?) {
         heart(g.o(78f + 4f * sin(ph * TAU), 26f - 16f * ph), 4.2f * u, c.accent.copy(alpha = alpha))
     }
     sparkle(g.o(16f, 22f), 3f * u, c.main.copy(alpha = twinkle(t, 0.2f)))
+}
+
+
+/** A prescription sheet: its lines write themselves while a scanning beam passes down it. */
+private fun DrawScope.prescription(g: Grid, t: Float, c: ArtColors, tr: Tracer?) {
+    val u = g.u
+    val sheet = g.roundRect(26f, 16f, 48f, 68f, 5f)
+    part(tr, sheet, c.paper)
+    val badge = g.circle(36f, 28f, 6f)
+    part(tr, badge, c.main)
+    if (tr != null) return
+    drawPath(sheet, c.main.copy(alpha = 0.35f), style = Stroke(1.4f * u))
+    drawLine(c.onMain, g.o(36f, 24.5f), g.o(36f, 31.5f), strokeWidth = 1.8f * u, cap = StrokeCap.Round)
+    drawLine(c.onMain, g.o(32.5f, 28f), g.o(39.5f, 28f), strokeWidth = 1.8f * u, cap = StrokeCap.Round)
+    drawLine(c.ink.copy(alpha = 0.3f), g.o(46f, 26f), g.o(66f, 26f), strokeWidth = 2f * u, cap = StrokeCap.Round)
+    drawLine(c.ink.copy(alpha = 0.18f), g.o(46f, 31f), g.o(60f, 31f), strokeWidth = 2f * u, cap = StrokeCap.Round)
+    // the medicines, written one after another
+    listOf(44f to 30f, 54f to 24f, 64f to 28f).forEachIndexed { i, (y, w) ->
+        val p = easeOut(clamp01((t - 0.06f - i * 0.16f) / 0.22f))
+        drawLine(c.main.copy(alpha = 0.25f), g.o(34f, y), g.o(34f + w, y), strokeWidth = 2.6f * u, cap = StrokeCap.Round)
+        if (p > 0f) drawLine(c.main, g.o(34f, y), g.o(34f + w * p, y), strokeWidth = 2.6f * u, cap = StrokeCap.Round)
+        if (p >= 1f) drawCircle(c.accent, radius = 1.8f * u, center = g.o(30f, y))
+    }
+    // the scanning beam
+    val beam = 18f + 64f * ((t * 1.2f) % 1f)
+    clipPath(sheet) {
+        drawRect(c.accent.copy(alpha = 0.16f), topLeft = g.o(26f, beam - 5f), size = g.s(48f, 5f))
+        drawLine(c.accent.copy(alpha = 0.8f), g.o(26f, beam), g.o(74f, beam), strokeWidth = 1.4f * u)
+    }
 }
