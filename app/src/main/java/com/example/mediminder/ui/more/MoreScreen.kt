@@ -1,5 +1,13 @@
 package com.example.mediminder.ui.more
 
+import androidx.compose.material3.Text
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import com.example.mediminder.util.Support
 import androidx.compose.material.icons.filled.BugReport
 import com.example.mediminder.ui.AccountKey
@@ -137,5 +145,38 @@ fun MoreScreen(modifier: Modifier, onOpen: (NavKey) -> Unit) {
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             NavRow(Icons.Default.Gavel, stringResource(R.string.legal_terms), { onOpen(LegalKey("TERMS")) }, subtitle = stringResource(R.string.legal_terms_sub), hue = Hue.SLATE)
         }
+        Signature(Modifier.entrance(entrance, 3))
+    }
+}
+
+/** The maker's small signature at the very bottom; it opens their GitHub page. */
+@Composable
+private fun Signature(modifier: Modifier = Modifier) {
+    val uri = LocalUriHandler.current
+    val description = stringResource(R.string.signature_open)
+    Column(
+        modifier
+            .fillMaxWidth()
+            .padding(top = 12.dp, bottom = 8.dp)
+            .clip(MaterialTheme.shapes.medium)
+            .clickable(onClickLabel = description) { uri.openUri(Support.GITHUB) }
+            .padding(vertical = 10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            stringResource(R.string.signature_made_by),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+        )
+        Text(
+            Support.AUTHOR,
+            style = MaterialTheme.typography.titleLarge.copy(fontFamily = FontFamily.Cursive, fontStyle = FontStyle.Italic),
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
+        )
+        Text(
+            Support.GITHUB.removePrefix("https://"),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+        )
     }
 }

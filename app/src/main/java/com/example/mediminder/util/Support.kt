@@ -8,6 +8,8 @@ import com.example.mediminder.R
 /** Getting help: the developer's address, and sending the problem log to it. */
 object Support {
     const val EMAIL = "m.a.hamza362@gmail.com"
+    const val AUTHOR = "irrepressible007"
+    const val GITHUB = "https://github.com/irrepressible007"
 
     /**
      * Opens the person's email app, addressed to the developer, with room to say what happened
