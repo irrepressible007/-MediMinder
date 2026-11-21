@@ -53,6 +53,12 @@ class AppSmokeTest {
         waitForText(text(R.string.onboarding_welcome))
         compose.onNodeWithText(text(R.string.text_size_large)).performScrollTo().assertIsDisplayed()
         compose.onNodeWithText(text(R.string.action_next)).performClick()
+        // builds with sign-in ask for it next; skipping is always possible
+        if (com.example.mediminder.cloud.CloudConfig.available) {
+            waitForText(text(R.string.onboarding_account_title))
+            compose.onNodeWithText(text(R.string.account_google)).assertIsDisplayed()
+            compose.onNodeWithText(text(R.string.onboarding_skip)).performClick()
+        }
         waitForText(text(R.string.onboarding_meals_title))
         compose.onNodeWithText(text(R.string.action_next)).performClick()
         waitForText(text(R.string.onboarding_permissions_title))

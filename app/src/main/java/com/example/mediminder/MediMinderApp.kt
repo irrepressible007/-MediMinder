@@ -1,5 +1,12 @@
 package com.example.mediminder
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import com.example.mediminder.cloud.CloudConfig
 import com.example.mediminder.cloud.CloudBackupWorker
 import androidx.room.InvalidationTracker
@@ -21,6 +28,7 @@ class MediMinderApp : Application() {
     @Inject lateinit var settings: SettingsRepository
     @Inject lateinit var notifier: Notifier
     @Inject lateinit var db: MediMinderDatabase
+    private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     override fun onCreate() {
         super.onCreate()
@@ -37,6 +45,13 @@ class MediMinderApp : Application() {
                 CloudBackupWorker.soon(this@MediMinderApp)
             }
         })
+        // Settings (meal times, Medical ID, Ramadan…) are part of the cloud copy too. The time of
+        // the last backup is left out, or each backup would start the next one.
+        appScope.launch {
+            settings.settings.map { it.copy(lastBackupAt = 0) }.distinctUntilChanged().drop(1).collect {
+                CloudBackupWorker.soon(this@MediMinderApp)
+            }
+        }
     }
 
     /**

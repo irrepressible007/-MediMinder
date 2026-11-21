@@ -35,6 +35,13 @@ class CloudBackupWorker(context: Context, params: WorkerParameters) : CoroutineW
     companion object {
         private const val NAME = "mediminder-cloud-backup"
 
+        /** From the 6-hourly safety net: a backup if the last one is more than a day old. */
+        fun dailyCatchUp(context: Context) {
+            val last = context.getSharedPreferences(com.example.mediminder.data.settings.SettingsRepository.FILE, Context.MODE_PRIVATE)
+                .getLong("lastBackupAt", 0)
+            if (System.currentTimeMillis() - last > 24 * 60 * 60_000L) soon(context)
+        }
+
         /** Call after any change: only signed-in people are backed up. */
         fun soon(context: Context) {
             if (!CloudConfig.available) return

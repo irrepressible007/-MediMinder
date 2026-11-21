@@ -87,6 +87,10 @@ class BanglaTest {
         shadowOf(ApplicationProvider.getApplicationContext<Application>()).grantPermissions(Manifest.permission.POST_NOTIFICATIONS)
         compose.waitForText("MediMinder-এ স্বাগতম")
         compose.onNodeWithText("পরবর্তী").performClick()
+        if (com.example.mediminder.cloud.CloudConfig.available) {
+            compose.waitForText("আপনার তথ্য নিরাপদ রাখুন")
+            compose.onNodeWithText("এখন না").performClick()
+        }
         compose.waitForText("আপনি কখন খান?")
         compose.onNodeWithText("পরবর্তী").performClick()
         compose.onNodeWithText("শুরু করুন").performClick()

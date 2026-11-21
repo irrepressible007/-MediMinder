@@ -960,7 +960,7 @@
     <string name="account_restore">Bring back my cloud copy</string>
     <string name="account_restore_title">Bring back the cloud copy?</string>
     <string name="account_restore_body">This phone\'s medicines, history and readings will be replaced by the cloud copy.</string>
-    <string name="account_photos_stay">Your data is saved automatically a few minutes after it changes. Photos and documents stay only on this phone.</string>
+    <string name="account_photos_stay">Your data is saved to the cloud by itself a few minutes after any change. Photos and documents stay only on this phone.</string>
     <string name="account_sign_out">Sign out</string>
     <string name="account_delete">Delete my account and cloud data</string>
     <string name="account_delete_title">Delete your account?</string>
@@ -982,7 +982,6 @@
     <string name="account_error_no_account">No account was found with this email. Create one instead.</string>
     <string name="account_error_wrong_password">The email or password is not right.</string>
     <string name="account_error_sign_in_again">For your safety, sign out and sign in again, then delete.</string>
-    <string name="onboarding_restore">Used MediMinder before? Sign in to bring your data back</string>
     <string name="report_problem">Report a problem</string>
     <string name="report_problem_sub">Email the developer, with the problem log attached</string>
     <string name="report_problem_subject">MediMinder %1$s: problem report</string>
@@ -1000,4 +999,13 @@
     <string name="fsi_lost_action">Turn on</string>
     <string name="channel_alarm_setup">Alarm problems</string>
     <string name="channel_alarm_setup_desc">When the phone switches off something alarms need</string>
+    <string name="account_sign_in_title">Sign in to MediMinder</string>
+    <string name="account_or">or</string>
+    <string name="account_auto_on">Automatic backup is on</string>
+    <string name="account_save_now">Save now</string>
+    <string name="account_restore_short">Bring back</string>
+    <string name="onboarding_account_title">Keep your data safe</string>
+    <string name="onboarding_account_body">Sign in, and MediMinder keeps a copy of your medicines and history in the cloud by itself, so nothing is lost if you change phones. You can do this later too.</string>
+    <string name="onboarding_skip">Skip for now</string>
+    <string name="account_signed_in_as">Signed in as %1$s. Your data is saved automatically.</string>
 </resources>

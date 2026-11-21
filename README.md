@@ -91,7 +91,7 @@ hard to make sure every alarm goes off.
   or family: doses taken, habits kept, and health readings (latest and average).
 - Stock counting with refill warnings, and a shopping list with prices.
 - Doctor visits with reminders, a Medical ID (blood group, allergies, emergency contact) and a
-  documents folder.
+  documents folder: photograph a prescription or test report, or pick it from the gallery.
 - **A PDF for the doctor:** medicines and how regularly they were taken, health readings with
   charts, and habits, on A4 pages to print or send.
 - **Home-screen widget:** the next dose, with a Taken button when it is time.
@@ -101,8 +101,9 @@ hard to make sure every alarm goes off.
 <img src="docs/screenshots/doctor-report.png" width="260" alt="The doctor's PDF report">
 </p>
 - Backup and restore to a file, and in-app updates from GitHub Releases.
-- **Optional sign-in** (Google or email) keeps a copy of the data in the cloud, so it
-  comes back after a reinstall or on a new phone. Without signing in, nothing leaves the phone.
+- **Optional sign-in** (Google or email), offered once during setup, keeps a copy of the data
+  in the cloud and updates it by itself a few minutes after each change, so it comes back after a
+  reinstall or on a new phone. Without signing in, nothing leaves the phone.
 
 **Friendly, alive interface**
 

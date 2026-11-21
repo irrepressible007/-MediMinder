@@ -1,5 +1,19 @@
 package com.example.mediminder.ui.account
 
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.CloudDone
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import android.app.Activity
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
@@ -166,18 +180,8 @@ fun AccountScreen(
         FeedbackBus.show(FeedbackKind.SAVED, R.string.account_restored)
         onRestored()
     }
-
     var confirmRestore by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
-    ui.choose?.let { copy ->
-        AlertDialog(
-            onDismissRequest = viewModel::dismissChoice,
-            title = { Text(stringResource(R.string.account_choose_title), style = MaterialTheme.typography.headlineSmall) },
-            text = { Text(stringResource(R.string.account_choose_body, whenText(context, copy.savedAt), copy.device), style = MaterialTheme.typography.bodyLarge) },
-            confirmButton = { TextButton(onClick = viewModel::useCloud) { Text(stringResource(R.string.account_use_cloud)) } },
-            dismissButton = { TextButton(onClick = viewModel::keepPhone) { Text(stringResource(R.string.account_keep_phone)) } },
-        )
-    }
     if (confirmRestore) ConfirmDialog(
         title = stringResource(R.string.account_restore_title),
         text = stringResource(R.string.account_restore_body),
@@ -199,104 +203,169 @@ fun AccountScreen(
         topBar = { AppTopBar(title = stringResource(R.string.account_title), onBack = onBack) },
     ) { padding ->
         Column(
-            Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).imePadding().padding(16.dp),
+            Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).imePadding().padding(horizontal = 20.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                AnimatedArt(Art.CLOUD, Hue.SKY, size = 96.dp)
-                Spacer(Modifier.width(12.dp))
-                Text(stringResource(R.string.account_intro), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-            }
-            if (ui.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
-            ui.message?.let { NoticeCard(stringResource(it), if (ui.error) Icons.Default.Warning else Icons.Default.Info, if (ui.error) Tone.WARNING else Tone.INFO) }
-
             if (!CloudConfig.available) {
                 NoticeCard(stringResource(R.string.account_unavailable), Icons.Default.Info, Tone.INFO)
                 return@Column
             }
             val u = user
-            if (u == null) SignedOut(
-                busy = ui.busy,
-                onGoogle = { context.findActivity()?.let(viewModel::google) },
-                onEmail = viewModel::email,
-                onReset = viewModel::resetPassword,
-                onOpenLegal = onOpenLegal,
-            ) else {
-                MediCard {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        androidx.compose.material3.Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        Spacer(Modifier.width(10.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text(u.name ?: u.email ?: "", style = MaterialTheme.typography.titleLarge)
-                            if (u.name != null && u.email != null) Text(u.email, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text(stringResource(providerName(u.provider)), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-                    Spacer(Modifier.height(10.dp))
-                    Text(
-                        if (settings.lastBackupAt > 0) stringResource(R.string.account_last_backup, whenText(context, settings.lastBackupAt))
-                        else stringResource(R.string.account_never_backed_up),
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
-                }
-                PrimaryButton(stringResource(R.string.account_back_up_now), onClick = viewModel::backUpNow, icon = Icons.Default.CloudUpload, enabled = !ui.busy)
-                SecondaryButton(stringResource(R.string.account_restore), onClick = { confirmRestore = true }, icon = Icons.Default.CloudDownload, enabled = !ui.busy)
-                NoticeCard(stringResource(R.string.account_photos_stay), Icons.Default.Info, Tone.INFO)
-                QuietButton(stringResource(R.string.account_sign_out), onClick = viewModel::signOut, icon = Icons.AutoMirrored.Filled.Logout, modifier = Modifier.align(Alignment.CenterHorizontally))
-                SecondaryButton(
-                    stringResource(R.string.account_delete),
-                    onClick = { confirmDelete = true },
-                    icon = Icons.Default.DeleteForever,
-                    contentColor = MaterialTheme.colorScheme.error,
-                    enabled = !ui.busy,
-                )
+            if (u == null) {
+                SignInHeader(stringResource(R.string.account_sign_in_title), stringResource(R.string.account_intro))
+                SignInPanel(viewModel, onOpenLegal)
+                return@Column
             }
+            // Signed in: who, and that backup runs by itself
+            MediCard {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(if (u.provider == "google.com") Icons.Default.AccountCircle else Icons.Default.Email, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(40.dp))
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(u.name ?: u.email ?: "", style = MaterialTheme.typography.titleLarge)
+                        if (u.name != null && u.email != null) Text(u.email, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(providerName(u.provider)), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+            MediCard(containerColor = MaterialTheme.colorScheme.primaryContainer, borderColor = MaterialTheme.colorScheme.primaryContainer) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.CloudDone, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(28.dp))
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(stringResource(R.string.account_auto_on), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                        Text(
+                            if (settings.lastBackupAt > 0) stringResource(R.string.account_last_backup, whenText(context, settings.lastBackupAt))
+                            else stringResource(R.string.account_never_backed_up),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+                Text(stringResource(R.string.account_photos_stay), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
+            }
+            if (ui.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
+            ui.message?.let { NoticeCard(stringResource(it), if (ui.error) Icons.Default.Warning else Icons.Default.Info, if (ui.error) Tone.WARNING else Tone.INFO) }
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                SecondaryButton(stringResource(R.string.account_save_now), onClick = viewModel::backUpNow, icon = Icons.Default.CloudUpload, enabled = !ui.busy, modifier = Modifier.weight(1f))
+                SecondaryButton(stringResource(R.string.account_restore_short), onClick = { confirmRestore = true }, icon = Icons.Default.CloudDownload, enabled = !ui.busy, modifier = Modifier.weight(1f))
+            }
+            Spacer(Modifier.height(8.dp))
+            QuietButton(stringResource(R.string.account_sign_out), onClick = viewModel::signOut, icon = Icons.AutoMirrored.Filled.Logout, modifier = Modifier.align(Alignment.CenterHorizontally))
+            QuietButton(
+                stringResource(R.string.account_delete),
+                onClick = { confirmDelete = true },
+                icon = Icons.Default.DeleteForever,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+            )
         }
     }
 }
 
+/** The picture, a title and a line of explanation above the sign-in buttons. */
 @Composable
-private fun SignedOut(
-    busy: Boolean,
-    onGoogle: () -> Unit,
-    onEmail: (email: String, password: String, create: Boolean) -> Unit,
-    onReset: (email: String) -> Unit,
-    onOpenLegal: (doc: String) -> Unit,
-) {
+fun SignInHeader(title: String, body: String) {
+    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        AnimatedArt(Art.CLOUD, Hue.SKY, size = 120.dp)
+        Text(title, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+        Text(body, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+    }
+}
+
+/**
+ * The familiar sign-in choices: a white "Continue with Google" button with Google's G, "or",
+ * then email (which opens a short form). Used on the Account page and during setup.
+ */
+@Composable
+fun SignInPanel(viewModel: AccountViewModel, onOpenLegal: (doc: String) -> Unit) {
+    val context = LocalContext.current
+    val ui by viewModel.ui.collectAsState()
+    ui.choose?.let { copy ->
+        AlertDialog(
+            onDismissRequest = viewModel::dismissChoice,
+            title = { Text(stringResource(R.string.account_choose_title), style = MaterialTheme.typography.headlineSmall) },
+            text = { Text(stringResource(R.string.account_choose_body, whenText(context, copy.savedAt), copy.device), style = MaterialTheme.typography.bodyLarge) },
+            confirmButton = { TextButton(onClick = viewModel::useCloud) { Text(stringResource(R.string.account_use_cloud)) } },
+            dismissButton = { TextButton(onClick = viewModel::keepPhone) { Text(stringResource(R.string.account_keep_phone)) } },
+        )
+    }
     var showEmail by rememberSaveable { mutableStateOf(!CloudConfig.google) }
     var email by rememberSaveable { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        if (CloudConfig.google) PrimaryButton(stringResource(R.string.account_google), onClick = onGoogle, enabled = !busy)
-        if (!showEmail) SecondaryButton(stringResource(R.string.account_email), onClick = { showEmail = true }, icon = Icons.Default.Email)
-        else MediCard {
+        if (ui.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
+        ui.message?.let { NoticeCard(stringResource(it), if (ui.error) Icons.Default.Warning else Icons.Default.Info, if (ui.error) Tone.WARNING else Tone.INFO) }
+        if (CloudConfig.google) {
+            ProviderButton(
+                text = stringResource(R.string.account_google),
+                onClick = { context.findActivity()?.let(viewModel::google) },
+                enabled = !ui.busy,
+            ) { Image(painterResource(R.drawable.ic_google_g), contentDescription = null, modifier = Modifier.size(22.dp)) }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                HorizontalDivider(Modifier.weight(1f), color = MaterialTheme.colorScheme.outlineVariant)
+                Text(stringResource(R.string.account_or), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 12.dp))
+                HorizontalDivider(Modifier.weight(1f), color = MaterialTheme.colorScheme.outlineVariant)
+            }
+        }
+        if (!showEmail) {
+            ProviderButton(text = stringResource(R.string.account_email), onClick = { showEmail = true }, enabled = !ui.busy) {
+                Icon(Icons.Default.Email, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
+            }
+        } else {
             OutlinedTextField(
                 value = email, onValueChange = { email = it.trim() },
                 label = { Text(stringResource(R.string.account_email_label)) },
+                leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 singleLine = true, modifier = Modifier.fillMaxWidth(),
             )
-            Spacer(Modifier.height(8.dp))
             OutlinedTextField(
                 value = password, onValueChange = { password = it },
                 label = { Text(stringResource(R.string.account_password_label)) },
+                leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
                 supportingText = { Text(stringResource(R.string.account_password_hint)) },
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 singleLine = true, modifier = Modifier.fillMaxWidth(),
             )
-            Spacer(Modifier.height(8.dp))
-            val ok = email.contains('@') && password.length >= 6 && !busy
-            PrimaryButton(stringResource(R.string.account_sign_in), onClick = { onEmail(email, password, false) }, enabled = ok)
-            Spacer(Modifier.height(8.dp))
-            SecondaryButton(stringResource(R.string.account_create), onClick = { onEmail(email, password, true) }, enabled = ok)
-            if (email.contains('@')) QuietButton(stringResource(R.string.account_forgot), onClick = { onReset(email) }, modifier = Modifier.align(Alignment.CenterHorizontally))
+            val ok = email.contains('@') && password.length >= 6 && !ui.busy
+            PrimaryButton(stringResource(R.string.account_sign_in), onClick = { viewModel.email(email, password, false) }, enabled = ok)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (email.contains('@')) TextButton(onClick = { viewModel.resetPassword(email) }) { Text(stringResource(R.string.account_forgot)) }
+                Spacer(Modifier.weight(1f))
+                TextButton(onClick = { viewModel.email(email, password, true) }, enabled = ok) { Text(stringResource(R.string.account_create)) }
+            }
         }
-        Text(stringResource(R.string.account_agree), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Row {
-            QuietButton(stringResource(R.string.legal_terms), onClick = { onOpenLegal("TERMS") }, modifier = Modifier.weight(1f))
-            QuietButton(stringResource(R.string.legal_privacy), onClick = { onOpenLegal("PRIVACY") }, modifier = Modifier.weight(1f))
+        Text(
+            stringResource(R.string.account_agree),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+        )
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+            TextButton(onClick = { onOpenLegal("TERMS") }) { Text(stringResource(R.string.legal_terms), style = MaterialTheme.typography.labelMedium) }
+            TextButton(onClick = { onOpenLegal("PRIVACY") }) { Text(stringResource(R.string.legal_privacy), style = MaterialTheme.typography.labelMedium) }
         }
+    }
+}
+
+/** A sign-in choice as people know it: white, outlined, the provider's mark on the left. */
+@Composable
+private fun ProviderButton(text: String, onClick: () -> Unit, enabled: Boolean, mark: @Composable () -> Unit) {
+    OutlinedButton(
+        onClick = onClick,
+        enabled = enabled,
+        shape = RoundedCornerShape(28.dp),
+        colors = ButtonDefaults.outlinedButtonColors(containerColor = MaterialTheme.colorScheme.surface, contentColor = MaterialTheme.colorScheme.onSurface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
+    ) {
+        mark()
+        Spacer(Modifier.width(12.dp))
+        Text(text, style = MaterialTheme.typography.titleMedium)
     }
 }
 

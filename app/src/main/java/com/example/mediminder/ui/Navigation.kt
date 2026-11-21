@@ -229,7 +229,7 @@ fun MainNavigation(
         ),
         entryProvider = entryProvider {
             entry<Onboarding> {
-                OnboardingScreen(onOpenAccount = { open(AccountKey) }, onFinished = {
+                OnboardingScreen(onOpenLegal = { open(LegalKey(it)) }, onFinished = {
                     backStack.add(Home)
                     backStack.remove(Onboarding)
                 })

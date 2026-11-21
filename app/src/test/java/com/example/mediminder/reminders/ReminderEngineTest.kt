@@ -95,7 +95,9 @@ class ReminderEngineTest {
 
     private fun alarmFor(path: String) = alarms.scheduledAlarms.firstOrNull { it.operation?.let { op -> shadowOf(op).savedIntent.data?.toString() } == "mediminder://$path" }
 
-    private fun shownNotifications(): List<Notification> = shadowOf(notifications).allNotifications
+    // (the test phone has no full-screen permission, so that notice is left out of the counts)
+    private fun shownNotifications(): List<Notification> =
+        shadowOf(notifications).allNotifications.filter { it.channelId != Notifier.CHANNEL_ALARM_SETUP }
 
     @Test fun `saving a medicine arms its next alarm`() = runBlocking {
         val (schedule, _) = addMedicine(minutesFromNow = 90, alert = AlertType.ALARM)

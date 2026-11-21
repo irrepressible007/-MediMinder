@@ -958,7 +958,7 @@
     <string name="account_restore">ক্লাউডের কপি ফিরিয়ে আনুন</string>
     <string name="account_restore_title">ক্লাউডের কপি ফিরিয়ে আনবেন?</string>
     <string name="account_restore_body">এই ফোনের ওষুধ, ইতিহাস ও মাপ ক্লাউডের কপি দিয়ে বদলে যাবে।</string>
-    <string name="account_photos_stay">তথ্য বদলানোর কয়েক মিনিট পর নিজে থেকেই ক্লাউডে রাখা হয়। ছবি ও কাগজপত্র শুধু এই ফোনেই থাকে।</string>
+    <string name="account_photos_stay">কিছু বদলানোর কয়েক মিনিট পর তথ্য নিজে থেকেই ক্লাউডে রাখা হয়। ছবি ও কাগজপত্র শুধু এই ফোনেই থাকে।</string>
     <string name="account_sign_out">সাইন আউট</string>
     <string name="account_delete">আমার অ্যাকাউন্ট ও ক্লাউডের তথ্য মুছুন</string>
     <string name="account_delete_title">অ্যাকাউন্ট মুছবেন?</string>
@@ -980,7 +980,6 @@
     <string name="account_error_no_account">এই ইমেইলে কোনো অ্যাকাউন্ট নেই। নতুন অ্যাকাউন্ট খুলুন।</string>
     <string name="account_error_wrong_password">ইমেইল বা পাসওয়ার্ড ঠিক নয়।</string>
     <string name="account_error_sign_in_again">নিরাপত্তার জন্য সাইন আউট করে আবার সাইন ইন করুন, তারপর মুছুন।</string>
-    <string name="onboarding_restore">আগে মেডিমাইন্ডার ব্যবহার করেছেন? সাইন ইন করে তথ্য ফিরিয়ে আনুন</string>
     <string name="report_problem">সমস্যা জানান</string>
     <string name="report_problem_sub">ডেভেলপারকে ইমেইল করুন, সমস্যার তালিকাসহ</string>
     <string name="report_problem_subject">মেডিমাইন্ডার %1$s: সমস্যার রিপোর্ট</string>
@@ -998,4 +997,13 @@
     <string name="fsi_lost_action">চালু করুন</string>
     <string name="channel_alarm_setup">অ্যালার্মের সমস্যা</string>
     <string name="channel_alarm_setup_desc">যখন ফোন অ্যালার্মের দরকারি কিছু বন্ধ করে দেয়</string>
+    <string name="account_sign_in_title">মেডিমাইন্ডারে সাইন ইন করুন</string>
+    <string name="account_or">অথবা</string>
+    <string name="account_auto_on">স্বয়ংক্রিয় ব্যাকআপ চালু আছে</string>
+    <string name="account_save_now">এখনই রাখুন</string>
+    <string name="account_restore_short">ফিরিয়ে আনুন</string>
+    <string name="onboarding_account_title">আপনার তথ্য নিরাপদ রাখুন</string>
+    <string name="onboarding_account_body">সাইন ইন করলে মেডিমাইন্ডার নিজে থেকেই আপনার ওষুধ ও ইতিহাসের একটি কপি ক্লাউডে রাখবে, তাই ফোন বদলালেও কিছু হারাবে না। পরেও করতে পারেন।</string>
+    <string name="onboarding_skip">এখন না</string>
+    <string name="account_signed_in_as">%1$s হিসেবে সাইন ইন করা আছে। আপনার তথ্য নিজে থেকেই রাখা হবে।</string>
 </resources>

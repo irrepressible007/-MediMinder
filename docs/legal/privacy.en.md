@@ -18,7 +18,7 @@ This information is stored in the app's private storage on your phone. Nobody el
 
 Only when you do one of these:
 
-- **Cloud backup (optional).** If you sign in with Google or email, a copy of your MediMinder data is kept in Google Firebase (Cloud Firestore, in the Mumbai region) so it can come back after you reinstall or change phones. It includes the same things as a backup file: medicines, history, readings, doctor visits, Medical ID and settings. Photos are not uploaded. Your copy can only be read by your own account. Google provides this service on our behalf.
+- **Cloud backup (optional).** If you sign in with Google or email, a copy of your MediMinder data is kept in Google Firebase (Cloud Firestore, in the Mumbai region) so it can come back after you reinstall or change phones. While you are signed in, the copy is updated automatically a few minutes after you change something. It includes the same things as a backup file: medicines, history, readings, doctor visits, Medical ID and settings. Photos are not uploaded. Your copy can only be read by your own account. Google provides this service on our behalf.
 - **Signing in.** The sign-in service you choose (Google, or Firebase for email) tells MediMinder your account ID, name and email address. MediMinder never posts anything on your behalf.
 - **Sharing.** When you share a report, a PDF or a backup file, it goes wherever you send it.
 - **Your phone's own backup.** If backup is turned on in your phone's settings, Android may include MediMinder's data in your Google account's device backup, so it can come back on a new phone. Google encrypts this backup with your screen lock. You can turn it off in the phone's settings.

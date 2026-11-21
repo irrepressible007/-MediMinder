@@ -1,5 +1,11 @@
 package com.example.mediminder.ui.more
 
+import com.example.mediminder.ui.account.AccountViewModel
+import com.example.mediminder.ui.account.SignInHeader
+import com.example.mediminder.ui.account.SignInPanel
+import com.example.mediminder.ui.components.NoticeCard
+import androidx.compose.material.icons.filled.CloudDone
+import androidx.compose.runtime.LaunchedEffect
 import com.example.mediminder.cloud.CloudConfig
 import androidx.compose.material.icons.filled.Cloud
 import com.example.mediminder.ui.components.AnimatedArt
@@ -79,17 +85,33 @@ import kotlinx.coroutines.launch
 
 /** First run: language & text size → meal times → permissions that make alarms reliable. */
 @Composable
-fun OnboardingScreen(onFinished: () -> Unit, onOpenAccount: () -> Unit = {}, viewModel: SettingsViewModel = hiltViewModel()) {
+fun OnboardingScreen(
+    onFinished: () -> Unit,
+    onOpenLegal: (doc: String) -> Unit = {},
+    viewModel: SettingsViewModel = hiltViewModel(),
+    account: AccountViewModel = hiltViewModel(),
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val s by viewModel.state.collectAsState()
     var step by rememberSaveable { mutableIntStateOf(0) }
+    // Welcome → (sign in, when this build has it) → meal times → permissions
+    val pages = remember { buildList { add(PAGE_WELCOME); if (CloudConfig.available) add(PAGE_ACCOUNT); add(PAGE_MEALS); add(PAGE_PERMISSIONS) } }
+    val last = pages.lastIndex
+    val user by account.user.collectAsState()
+    val accountUi by account.ui.collectAsState()
+    // Signed in on a new phone and the data came back: setup is done
+    LaunchedEffect(accountUi.restored) {
+        if (!accountUi.restored) return@LaunchedEffect
+        viewModel.update { it.copy(onboardingDone = true) }   // (a copy without settings doesn't set it)
+        onFinished()
+    }
     var checks by remember { mutableStateOf(Reliability.checks(context)) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { checks = Reliability.checks(context) }
     val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { checks = Reliability.checks(context) }
 
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).safeDrawingPadding().padding(horizontal = 20.dp, vertical = 16.dp)) {
-        val progress by animateFloatAsState((step + 1) / 3f, tween(Motion.LONG, easing = FastOutSlowInEasing), label = "steps")
+        val progress by animateFloatAsState((step + 1) / pages.size.toFloat(), tween(Motion.LONG, easing = FastOutSlowInEasing), label = "steps")
         LinearProgressIndicator(
             progress = { progress },
             modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
@@ -106,8 +128,8 @@ fun OnboardingScreen(onFinished: () -> Unit, onOpenAccount: () -> Unit = {}, vie
             label = "onboarding",
         ) { page ->
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            when (page) {
-                0 -> {
+            when (pages[page]) {
+                PAGE_WELCOME -> {
                     AnimatedArt(Art.HEART, Hue.ROSE, Modifier.align(Alignment.CenterHorizontally), size = 176.dp)
                     Text(stringResource(R.string.onboarding_welcome), style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
                     Text(stringResource(R.string.onboarding_welcome_body), style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
@@ -125,16 +147,18 @@ fun OnboardingScreen(onFinished: () -> Unit, onOpenAccount: () -> Unit = {}, vie
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
-                    // a reinstall or a new phone: the data can come straight back
-                    if (CloudConfig.available) {
-                        com.example.mediminder.ui.components.SecondaryButton(
-                            stringResource(R.string.onboarding_restore),
-                            onClick = onOpenAccount,
-                            icon = androidx.compose.material.icons.Icons.Default.Cloud,
-                        )
-                    }
                 }
-                1 -> {
+                PAGE_ACCOUNT -> {
+                    SignInHeader(stringResource(R.string.onboarding_account_title), stringResource(R.string.onboarding_account_body))
+                    val u = user
+                    if (u == null) SignInPanel(account, onOpenLegal)
+                    else NoticeCard(
+                        stringResource(R.string.account_signed_in_as, u.email ?: u.name.orEmpty()),
+                        androidx.compose.material.icons.Icons.Default.CloudDone,
+                        com.example.mediminder.ui.components.Tone.INFO,
+                    )
+                }
+                PAGE_MEALS -> {
                     AnimatedArt(Art.MEAL, Hue.SUNRISE, Modifier.align(Alignment.CenterHorizontally), size = 150.dp)
                     Text(stringResource(R.string.onboarding_meals_title), style = MaterialTheme.typography.headlineMedium)
                     Text(stringResource(R.string.onboarding_meals_body), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -146,7 +170,7 @@ fun OnboardingScreen(onFinished: () -> Unit, onOpenAccount: () -> Unit = {}, vie
                         MealRow(stringResource(R.string.meal_bedtime), s.mealTimes.bedtime) { m -> viewModel.update { it.copy(mealTimes = it.mealTimes.copy(bedtime = m)) } }
                     }
                 }
-                else -> {
+                else -> {   // PAGE_PERMISSIONS
                     val status = LocalStatusColors.current
                     AnimatedArt(Art.PHONE, Hue.VIOLET, Modifier.align(Alignment.CenterHorizontally), size = 150.dp)
                     Text(stringResource(R.string.onboarding_permissions_title), style = MaterialTheme.typography.headlineMedium)
@@ -195,9 +219,15 @@ fun OnboardingScreen(onFinished: () -> Unit, onOpenAccount: () -> Unit = {}, vie
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             if (step > 0) SecondaryButton(stringResource(R.string.action_back), onClick = { step-- }, modifier = Modifier.weight(1f))
             PrimaryButton(
-                text = stringResource(if (step < 2) R.string.action_next else R.string.action_get_started),
+                text = stringResource(
+                    when {
+                        step == last -> R.string.action_get_started
+                        pages[step] == PAGE_ACCOUNT && user == null -> R.string.onboarding_skip
+                        else -> R.string.action_next
+                    }
+                ),
                 onClick = {
-                    if (step < 2) step++ else {
+                    if (step < last) step++ else {
                         viewModel.update { it.copy(onboardingDone = true) }
                         scope.launch { viewModel.rearm() }
                         onFinished()
@@ -208,3 +238,8 @@ fun OnboardingScreen(onFinished: () -> Unit, onOpenAccount: () -> Unit = {}, vie
         }
     }
 }
+
+private const val PAGE_WELCOME = 0
+private const val PAGE_MEALS = 1
+private const val PAGE_PERMISSIONS = 2
+private const val PAGE_ACCOUNT = 3

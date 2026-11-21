@@ -151,6 +151,8 @@ class SafetyNetWorker(context: Context, params: WorkerParameters) : CoroutineWor
         reminders.engine().rescheduleAll()
         SetupNudge.maybeNotify(applicationContext, reminders.notifier(), reminders.engine().hasActiveMedicines())
         SetupNudge.checkFullScreen(applicationContext, reminders.notifier(), reminders.engine().hasAlarmDoses())
+        // signed in but not backed up for a day (no changes, or no internet then): catch up
+        com.example.mediminder.cloud.CloudBackupWorker.dailyCatchUp(applicationContext)
         return Result.success()
     }
 
