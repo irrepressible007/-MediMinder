@@ -126,8 +126,13 @@ class SystemEventsReceiver : BroadcastReceiver() {
             AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED,
             "android.intent.action.QUICKBOOT_POWERON", // some Xiaomi / HTC builds
             -> {
-                val engine = context.reminders().engine()
-                runAsync { engine.rescheduleAll() }
+                val reminders = context.reminders()
+                val engine = reminders.engine()
+                runAsync {
+                    engine.rescheduleAll()
+                    // an update or restart can be when Android switches full-screen alarms off
+                    SetupNudge.checkFullScreen(context, reminders.notifier(), engine.hasAlarmDoses())
+                }
                 SafetyNetWorker.ensureScheduled(context)
             }
         }
@@ -145,6 +150,7 @@ class SafetyNetWorker(context: Context, params: WorkerParameters) : CoroutineWor
         reminders.ramadan().endIfOver()
         reminders.engine().rescheduleAll()
         SetupNudge.maybeNotify(applicationContext, reminders.notifier(), reminders.engine().hasActiveMedicines())
+        SetupNudge.checkFullScreen(applicationContext, reminders.notifier(), reminders.engine().hasAlarmDoses())
         return Result.success()
     }
 

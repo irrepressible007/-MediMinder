@@ -1,5 +1,7 @@
 package com.example.mediminder.reminders
 
+import android.app.NotificationManager
+import android.os.Build
 import android.content.Context
 import androidx.core.app.NotificationManagerCompat
 
@@ -29,6 +31,26 @@ object SetupNudge {
     internal fun shouldNudge(now: Long, clockStartedAt: Long, lastNudge: Long, problems: Int, notificationsOn: Boolean, hasMedicines: Boolean): Boolean =
         notificationsOn && hasMedicines && problems > 0 && clockStartedAt > 0 &&
             now - clockStartedAt >= NUDGE_EVERY && now - lastNudge >= NUDGE_EVERY
+
+    /**
+     * Android can switch off "full-screen alarm" on its own (it happens after updates of apps
+     * installed outside the Play Store). Alarms still ring, but no longer show over the lock
+     * screen, so this is said straight away, not after days: at most once a day, and only
+     * while there are alarm-type doses.
+     */
+    fun checkFullScreen(context: Context, notifier: Notifier, hasAlarmDoses: Boolean) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return
+        val prefs = prefs(context)
+        val allowed = context.getSystemService(NotificationManager::class.java).canUseFullScreenIntent()
+        if (allowed || !hasAlarmDoses) {
+            if (allowed) notifier.cancelFullScreenLost()
+            return
+        }
+        val now = System.currentTimeMillis()
+        if (now - prefs.getLong("fsiNotified", 0) < DAY) return
+        notifier.showFullScreenLost()
+        prefs.edit().putLong("fsiNotified", now).apply()
+    }
 
     /** Called by the 6-hourly safety net. */
     fun maybeNotify(context: Context, notifier: Notifier, hasMedicines: Boolean) {

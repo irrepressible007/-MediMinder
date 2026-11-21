@@ -112,6 +112,11 @@ class Notifier @Inject constructor(
                 description = ctx.getString(R.string.channel_setup_desc)
             }
         )
+        manager.createNotificationChannel(
+            NotificationChannel(CHANNEL_ALARM_SETUP, ctx.getString(R.string.channel_alarm_setup), NotificationManager.IMPORTANCE_DEFAULT).apply {
+                description = ctx.getString(R.string.channel_alarm_setup_desc)
+            }
+        )
         // Channel from version 1.x, replaced by the ones above
         system.deleteNotificationChannel("mediminder_alarms")
     }
@@ -297,6 +302,32 @@ class Notifier @Inject constructor(
         post(ID_SETUP, notification)
     }
 
+    /** Android switched off full-screen alarms: one tap opens the exact settings page. */
+    fun showFullScreenLost() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return
+        val ctx = context
+        val settings = PendingIntent.getActivity(
+            appContext, 0,
+            Intent(android.provider.Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, Uri.parse("package:${appContext.packageName}"))
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val text = ctx.getString(R.string.fsi_lost_text)
+        val notification = NotificationCompat.Builder(ctx, CHANNEL_ALARM_SETUP)
+            .setSmallIcon(R.drawable.ic_stat_pill)
+            .setColor(ContextCompat.getColor(appContext, R.color.brand))
+            .setContentTitle(ctx.getString(R.string.fsi_lost_title))
+            .setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+            .setAutoCancel(true)
+            .setContentIntent(settings)
+            .addAction(0, ctx.getString(R.string.fsi_lost_action), settings)
+            .build()
+        post(ID_FULL_SCREEN, notification)
+    }
+
+    fun cancelFullScreenLost() = manager.cancel(ID_FULL_SCREEN)
+
     /** Ramadan mode ended by itself: the usual times are back. */
     fun showRamadanOver() {
         val ctx = context
@@ -457,6 +488,7 @@ class Notifier @Inject constructor(
         const val CHANNEL_REFILLS = "refills"
         const val CHANNEL_APPOINTMENTS = "appointments"
         const val CHANNEL_SETUP = "setup_tips"
+        const val CHANNEL_ALARM_SETUP = "alarm_setup"
 
         private const val GROUP_DOSES = "doses"
         private const val ID_ALARM = 1001
@@ -464,6 +496,7 @@ class Notifier @Inject constructor(
         private const val ID_REFILL_SUMMARY = 1003
         private const val ID_SETUP = 1004
         private const val ID_RAMADAN = 1005
+        private const val ID_FULL_SCREEN = 1006
 
         const val DEEP_LINK_TODAY = "mediminder://open/today"
         const val DEEP_LINK_REFILLS = "mediminder://open/refills"

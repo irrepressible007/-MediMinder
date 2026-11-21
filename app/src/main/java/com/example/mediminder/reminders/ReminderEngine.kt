@@ -255,12 +255,20 @@ class ReminderEngine @Inject constructor(
             doseInfo(medication, schedule, alert.scheduledDay)
         }
         val s = settings.current
-        if (doses.isEmpty()) notifier.cancelAlarm() else notifier.showAlarm(doses, s.snoozeMinutes, s.alarmRingMinutes)
+        if (doses.isEmpty()) notifier.cancelAlarm() else {
+            notifier.showAlarm(doses, s.snoozeMinutes, s.alarmRingMinutes)
+            // ringing without its full-screen page: say so now
+            SetupNudge.checkFullScreen(appContext, notifier, hasAlarmDoses = true)
+        }
     }
 
     suspend fun ringingAlerts(): List<ActiveAlert> = activeAlertDao.getAll()
 
     suspend fun hasActiveMedicines(): Boolean = medicationDao.getActiveWithSchedules().isNotEmpty()
+
+    /** Any dose set to ring as a full-screen alarm? */
+    suspend fun hasAlarmDoses(): Boolean =
+        medicationDao.getActiveWithSchedules().any { item -> item.schedules.any { it.enabled && it.alertType == AlertType.ALARM } }
 
     suspend fun doseInfo(medication: Medication, schedule: Schedule, day: Long) = DoseInfo(
         scheduleId = schedule.id,
