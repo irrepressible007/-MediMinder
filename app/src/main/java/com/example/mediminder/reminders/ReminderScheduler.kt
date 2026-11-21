@@ -23,7 +23,6 @@ import javax.inject.Singleton
  *   mediminder://dose/{scheduleId}                 the regular daily alarm
  *   mediminder://dose-repeat/{scheduleId}/{day}    a snooze or "not answered yet" repeat
  *   mediminder://appointment/{id}/{main|evening}   appointment reminders
- *   mediminder://missed/{scheduleId}/{day}         "still not taken?" check for family alerts
  *   mediminder://refill                            the daily low-stock check
  *   mediminder://test                              "test my alarm"
  */
@@ -69,14 +68,6 @@ class ReminderScheduler @Inject constructor(
     fun cancelAppointment(appointmentId: Long) {
         cancel(receiverIntent(ACTION_APPOINTMENT, "appointment/$appointmentId/$WHICH_MAIN"))
         cancel(receiverIntent(ACTION_APPOINTMENT, "appointment/$appointmentId/$WHICH_EVENING"))
-    }
-
-    /** A while after a dose rang: if still unanswered, a family member may be told. */
-    fun scheduleMissedCheck(scheduleId: Long, day: Long, triggerAt: Long) {
-        val intent = receiverIntent(ACTION_MISSED_CHECK, "missed/$scheduleId/$day")
-            .putExtra(EXTRA_SCHEDULE_ID, scheduleId)
-            .putExtra(EXTRA_DAY, day)
-        set(triggerAt, broadcast(intent), alarmClock = false)
     }
 
     fun scheduleRefillCheck(triggerAt: Long) =
@@ -134,7 +125,6 @@ class ReminderScheduler @Inject constructor(
         const val ACTION_APPOINTMENT = "com.example.mediminder.action.APPOINTMENT"
         const val ACTION_REFILL_CHECK = "com.example.mediminder.action.REFILL_CHECK"
         const val ACTION_TEST = "com.example.mediminder.action.TEST"
-        const val ACTION_MISSED_CHECK = "com.example.mediminder.action.MISSED_CHECK"
 
         const val EXTRA_SCHEDULE_ID = "scheduleId"
         const val EXTRA_DAY = "day"

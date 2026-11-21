@@ -205,11 +205,6 @@ class ReminderEngine @Inject constructor(
             notifier.showDoseReminder(doseInfo(medication, schedule, day), s.snoozeMinutes, repeatCount)
         }
 
-        // Family alerts: check back later, and tell them if it is still not taken
-        if (kind == ReminderScheduler.KIND_REGULAR && s.family.on && medication.kind.isMedicine) {
-            scheduler.scheduleMissedCheck(scheduleId, day, System.currentTimeMillis() + s.family.afterMinutes * 60_000L)
-        }
-
         if (s.repeatReminders && repeatCount < s.maxRepeats) {
             scheduler.scheduleDoseRepeat(
                 scheduleId, day,
@@ -217,42 +212,6 @@ class ReminderEngine @Inject constructor(
                 schedule.alertType, ReminderScheduler.KIND_REPEAT,
             )
         }
-    }
-
-    // ── Family alerts ───────────────────────────────────────────────────────
-
-    private val family by lazy { FamilyAlerter(appContext, settings) }
-
-    /** Doses due together fire their checks together: one at a time, so they share one text. */
-    private val familyLock = Mutex()
-
-    /**
-     * A dose rang a while ago. If it (and any other medicine due that day by now) is still not
-     * answered, one SMS tells the family member. Each dose is reported once.
-     */
-    suspend fun onMissedCheck(scheduleId: Long, day: Long) = familyLock.withLock {
-        val f = settings.current.family
-        if (!f.on || f.phone.isBlank()) return@withLock
-        val schedule = scheduleDao.getById(scheduleId) ?: return@withLock
-        if (isAnswered(scheduleId, day) || family.alreadySent(scheduleId, day)) return@withLock
-        val now = LocalDateTime.now()
-        val date = LocalDate.ofEpochDay(day)
-        val missed = DosePlanner.occurrencesOn(medicationDao.getActiveWithSchedules(), date)
-            .filter { occ ->
-                occ.medication.kind.isMedicine &&
-                    // this dose, and others already overdue just as long
-                    (occ.schedule.id == schedule.id || !occ.dateTime.plusMinutes(f.afterMinutes.toLong()).isAfter(now)) &&
-                    !isAnswered(occ.schedule.id, occ.day) && !family.alreadySent(occ.schedule.id, occ.day)
-            }
-            .sortedBy { it.minuteOfDay }
-            .map { occ ->
-                FamilyAlerter.Missed(
-                    FamilyAlerter.key(occ.schedule.id, occ.day),
-                    listOf(occ.medication.name, occ.medication.strength).filter { it.isNotBlank() }.joinToString(" "),
-                    occ.minuteOfDay,
-                )
-            }
-        if (missed.isNotEmpty()) family.sendMissed(missed)
     }
 
     // ── The user answered a dose ────────────────────────────────────────────

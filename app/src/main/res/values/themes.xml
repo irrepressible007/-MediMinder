@@ -9,13 +9,4 @@
         <item name="android:windowBackground">@color/background_light</item>
     </style>
 
-    <!-- AppCompat bridge required by CropImageActivity from canhub library -->
-    <style name="Theme.MediMinder.AppCompat" parent="Theme.AppCompat.Light.NoActionBar">
-        <item name="colorPrimary">@color/brand</item>
-        <item name="colorPrimaryDark">@color/brand_dark</item>
-        <item name="colorAccent">@color/brand</item>
-        <item name="windowNoTitle">true</item>
-        <item name="windowActionBar">false</item>
-    </style>
-
 </resources>

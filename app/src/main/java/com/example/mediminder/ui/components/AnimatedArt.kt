@@ -114,8 +114,6 @@ enum class Art(internal val periodMillis: Int, internal val still: Float) {
     GLASS(3000, 0.3f),
     /** A crescent moon and star, with a lantern swinging gently. */
     CRESCENT(4000, 0.25f),
-    /** A speech bubble that types, then sends a heart. */
-    MESSAGE(2800, 0.2f),
     /** A prescription whose lines write themselves under a scanning beam. */
     PRESCRIPTION(3400, 0.7f),
     /** A cloud over a phone, a copy travelling up and back. */
@@ -252,7 +250,6 @@ private fun DrawScope.scene(art: Art, g: Grid, t: Float, c: ArtColors, tracer: T
     Art.THERMO -> thermo(g, t, c, tracer)
     Art.GLASS -> glass(g, t, c, tracer)
     Art.CRESCENT -> crescent(g, t, c, tracer)
-    Art.MESSAGE -> message(g, t, c, tracer)
     Art.PRESCRIPTION -> prescription(g, t, c, tracer)
     Art.CLOUD -> cloudScene(g, t, c, tracer)
 }
@@ -1308,30 +1305,6 @@ private fun DrawScope.crescent(g: Grid, t: Float, c: ArtColors, tr: Tracer?) {
     listOf(Triple(22f, 70f, 0f), Triple(30f, 84f, 0.35f), Triple(86f, 22f, 0.7f), Triple(16f, 46f, 0.5f)).forEach { (x, y, ph) ->
         sparkle(g.o(x, y), 3f * u, c.main.copy(alpha = twinkle(t, ph)))
     }
-}
-
-
-/** A speech bubble: three dots type, then a little heart floats up from it. */
-private fun DrawScope.message(g: Grid, t: Float, c: ArtColors, tr: Tracer?) {
-    val u = g.u
-    val bubble = Path().apply {
-        addRoundRect(RoundRect(g.x(18f), g.y(26f), g.x(78f), g.y(66f), CornerRadius(12f * u)))
-        moveTo(g.x(30f), g.y(64f)); lineTo(g.x(26f), g.y(78f)); lineTo(g.x(42f), g.y(65f)); close()
-    }
-    part(tr, bubble, c.main)
-    if (tr != null) return
-    // typing…
-    for (i in 0..2) {
-        val hop = bump((t * 1.6f + i * 0.18f) % 1f, 0.05f, 0.45f)
-        drawCircle(c.onMain.copy(alpha = 0.95f), radius = 3.6f * u, center = g.o(36f + i * 12f, 46f - 4f * hop))
-    }
-    // …then a heart rises from the corner and fades
-    val ph = clamp01((t - 0.55f) / 0.45f)
-    if (ph > 0f && ph < 1f) {
-        val alpha = sin(PI.toFloat() * ph)
-        heart(g.o(78f + 4f * sin(ph * TAU), 26f - 16f * ph), 4.2f * u, c.accent.copy(alpha = alpha))
-    }
-    sparkle(g.o(16f, 22f), 3f * u, c.main.copy(alpha = twinkle(t, 0.2f)))
 }
 
 

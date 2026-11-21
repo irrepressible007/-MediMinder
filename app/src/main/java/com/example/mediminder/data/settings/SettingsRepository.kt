@@ -38,16 +38,6 @@ data class RamadanSettings(
     val dismissedYear: Int = 0,
 )
 
-/** A text message to a family member when a medicine dose is missed. */
-@kotlinx.serialization.Serializable
-data class FamilyAlerts(
-    val on: Boolean = false,
-    val name: String = "",
-    val phone: String = "",
-    /** How long after a dose's time, still unanswered, before the message goes. */
-    val afterMinutes: Int = 60,
-)
-
 /** Health details shown on the Medical ID screen and used for allergy warnings. */
 @kotlinx.serialization.Serializable
 data class MedicalProfile(
@@ -87,7 +77,6 @@ data class AppSettings(
     /** In-app text size on top of the phone's: 1.0 normal, 1.15 large, 1.3 extra large. */
     val textScale: Float = 1f,
     val ramadan: RamadanSettings = RamadanSettings(),
-    val family: FamilyAlerts = FamilyAlerts(),
 )
 
 /**
@@ -162,12 +151,6 @@ class SettingsRepository @Inject constructor(
                 ),
                 dismissedYear = getInt("ramadan.dismissedYear", 0),
             ),
-            family = FamilyAlerts(
-                on = getBoolean("family.on", false),
-                name = getString("family.name", "") ?: "",
-                phone = getString("family.phone", "") ?: "",
-                afterMinutes = getInt("family.after", defaults.family.afterMinutes),
-            ),
         )
     }
 
@@ -211,10 +194,6 @@ class SettingsRepository @Inject constructor(
             .putInt("ramadan.usual.dinner", s.ramadan.usualMeals?.dinner ?: 0)
             .putInt("ramadan.usual.bedtime", s.ramadan.usualMeals?.bedtime ?: 0)
             .putInt("ramadan.dismissedYear", s.ramadan.dismissedYear)
-            .putBoolean("family.on", s.family.on)
-            .putString("family.name", s.family.name)
-            .putString("family.phone", s.family.phone)
-            .putInt("family.after", s.family.afterMinutes)
             .apply()
     }
 

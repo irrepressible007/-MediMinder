@@ -28,7 +28,7 @@ The medicine list comes from public sources, including the Directorate General o
 
 ## Costs
 
-MediMinder is free. Text messages to family are sent from your phone at your mobile operator's normal rates.
+MediMinder is free.
 
 ## No warranty
 

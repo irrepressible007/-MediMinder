@@ -19,9 +19,6 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
-    <!-- Optional: a text to a family member when a dose is missed (asked for only when turned on) -->
-    <uses-permission android:name="android.permission.SEND_SMS" />
-    <uses-feature android:name="android.hardware.telephony" android:required="false" />
 
     <!-- Manufacturer "autostart" settings pages opened by the reliability check -->
     <queries>
@@ -108,11 +105,6 @@
                 android:name="autoStoreLocales"
                 android:value="true" />
         </service>
-
-        <!-- Override CropImageActivity's theme: requires Theme.AppCompat -->
-        <activity
-            android:name="com.canhub.cropper.CropImageActivity"
-            android:theme="@style/Theme.MediMinder.AppCompat" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

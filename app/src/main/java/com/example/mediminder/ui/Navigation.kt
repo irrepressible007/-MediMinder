@@ -4,7 +4,6 @@ import com.example.mediminder.ui.account.AccountScreen
 import com.example.mediminder.ui.more.LegalDoc
 import com.example.mediminder.ui.more.LegalScreen
 import com.example.mediminder.ui.prescription.PrescriptionScreen
-import com.example.mediminder.ui.more.FamilyAlertScreen
 import com.example.mediminder.ui.more.RamadanScreen
 import com.example.mediminder.domain.CareKind
 import com.example.mediminder.ui.health.CareEditorScreen
@@ -135,9 +134,9 @@ import javax.inject.Inject
 @Serializable data class RecordKey(val type: String = "", val medicationId: Long = 0, val scheduleId: Long = 0, val day: Long = -1) : NavKey
 @Serializable data class ReadingsKey(val type: String) : NavKey
 @Serializable data object RamadanKey : NavKey
-@Serializable data object FamilyAlertKey : NavKey
 @Serializable data object PrescriptionKey : NavKey
 @Serializable data object PrescriptionPhotoKey : NavKey
+@Serializable data object DocumentPhotoKey : NavKey
 /** "PRIVACY" or "TERMS" */
 @Serializable data class LegalKey(val doc: String) : NavKey
 @Serializable data object AccountKey : NavKey
@@ -176,6 +175,8 @@ fun MainNavigation(
     var capturedPhoto by rememberSaveable { mutableStateOf<String?>(null) }
     // A photo of a prescription, handed back to the prescription reader
     var prescriptionPhoto by rememberSaveable { mutableStateOf<String?>(null) }
+    // A photo for My documents
+    var documentPhoto by rememberSaveable { mutableStateOf<String?>(null) }
 
     val link by deepLink.collectAsState()
     LaunchedEffect(link) {
@@ -286,7 +287,21 @@ fun MainNavigation(
             entry<MedicalId> { MedicalIdScreen(onBack = ::back) }
             entry<SettingsKey> { SettingsScreen(onBack = ::back, onOpenReliability = { open(ReliabilityKey) }, onOpenRamadan = { open(RamadanKey) }) }
             entry<ReliabilityKey> { ReliabilityScreen(onBack = ::back) }
-            entry<Vault> { MedicalVaultScreen(onBack = ::back) }
+            entry<Vault> {
+                MedicalVaultScreen(
+                    onBack = ::back,
+                    capturedPhoto = documentPhoto,
+                    onPhotoConsumed = { documentPhoto = null },
+                    onTakePhoto = { open(DocumentPhotoKey) },
+                )
+            }
+            entry<DocumentPhotoKey> {
+                // documents keep more detail than medicine photos, so the writing stays readable
+                PhotoCaptureScreen(onBack = ::back, maxSide = 2400, onCaptured = { ref ->
+                    documentPhoto = ref
+                    back()
+                })
+            }
             entry<HistoryKey> { key -> HistoryScreen(medicationId = key.medicationId, onBack = ::back) }
             entry<HealthKey> {
                 HealthScreen(
@@ -309,7 +324,6 @@ fun MainNavigation(
                     onOpenItem = { kind, id -> open(if (kind.isMedicine) MedicineDetail(id) else CareEditorKey(kind.name, id)) },
                 )
             }
-            entry<FamilyAlertKey> { FamilyAlertScreen(onBack = ::back) }
             entry<LegalKey> { key -> LegalScreen(doc = LegalDoc.valueOf(key.doc), onBack = ::back) }
             entry<AccountKey> {
                 AccountScreen(

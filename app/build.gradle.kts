@@ -210,7 +210,6 @@ dependencies {
   implementation(libs.androidx.camera.view)
 
   // Image Cropper
-  implementation(libs.android.image.cropper)
 
   // Coil
   implementation("io.coil-kt:coil-compose:2.6.0")

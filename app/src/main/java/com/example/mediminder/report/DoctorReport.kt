@@ -78,7 +78,7 @@ object DoctorReport {
         val byId = summary.perMedication.associateBy { it.medicationId }
         val p = settings.profile
         return DoctorReportData(
-            person = settings.userName.ifBlank { ctx.getString(R.string.family_someone) },
+            person = settings.userName.ifBlank { ctx.getString(R.string.pdf_person) },
             age = p.birthYear?.let { today.year - it },
             bloodGroup = p.bloodGroup,
             allergies = p.allergies,

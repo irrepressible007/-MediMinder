@@ -53,8 +53,8 @@ object MedicinePhotos {
     }.getOrNull()
 
     /** Saves a camera frame (already upright) and returns its reference. */
-    suspend fun save(context: Context, bitmap: Bitmap): String = withContext(Dispatchers.IO) {
-        val scaled = scaleDown(bitmap, MAX_SIDE)
+    suspend fun save(context: Context, bitmap: Bitmap, maxSide: Int = MAX_SIDE): String = withContext(Dispatchers.IO) {
+        val scaled = scaleDown(bitmap, maxSide)
         val name = UUID.randomUUID().toString() + ".jpg"
         File(dir(context), name).outputStream().use { scaled.compress(Bitmap.CompressFormat.JPEG, QUALITY, it) }
         if (scaled !== bitmap) scaled.recycle()

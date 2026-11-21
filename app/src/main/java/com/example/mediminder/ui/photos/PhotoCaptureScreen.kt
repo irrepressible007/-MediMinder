@@ -166,7 +166,7 @@ suspend fun ImageCapture.takeUprightPhoto(context: Context): Bitmap? = suspendCa
 /** "Take a photo of the box or strip": one big shutter, then keep it or take it again. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PhotoCaptureScreen(onBack: () -> Unit, onCaptured: (photoRef: String) -> Unit) {
+fun PhotoCaptureScreen(onBack: () -> Unit, onCaptured: (photoRef: String) -> Unit, maxSide: Int = 1280) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val hasPermission = rememberCameraPermission()
@@ -238,7 +238,7 @@ fun PhotoCaptureScreen(onBack: () -> Unit, onCaptured: (photoRef: String) -> Uni
                         onClick = {
                             busy = true
                             scope.launch {
-                                val ref = MedicinePhotos.save(context, photo)
+                                val ref = MedicinePhotos.save(context, photo, maxSide)
                                 busy = false
                                 onCaptured(ref)
                             }

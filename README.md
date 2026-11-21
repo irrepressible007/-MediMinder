@@ -94,8 +94,6 @@ hard to make sure every alarm goes off.
   documents folder.
 - **A PDF for the doctor:** medicines and how regularly they were taken, health readings with
   charts, and habits, on A4 pages to print or send.
-- **Tell family about missed doses:** if a medicine is still not taken after 30 minutes to two
-  hours, one SMS tells a son, daughter or anyone chosen (at most five a day).
 - **Home-screen widget:** the next dose, with a Taken button when it is time.
 
 <p align="center">
