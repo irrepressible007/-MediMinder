@@ -13,7 +13,7 @@ import com.example.mediminder.BuildConfig
 import com.example.mediminder.R
 import com.example.mediminder.util.ErrorLog
 import com.example.mediminder.util.await
-import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.FirebaseNetworkException
 import com.google.firebase.auth.FirebaseAuth
@@ -60,12 +60,12 @@ class CloudAccount @Inject constructor(
 
     val signedIn: Boolean get() = _user.value != null
 
-    /** Google: the phone's own account picker (Credential Manager). */
+    /**
+     * Google: the full "Sign in with Google" account chooser (Credential Manager), which also
+     * lets the person add an account. (The quick bottom sheet is meant for automatic prompts.)
+     */
     suspend fun signInWithGoogle(activity: Activity) = translate {
-        val option = GetGoogleIdOption.Builder()
-            .setServerClientId(BuildConfig.FIREBASE_WEB_CLIENT_ID)
-            .setFilterByAuthorizedAccounts(false)
-            .build()
+        val option = GetSignInWithGoogleOption.Builder(BuildConfig.FIREBASE_WEB_CLIENT_ID).build()
         val credential = CredentialManager.create(activity)
             .getCredential(activity, GetCredentialRequest.Builder().addCredentialOption(option).build())
             .credential
@@ -110,6 +110,8 @@ class CloudAccount @Inject constructor(
     } catch (e: GetCredentialCancellationException) {
         throw SignInException(0, e)   // closed the picker: say nothing
     } catch (e: NoCredentialException) {
+        // also when Google's service can't be reached in time: keep the real reason
+        ErrorLog.record("Account", "Google sign-in found no credential: ${e.type}", e)
         throw SignInException(R.string.account_error_no_google, e)
     } catch (e: FirebaseNetworkException) {
         throw SignInException(R.string.account_error_network, e)

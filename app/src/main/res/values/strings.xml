@@ -999,7 +999,7 @@
     <string name="account_deleted">Your account and cloud copy are deleted.</string>
     <string name="account_error_generic">Something went wrong. Please try again.</string>
     <string name="account_error_network">No internet connection. Please try again when you\'re online.</string>
-    <string name="account_error_no_google">No Google account was found on this phone. Add one in the phone\'s settings, or use email.</string>
+    <string name="account_error_no_google">Google sign-in couldn\'t start. Check the internet connection and try again, or use email.</string>
     <string name="account_error_weak_password">Please choose a longer password (at least 6 characters).</string>
     <string name="account_error_exists">An account with this email already exists. Sign in instead.</string>
     <string name="account_error_no_account">No account was found with this email. Create one instead.</string>

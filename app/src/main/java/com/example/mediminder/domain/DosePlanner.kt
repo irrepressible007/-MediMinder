@@ -45,11 +45,14 @@ object DosePlanner {
             isCourseActiveOn(medication, date) &&
             DaysOfWeek.includes(schedule.daysMask, date.dayOfWeek)
 
-    fun occurrencesOn(medications: List<MedicationWithSchedules>, date: LocalDate): List<Occurrence> =
+    fun occurrencesOn(medications: List<MedicationWithSchedules>, date: LocalDate, zone: ZoneId = ZoneId.systemDefault()): List<Occurrence> =
         medications.flatMap { item ->
+            val added = item.medication.createdAt.toLocalDateTime(zone)
             item.schedules
                 .filter { occursOn(item.medication, it, date) }
                 .map { Occurrence(item.medication, it, date) }
+                // a dose whose time had fully passed before the medicine was added was never missed
+                .filter { it.dateTime.plusMinutes(MISSED_AFTER_MINUTES).isAfter(added) }
         }.sortedWith(compareBy<Occurrence> { it.minuteOfDay }.thenBy { it.medication.name.lowercase() })
 
     /**

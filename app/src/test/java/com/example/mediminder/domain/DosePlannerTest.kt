@@ -7,6 +7,7 @@ import com.example.mediminder.domain.TestData.medication
 import com.example.mediminder.domain.TestData.schedule
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -91,5 +92,16 @@ class DosePlannerTest {
         assertEquals(DayPart.EVENING, dayPartOf(18 * 60))
         assertEquals(DayPart.NIGHT, dayPartOf(22 * 60))
         assertEquals(DayPart.NIGHT, dayPartOf(1 * 60))
+    }
+
+    @Test fun `doses whose time had passed before the medicine was added are not shown as missed`() {
+        val day = java.time.LocalDate.of(2026, 11, 21)
+        val added = day.atTime(22, 50).atZone(TestData.zone).toInstant().toEpochMilli()
+        val napa = TestData.medication().copy(createdAt = added)
+        val item = TestData.item(napa, TestData.schedule(id = 10, hour = 8, minute = 15), TestData.schedule(id = 11, hour = 21, minute = 15))
+        // 8:15 had long passed; 9:15 PM is still within its two hours, so it can be taken
+        assertEquals(listOf(11L), DosePlanner.occurrencesOn(listOf(item), day).map { it.schedule.id })
+        assertTrue("nothing on the days before", DosePlanner.occurrencesOn(listOf(item), day.minusDays(1)).isEmpty())
+        assertEquals(2, DosePlanner.occurrencesOn(listOf(item), day.plusDays(1)).size)
     }
 }

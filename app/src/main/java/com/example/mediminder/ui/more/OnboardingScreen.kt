@@ -112,8 +112,10 @@ fun OnboardingScreen(onFinished: () -> Unit, onOpenAccount: () -> Unit = {}, vie
                     Text(stringResource(R.string.onboarding_welcome), style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
                     Text(stringResource(R.string.onboarding_welcome_body), style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
                     SectionTitle(stringResource(R.string.settings_language))
-                    ChoiceTile(title = "বাংলা", selected = s.language == "bn", onClick = { viewModel.setLanguage("bn") })
-                    ChoiceTile(title = "English", selected = s.language == "en", onClick = { viewModel.setLanguage("en") })
+                    // until one is chosen, the app follows the phone's language: show which that is
+                    val shown = s.language.ifBlank { com.example.mediminder.util.Formats.locale(context).language }
+                    ChoiceTile(title = "বাংলা", selected = shown == "bn", onClick = { viewModel.setLanguage("bn") })
+                    ChoiceTile(title = "English", selected = shown != "bn", onClick = { viewModel.setLanguage("en") })
                     SectionTitle(stringResource(R.string.settings_text_size))
                     TextSizeChooser(s.textScale) { scale -> viewModel.update { it.copy(textScale = scale) } }
                     OutlinedTextField(

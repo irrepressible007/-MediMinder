@@ -997,7 +997,7 @@
     <string name="account_deleted">আপনার অ্যাকাউন্ট ও ক্লাউডের কপি মুছে ফেলা হয়েছে।</string>
     <string name="account_error_generic">কিছু একটা সমস্যা হয়েছে। আবার চেষ্টা করুন।</string>
     <string name="account_error_network">ইন্টারনেট সংযোগ নেই। অনলাইনে এসে আবার চেষ্টা করুন।</string>
-    <string name="account_error_no_google">এই ফোনে কোনো গুগল অ্যাকাউন্ট পাওয়া যায়নি। ফোনের সেটিংসে যোগ করুন, অথবা ইমেইল ব্যবহার করুন।</string>
+    <string name="account_error_no_google">গুগল সাইন ইন শুরু করা যায়নি। ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন, অথবা ইমেইল ব্যবহার করুন।</string>
     <string name="account_error_weak_password">আরেকটু লম্বা পাসওয়ার্ড দিন (অন্তত ৬টি অক্ষর)।</string>
     <string name="account_error_exists">এই ইমেইলে আগে থেকেই অ্যাকাউন্ট আছে। সাইন ইন করুন।</string>
     <string name="account_error_no_account">এই ইমেইলে কোনো অ্যাকাউন্ট নেই। নতুন অ্যাকাউন্ট খুলুন।</string>
