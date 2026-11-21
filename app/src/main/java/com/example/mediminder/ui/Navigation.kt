@@ -1,5 +1,6 @@
 package com.example.mediminder.ui
 
+import com.example.mediminder.ui.more.FamilyAlertScreen
 import com.example.mediminder.ui.more.RamadanScreen
 import com.example.mediminder.domain.CareKind
 import com.example.mediminder.ui.health.CareEditorScreen
@@ -130,6 +131,7 @@ import javax.inject.Inject
 @Serializable data class RecordKey(val type: String = "", val medicationId: Long = 0, val scheduleId: Long = 0, val day: Long = -1) : NavKey
 @Serializable data class ReadingsKey(val type: String) : NavKey
 @Serializable data object RamadanKey : NavKey
+@Serializable data object FamilyAlertKey : NavKey
 
 enum class HomeTab { TODAY, MEDICINES, APPOINTMENTS, MORE }
 
@@ -295,6 +297,7 @@ fun MainNavigation(
                     onOpenItem = { kind, id -> open(if (kind.isMedicine) MedicineDetail(id) else CareEditorKey(kind.name, id)) },
                 )
             }
+            entry<FamilyAlertKey> { FamilyAlertScreen(onBack = ::back) }
             entry<ReadingsKey> { key ->
                 ReadingsScreen(type = key.type, onBack = ::back, onRecord = { open(RecordKey(type = it)) })
             }

@@ -71,6 +71,11 @@ class ReminderReceiver : BroadcastReceiver() {
                     if (id > 0) engine.onAppointmentAlarm(id, which)
                 }
                 ReminderScheduler.ACTION_REFILL_CHECK -> engine.onRefillCheck()
+                ReminderScheduler.ACTION_MISSED_CHECK -> {
+                    val scheduleId = intent.getLongExtra(ReminderScheduler.EXTRA_SCHEDULE_ID, -1)
+                    val day = intent.getLongExtra(ReminderScheduler.EXTRA_DAY, -1)
+                    if (scheduleId > 0 && day >= 0) engine.onMissedCheck(scheduleId, day)
+                }
                 ReminderScheduler.ACTION_TEST -> {
                     val type = runCatching { AlertType.valueOf(intent.getStringExtra(ReminderScheduler.EXTRA_ALERT_TYPE) ?: "") }
                         .getOrDefault(AlertType.ALARM)

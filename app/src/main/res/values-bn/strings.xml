@@ -886,4 +886,27 @@
     <string name="ramadan_over_title">রমজান মোড বন্ধ হয়েছে</string>
     <string name="ramadan_over_text">ঈদ মোবারক! আপনার ওষুধ আগের সময়ে ফিরে গেছে।</string>
     <string name="settings_ramadan_on">রমজান মোড চালু, তাই খাবারের সময় সেহরি ও ইফতার অনুযায়ী। রমজান মোডে গিয়ে বদলান।</string>
+    <string name="family_title">ওষুধ বাদ পড়লে পরিবারকে জানান</string>
+    <string name="family_more_sub">ডোজ না খেলে একটি এসএমএস</string>
+    <string name="family_intro">কোনো ওষুধ খাওয়া হয়েছে বলে চিহ্নিত না হলে, অ্যাপ আপনার ছেলে, মেয়ে বা পছন্দের কাউকে এসএমএস পাঠাতে পারে, যাতে তাঁরা খোঁজ নিতে পারেন।</string>
+    <string name="family_switch">ডোজ বাদ পড়লে এসএমএস পাঠান</string>
+    <string name="family_on_sub">চালু · %1$s-কে জানাবে</string>
+    <string name="family_who">কাকে জানাবে?</string>
+    <string name="family_name">তাঁর নাম</string>
+    <string name="family_phone">তাঁর মোবাইল নম্বর</string>
+    <string name="family_use_emergency">আমার জরুরি যোগাযোগ ব্যবহার করুন (%1$s)</string>
+    <string name="family_after">এতক্ষণ পরেও না খেলে পাঠাবে</string>
+    <string name="family_minutes">%1$s মিনিট</string>
+    <string name="family_hour_one">১ ঘণ্টা</string>
+    <string name="family_hours">%1$s ঘণ্টা</string>
+    <string name="family_preview">বার্তায় লেখা থাকবে</string>
+    <string name="family_test">পরীক্ষামূলক বার্তা পাঠান</string>
+    <string name="feedback_family_test">%1$s-কে পরীক্ষামূলক বার্তা পাঠানো হয়েছে</string>
+    <string name="family_test_failed">বার্তা পাঠানো যায়নি। নম্বর ঠিক আছে কিনা, আর ফোনে সিম ও ব্যালান্স আছে কিনা দেখুন।</string>
+    <string name="family_cost">আপনার ফোন থেকে সাধারণ এসএমএস যাবে, তাই অপারেটরের স্বাভাবিক এসএমএস খরচ লাগবে। দিনে সর্বোচ্চ ৫টি। শুধু ওষুধের কথা জানানো হবে, স্বাস্থ্য পরীক্ষা বা অভ্যাস নয়।</string>
+    <string name="family_permission">এসএমএস পাঠানোর অনুমতি দরকার। আবার সুইচে চাপুন, অথবা ফোনের সেটিংসে অনুমতি দিন।</string>
+    <string name="family_need_phone">আগে তাঁর মোবাইল নম্বর দিন।</string>
+    <string name="family_someone">আপনার পরিবারের সদস্য</string>
+    <string name="family_sms_missed">মেডিমাইন্ডার: %1$s এখনো এই ওষুধগুলো খেয়েছেন বলে জানাননি: %2$s। একবার খোঁজ নিন।</string>
+    <string name="family_sms_test">মেডিমাইন্ডার: এটি একটি পরীক্ষামূলক বার্তা। %1$s কোনো ওষুধ বাদ দিলে আপনি এমন একটি বার্তা পাবেন।</string>
 </resources>

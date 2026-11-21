@@ -1,5 +1,7 @@
 package com.example.mediminder.ui.more
 
+import com.example.mediminder.ui.FamilyAlertKey
+import androidx.compose.material.icons.filled.Sms
 import com.example.mediminder.ui.RamadanKey
 import androidx.compose.material.icons.filled.NightsStay
 import com.example.mediminder.ui.HealthKey
@@ -80,6 +82,8 @@ fun MoreScreen(modifier: Modifier, onOpen: (NavKey) -> Unit) {
             NavRow(Icons.Default.MonitorHeart, stringResource(R.string.health_title), { onOpen(HealthKey) }, subtitle = stringResource(R.string.more_health_sub), hue = Hue.CORAL)
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             NavRow(Icons.Default.NightsStay, stringResource(R.string.ramadan_title), { onOpen(RamadanKey) }, subtitle = stringResource(R.string.ramadan_more_sub), hue = Hue.NIGHT)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            NavRow(Icons.Default.Sms, stringResource(R.string.family_title), { onOpen(FamilyAlertKey) }, subtitle = stringResource(R.string.family_more_sub), hue = Hue.TEAL)
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             NavRow(Icons.Default.History, stringResource(R.string.history_title), { onOpen(HistoryKey()) }, subtitle = stringResource(R.string.more_history_sub), hue = Hue.VIOLET)
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
