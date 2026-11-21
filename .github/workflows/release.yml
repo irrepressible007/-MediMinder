@@ -74,24 +74,31 @@ jobs:
 
       # The app's updater reads update.json through github.com's download links (no API, so no
       # per-address limit): a higher versionCode means "newer"; the APK is checked against this
-      # size and SHA-256 before it is installed; the notes come from the tag's message.
+      # size and SHA-256 before it is installed; the notes come from the tag's message: English
+      # lines, then a line "---", then the same in Bangla. The release page shows only the English;
+      # the Bangla goes only into update.json, for the app's update dialog.
       - name: Describe the update
         run: |
           git fetch --force origin "refs/tags/${GITHUB_REF_NAME}:refs/tags/${GITHUB_REF_NAME}"
-          git tag -l --format='%(contents)' "${GITHUB_REF_NAME}" > release_notes.md
+          git tag -l --format='%(contents)' "${GITHUB_REF_NAME}" > tag_message.txt
           python3 - <<'PY'
           import hashlib, json, os, re
           gradle = open("app/build.gradle.kts", encoding="utf-8").read()
           apk = os.environ["APK"]
           data = open(apk, "rb").read()
           tag = os.environ["GITHUB_REF_NAME"]
+          message = open("tag_message.txt", encoding="utf-8").read()
+          english, _, bangla = message.partition("\n---\n")
+          def lines(text): return [l.strip() for l in text.splitlines() if l.strip() and not l.startswith("-----")]
+          open("release_notes.md", "w", encoding="utf-8").write("\n".join(lines(english)) + "\n")
           json.dump({
               "versionCode": int(re.search(r"versionCode = (\d+)", gradle).group(1)),
               "versionName": re.search(r'versionName = "([^"]+)"', gradle).group(1),
               "sha256": hashlib.sha256(data).hexdigest(),
               "size": len(data),
               "apk": f"https://github.com/{os.environ['GITHUB_REPOSITORY']}/releases/download/{tag}/{apk}",
-              "notes": [l.strip() for l in open("release_notes.md", encoding="utf-8") if l.strip()],
+              "notes": lines(english),
+              "notes_bn": lines(bangla),
           }, open("update.json", "w", encoding="utf-8"), ensure_ascii=False)
           PY
           cat update.json release_notes.md

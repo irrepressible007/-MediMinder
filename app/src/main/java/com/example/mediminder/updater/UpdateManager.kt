@@ -55,7 +55,12 @@ data class UpdateInfo(
     val apkSize: Long,
     val sha256: String?,
     val notes: List<String>,
-)
+    /** The same notes in Bangla, when the release has them. */
+    val notesBn: List<String> = emptyList(),
+) {
+    /** The notes in the app's language. */
+    fun notesFor(bangla: Boolean): List<String> = if (bangla && notesBn.isNotEmpty()) notesBn else notes
+}
 
 sealed interface UpdateState {
     data object Idle : UpdateState
@@ -367,6 +372,7 @@ internal data class UpdateMeta(
     val size: Long,
     val apk: String? = null,
     val notes: List<String> = emptyList(),
+    val notesBn: List<String> = emptyList(),
 )
 
 internal fun parseRelease(json: String): Release {
@@ -391,14 +397,15 @@ internal fun parseRelease(json: String): Release {
 
 internal fun parseMeta(json: String): UpdateMeta {
     val o = JSONObject(json)
-    val notes = o.optJSONArray("notes")
+    fun lines(key: String) = o.optJSONArray(key).let { a -> List(a?.length() ?: 0) { a!!.optString(it) }.filter { it.isNotBlank() } }
     return UpdateMeta(
         versionCode = o.getInt("versionCode"),
         versionName = o.optString("versionName"),
         sha256 = o.optString("sha256").ifBlank { null },
         size = o.optLong("size"),
         apk = o.optString("apk").ifBlank { null },
-        notes = List(notes?.length() ?: 0) { notes!!.optString(it) }.filter { it.isNotBlank() },
+        notes = lines("notes"),
+        notesBn = lines("notes_bn"),
     )
 }
 
@@ -410,6 +417,7 @@ internal fun UpdateMeta.toInfo(repo: String): UpdateInfo = UpdateInfo(
     apkSize = size,
     sha256 = sha256,
     notes = cleanNotes(notes.joinToString(System.lineSeparator())),
+    notesBn = cleanNotes(notesBn.joinToString(System.lineSeparator())),
 )
 
 internal fun Release.toInfo(meta: UpdateMeta?): UpdateInfo? {

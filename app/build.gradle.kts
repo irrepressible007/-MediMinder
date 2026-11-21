@@ -54,7 +54,8 @@ android {
             buildConfigField("String", "FIREBASE_$key", "\"${firebase[key].orEmpty()}\"")
         }
     }
-    // The privacy policy and terms are written once, in docs/legal, and shipped inside the app too
+    // The privacy policy and terms (English) are written once, in docs/legal, and shipped inside the
+    // app too; the Bangla ones live only in the app (src/main/assets)
     sourceSets.getByName("main").assets.srcDir("../docs/legal")
     namespace = "com.example.mediminder"
     compileSdk = 36
@@ -62,7 +63,7 @@ android {
         applicationId = "com.example.mediminder"
         minSdk = 24
         targetSdk = 36
-        versionCode = 32
+        versionCode = 33
         versionName = "1.0.9"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Real phones are ARM; the x86 copies of the scanner's native code (22 MB) only serve emulators

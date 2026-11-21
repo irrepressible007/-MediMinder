@@ -88,4 +88,16 @@ class UpdaterTest {
         assertFalse(Updater.isOwnRelease("https://evil.example/github.com/irrepressible007/-MediMinder/releases/download/x.apk"))
         assertFalse(Updater.isOwnRelease("https://github.com/irrepressible007/-MediMinder/releases/download/../../other/x.apk"))
     }
+
+    @Test fun `Bangla users get the Bangla notes when the release has them`() {
+        val info = parseMeta("""{"versionCode":33,"versionName":"1.0.9","sha256":"ab","size":1,"notes":["One."],"notes_bn":["এক।"]}""")
+            .toInfo("https://github.com/x/y")
+        assertEquals(listOf("One."), info.notesFor(bangla = false))
+        assertEquals(listOf("এক।"), info.notesFor(bangla = true))
+    }
+
+    @Test fun `update files without Bangla notes show the English to everyone`() {
+        val info = parseMeta("""{"versionCode":31,"versionName":"1.0.8","sha256":"ab","size":1,"notes":["One."]}""").toInfo("https://github.com/x/y")
+        assertEquals(listOf("One."), info.notesFor(bangla = true))
+    }
 }

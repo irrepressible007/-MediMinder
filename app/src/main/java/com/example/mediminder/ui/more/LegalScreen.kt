@@ -35,7 +35,7 @@ enum class LegalDoc(val file: String) { PRIVACY("privacy"), TERMS("terms") }
 
 /**
  * The privacy policy or terms, in the app's language. The same files are published on
- * GitHub (docs/legal), so the app and the web always say the same thing.
+ * GitHub (docs/legal; the Bangla ones only in the app), so the app and the web say the same thing.
  */
 @Composable
 fun LegalScreen(doc: LegalDoc, onBack: () -> Unit) {

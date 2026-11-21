@@ -985,7 +985,7 @@
     <string name="report_problem_subject">মেডিমাইন্ডার %1$s: সমস্যার রিপোর্ট</string>
     <string name="report_problem_intro">কী হয়েছিল? (এক-দুই লাইনে লিখুন; বাংলায় লিখতে পারেন।)</string>
     <string name="report_problem_log_heading">— সমস্যার তালিকা (অ্যাপ সংস্করণ, ফোন, ত্রুটি) —</string>
-    <string name="signature_made_by">বাংলাদেশে যত্ন করে বানিয়েছেন</string>
+    <string name="signature_made_by">বানিয়েছেন %1$s</string>
     <string name="signature_open">ডেভেলপারের গিটহাব পাতা খুলুন</string>
     <string name="pdf_person">রোগী</string>
     <string name="vault_review_title">এই কাগজটি রাখবেন?</string>

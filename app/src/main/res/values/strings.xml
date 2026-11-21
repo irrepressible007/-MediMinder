@@ -987,7 +987,7 @@
     <string name="report_problem_subject">MediMinder %1$s: problem report</string>
     <string name="report_problem_intro">What happened? (Please write a line or two; you can write in Bangla.)</string>
     <string name="report_problem_log_heading">— Problem log (app version, phone, errors) —</string>
-    <string name="signature_made_by">Made with care in Bangladesh by</string>
+    <string name="signature_made_by">Made by %1$s</string>
     <string name="signature_open">Open the developer\'s GitHub page</string>
     <string name="pdf_person">Patient</string>
     <string name="vault_review_title">Save this document?</string>

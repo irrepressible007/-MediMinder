@@ -103,9 +103,10 @@ fun UpdateDialogHost() {
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
-                            if (s.info.notes.isNotEmpty()) {
+                            val notes = s.info.notesFor(bangla = Formats.isBangla(context))
+                            if (notes.isNotEmpty()) {
                                 ExpandableSection(stringResource(R.string.update_whats_new)) {
-                                    s.info.notes.forEach { line -> Text("• $line", style = MaterialTheme.typography.bodyMedium) }
+                                    notes.forEach { line -> Text("• $line", style = MaterialTheme.typography.bodyMedium) }
                                 }
                             }
                         }

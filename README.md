@@ -3,7 +3,7 @@
 # MediMinder
 
 **Medicine reminders for Bangladesh, designed for older people.**
-Gentle reminders or loud full-screen alarms that ring on time, in বাংলা and English.
+Gentle reminders or loud full-screen alarms that ring on time, in Bangla and English.
 
 [![Android](https://img.shields.io/badge/Android-7.0%2B-3DDC84?logo=android&logoColor=white)](https://github.com/irrepressible007/-MediMinder/releases/latest)
 [![Tests](https://github.com/irrepressible007/-MediMinder/actions/workflows/ci.yml/badge.svg)](https://github.com/irrepressible007/-MediMinder/actions/workflows/ci.yml)
@@ -57,8 +57,8 @@ hard to make sure every alarm goes off.
 - Injection places can rotate (belly, thighs, upper arms in turn), and every reminder says where.
 - Things that only last a few weeks once opened (eye drops, creams, syrups, inhalers) get a
   gentle "time for a new one" reminder.
-- Reminders and buttons use the right words for each: a cream is *applied*, drops are *put in*;
-  in Bangla লাগিয়েছি, দিয়েছি or নিয়েছি, never খেয়েছি for something that isn't swallowed.
+- Reminders and buttons use the right words for each, in both languages: a cream is *applied*,
+  drops are *put in*, and nothing is *eaten* unless it is swallowed.
 
 **Health checks and habits**
 - Write down blood pressure, blood sugar (mmol/L or mg/dL), weight, temperature (°F or °C) and
@@ -238,8 +238,8 @@ The medicine catalogue is built from the Directorate General of Drug Administrat
 registered product lists and a public price list. MediMinder reminds and records; it does not give
 medical advice. Always follow your doctor's and pharmacist's instructions.
 
-[Privacy policy](docs/legal/privacy.en.md) ([বাংলা](docs/legal/privacy.bn.md)) ·
-[Terms of use](docs/legal/terms.en.md) ([বাংলা](docs/legal/terms.bn.md))
+[Privacy policy](docs/legal/privacy.en.md) ·
+[Terms of use](docs/legal/terms.en.md)
 
 ---
 
