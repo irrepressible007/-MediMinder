@@ -917,4 +917,24 @@
     <string name="widget_now">Now</string>
     <string name="widget_all_done">All done for today</string>
     <string name="widget_nothing">Nothing more today</string>
+    <string name="pdf_title">Medicine report</string>
+    <string name="pdf_for">%1$s · %2$s to %3$s</string>
+    <string name="pdf_age">Age %1$s</string>
+    <string name="pdf_blood">Blood group %1$s</string>
+    <string name="pdf_allergies">Allergies: %1$s</string>
+    <string name="pdf_conditions">Conditions: %1$s</string>
+    <string name="pdf_adherence">Doses taken</string>
+    <string name="pdf_adherence_line">%1$s of due doses taken (%2$s taken, %3$s missed, %4$s skipped). Each bar is a day: green taken, red missed.</string>
+    <string name="pdf_medicines">Current medicines</string>
+    <string name="pdf_col_medicine">Medicine</string>
+    <string name="pdf_col_how">How it is taken</string>
+    <string name="pdf_col_taken">Taken</string>
+    <string name="pdf_as_needed">When needed</string>
+    <string name="pdf_none">None</string>
+    <string name="pdf_readings">Health readings</string>
+    <string name="pdf_reading_summary">Latest %1$s · average %2$s · lowest %3$s · highest %4$s · %5$s</string>
+    <string name="pdf_footer">MediMinder · page %1$s · Readings are labelled using general adult ranges. This report does not replace medical advice.</string>
+    <string name="stats_pdf">Share a PDF for the doctor</string>
+    <string name="pdf_failed">The PDF could not be made. Please try again.</string>
+    <string name="pdf_reading_single">Latest %1$s · %2$s</string>
 </resources>

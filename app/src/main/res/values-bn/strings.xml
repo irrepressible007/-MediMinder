@@ -915,4 +915,24 @@
     <string name="widget_now">এখন</string>
     <string name="widget_all_done">আজকের সব হয়ে গেছে</string>
     <string name="widget_nothing">আজ আর কিছু নেই</string>
+    <string name="pdf_title">ওষুধের রিপোর্ট</string>
+    <string name="pdf_for">%1$s · %2$s থেকে %3$s</string>
+    <string name="pdf_age">বয়স %1$s</string>
+    <string name="pdf_blood">রক্তের গ্রুপ %1$s</string>
+    <string name="pdf_allergies">অ্যালার্জি: %1$s</string>
+    <string name="pdf_conditions">রোগ: %1$s</string>
+    <string name="pdf_adherence">ডোজ নেওয়া</string>
+    <string name="pdf_adherence_line">সময়মতো ডোজের %1$s নেওয়া হয়েছে (নেওয়া %2$s, বাদ %3$s, এড়ানো %4$s)। প্রতিটি দাগ একদিন: সবুজ নেওয়া, লাল বাদ।</string>
+    <string name="pdf_medicines">বর্তমান ওষুধ</string>
+    <string name="pdf_col_medicine">ওষুধ</string>
+    <string name="pdf_col_how">কীভাবে নেন</string>
+    <string name="pdf_col_taken">নেওয়া</string>
+    <string name="pdf_as_needed">প্রয়োজন হলে</string>
+    <string name="pdf_none">নেই</string>
+    <string name="pdf_readings">স্বাস্থ্য পরীক্ষার মাপ</string>
+    <string name="pdf_reading_summary">সর্বশেষ %1$s · গড় %2$s · সর্বনিম্ন %3$s · সর্বোচ্চ %4$s · %5$s</string>
+    <string name="pdf_footer">মেডিমাইন্ডার · পৃষ্ঠা %1$s · মাপগুলো বড়দের সাধারণ মাপ অনুযায়ী চিহ্নিত। এই রিপোর্ট ডাক্তারের পরামর্শের বিকল্প নয়।</string>
+    <string name="stats_pdf">ডাক্তারের জন্য পিডিএফ শেয়ার করুন</string>
+    <string name="pdf_failed">পিডিএফ তৈরি করা যায়নি। আবার চেষ্টা করুন।</string>
+    <string name="pdf_reading_single">সর্বশেষ %1$s · %2$s</string>
 </resources>

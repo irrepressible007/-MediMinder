@@ -1,5 +1,11 @@
 package com.example.mediminder.ui.more
 
+import androidx.core.content.FileProvider
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material.icons.filled.PictureAsPdf
+import com.example.mediminder.ui.components.PrimaryButton
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import com.example.mediminder.data.HealthRepository
 import com.example.mediminder.data.local.entity.Reading
 import com.example.mediminder.domain.CareKind
@@ -87,11 +93,26 @@ import javax.inject.Inject
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class StatsViewModel @Inject constructor(
-    medicines: MedicineRepository,
-    db: MediMinderDatabase,
-    health: HealthRepository,
+    private val medicines: MedicineRepository,
+    private val db: MediMinderDatabase,
+    private val health: HealthRepository,
     private val settings: SettingsRepository,
 ) : ViewModel() {
+    /** The doctor's PDF for the last [n] days, written to the app's cache to be shared. */
+    suspend fun makePdf(context: android.content.Context, n: Int): java.io.File = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        val ctx = com.example.mediminder.util.AppLocale.localized(context)
+        val day = LocalDate.now()
+        val from = day.minusDays(n - 1L)
+        val data = com.example.mediminder.report.DoctorReport.build(
+            ctx, settings.current,
+            medicines.observeAll().first(),
+            db.doseLogDao().getRange(from.toEpochDay(), day.toEpochDay()),
+            health.observeSince(from.atStartOfDay().toEpochMillis()).first(),
+            n,
+        )
+        java.io.File(context.cacheDir, "reports/MediMinder-report-$day.pdf").also { com.example.mediminder.report.DoctorReport.write(ctx, data, it) }
+    }
+
     val days = MutableStateFlow(7)
     private val today = LocalDate.now()
 
@@ -226,6 +247,28 @@ fun StatsScreen(onBack: () -> Unit, viewModel: StatsViewModel = hiltViewModel())
                 }}
             }
             item { Arrive(arrival, 6) {
+                val scope = rememberCoroutineScope()
+                PrimaryButton(
+                    stringResource(R.string.stats_pdf),
+                    onClick = {
+                        scope.launch {
+                            runCatching { viewModel.makePdf(context, days) }
+                                .onSuccess { file ->
+                                    val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
+                                    val send = Intent(Intent.ACTION_SEND).setType("application/pdf")
+                                        .putExtra(Intent.EXTRA_STREAM, uri)
+                                        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    context.startActivity(Intent.createChooser(send, null))
+                                }
+                                .onFailure { e ->
+                                    com.example.mediminder.util.ErrorLog.record("Report", "Could not make the PDF", e)
+                                    android.widget.Toast.makeText(context, context.getString(R.string.pdf_failed), android.widget.Toast.LENGTH_LONG).show()
+                                }
+                        }
+                    },
+                    icon = Icons.Default.PictureAsPdf,
+                )
+                Spacer(Modifier.height(10.dp))
                 SecondaryButton(
                     stringResource(R.string.stats_share),
                     onClick = {

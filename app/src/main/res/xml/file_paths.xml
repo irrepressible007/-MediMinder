@@ -2,4 +2,6 @@
 <paths>
     <!-- Updates downloaded inside the app, handed to Android's installer -->
     <cache-path name="updates" path="updates/" />
+    <!-- Reports made for the doctor, shared from the app -->
+    <cache-path name="reports" path="reports/" />
 </paths>
