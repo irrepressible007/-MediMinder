@@ -1,5 +1,7 @@
 package com.example.mediminder.ui.more
 
+import com.example.mediminder.ui.HealthKey
+import androidx.compose.material.icons.filled.MonitorHeart
 import androidx.compose.runtime.collectAsState
 import com.example.mediminder.updater.UpdateState
 import com.example.mediminder.updater.Updater
@@ -73,6 +75,8 @@ fun MoreScreen(modifier: Modifier, onOpen: (NavKey) -> Unit) {
         ScreenHeader(stringResource(R.string.tab_more), icon = Icons.Default.Apps, hue = Hue.VIOLET)
         val entrance = rememberEntranceState()
         MediCard(contentPadding = PaddingValues(vertical = 4.dp), modifier = Modifier.entrance(entrance, 0)) {
+            NavRow(Icons.Default.MonitorHeart, stringResource(R.string.health_title), { onOpen(HealthKey) }, subtitle = stringResource(R.string.more_health_sub), hue = Hue.CORAL)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             NavRow(Icons.Default.History, stringResource(R.string.history_title), { onOpen(HistoryKey()) }, subtitle = stringResource(R.string.more_history_sub), hue = Hue.VIOLET)
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             NavRow(Icons.Default.ShoppingCart, stringResource(R.string.refill_title), { onOpen(RefillList) }, subtitle = stringResource(R.string.more_refill_sub), hue = Hue.TEAL)

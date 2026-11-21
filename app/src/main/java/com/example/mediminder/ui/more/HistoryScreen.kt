@@ -1,5 +1,7 @@
 package com.example.mediminder.ui.more
 
+import com.example.mediminder.domain.CareKind
+import com.example.mediminder.util.CareText
 import com.example.mediminder.ui.components.Art
 import com.example.mediminder.ui.components.FeedbackBus
 import com.example.mediminder.ui.components.FeedbackKind
@@ -260,23 +262,25 @@ private fun HistoryRow(entry: HistoryEntry, onClick: () -> Unit, modifier: Modif
     val context = LocalContext.current
     MediCard(onClick = onClick, modifier = modifier, contentPadding = PaddingValues(14.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            MedicineImage(entry.photoUri, entry.name, entry.color, size = 48)
+            MedicineImage(entry.photoUri, entry.name, entry.color, size = 48, kind = entry.kind, subtype = entry.subtype)
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
-                Text(listOf(entry.name, entry.strength).filter { it.isNotBlank() }.joinToString(" "), style = MaterialTheme.typography.titleMedium)
+                Text(listOf(CareText.name(context, entry.kind, entry.subtype, entry.name), entry.strength).filter { it.isNotBlank() }.joinToString(" "), style = MaterialTheme.typography.titleMedium)
                 if (entry.deletedAt != null) {
                     Text(stringResource(R.string.history_deleted_label), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Text(entryDetail(context, entry), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Spacer(Modifier.width(8.dp))
-            StatusChip(if (entry.log.status == DoseStatus.TAKEN) DoseState.TAKEN else DoseState.SKIPPED)
+            val taken = entry.log.status == DoseStatus.TAKEN
+            if (taken && !CareText.isOral(entry.kind)) StatusChip(DoseState.TAKEN, stringResource(R.string.state_done))
+            else StatusChip(if (taken) DoseState.TAKEN else DoseState.SKIPPED)
         }
     }
 }
 
 private fun entryTitle(context: Context, e: HistoryEntry): String {
-    val name = listOf(e.name, e.strength).filter { it.isNotBlank() }.joinToString(" ")
+    val name = listOf(CareText.name(context, e.kind, e.subtype, e.name), e.strength).filter { it.isNotBlank() }.joinToString(" ")
     return if (e.deletedAt != null) context.getString(R.string.history_deleted_name, name) else name
 }
 
@@ -284,8 +288,9 @@ private fun entryTitle(context: Context, e: HistoryEntry): String {
 private fun entryDetail(context: Context, e: HistoryEntry): String = buildList {
     val takenMinute = minuteOf(e.log.loggedAt.toLocalDateTime().toLocalTime())
     val taken = e.log.status == DoseStatus.TAKEN
-    if (taken) add(context.getString(R.string.today_taken_at, Formats.time(context, takenMinute)))
-    add(Formats.quantity(context, e.log.quantity, e.unit))
+    if (taken) add(context.getString(if (CareText.isOral(e.kind)) R.string.today_taken_at else R.string.today_done_at, Formats.time(context, takenMinute)))
+    // an amount means nothing for a cream, a health check or a habit
+    if (e.kind != CareKind.TOPICAL && e.kind.isMedicine) add(Formats.quantity(context, e.log.quantity, e.unit))
     val dose = e.log.scheduledMinute
     when {
         dose == null -> add(context.getString(R.string.history_when_needed))
@@ -310,7 +315,13 @@ private fun share(context: Context, entries: List<HistoryEntry>) {
             appendLine()
             appendLine(dayLabel(context, day))
             dayEntries.forEach { e ->
-                val status = context.getString(if (e.log.status == DoseStatus.TAKEN) R.string.state_taken else R.string.state_skipped)
+                val status = context.getString(
+                    when {
+                        e.log.status != DoseStatus.TAKEN -> R.string.state_skipped
+                        CareText.isOral(e.kind) -> R.string.state_taken
+                        else -> R.string.state_done
+                    }
+                )
                 appendLine("• ${entryTitle(context, e)} — $status (${entryDetail(context, e)})")
             }
         }

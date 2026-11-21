@@ -171,6 +171,7 @@ fun TodayScreen(
     onOpenReliability: () -> Unit,
     onOpenAppointments: () -> Unit,
     onRecord: (scheduleId: Long, day: Long) -> Unit = { _, _ -> },
+    onOpenCare: (kind: CareKind, id: Long) -> Unit = { _, _ -> },
     viewModel: TodayViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
@@ -258,7 +259,10 @@ fun TodayScreen(
             onSnooze = { viewModel.snooze(live); sheetFor = null },
             onSkip = { viewModel.skip(live); offerUndo(live, taken = false); sheetFor = null },
             onUndo = { viewModel.undo(live); sheetFor = null },
-            onDetails = { sheetFor = null; onOpenMedicine(live.medicationId) },
+            onDetails = {
+                sheetFor = null
+                if (live.kind.isMedicine) onOpenMedicine(live.medicationId) else onOpenCare(live.kind, live.medicationId)
+            },
         )
     }
 
@@ -519,7 +523,13 @@ private fun SummaryCard(state: TodayUi, modifier: Modifier = Modifier) {
                     if (state.isToday && (allDone || next != null)) {
                         Spacer(Modifier.height(10.dp))
                         val line = if (allDone) stringResource(R.string.today_all_done)
-                        else stringResource(R.string.today_next_named, next!!.second.name, Formats.time(context, minuteOf(next.first.toLocalTime())))
+                        else next!!.second.let { row ->
+                            stringResource(
+                                if (CareText.isOral(row.kind)) R.string.today_next_named else R.string.today_next_any,
+                                CareText.name(context, row.kind, row.subtype, row.name),
+                                Formats.time(context, minuteOf(next.first.toLocalTime())),
+                            )
+                        }
                         RollingContent(allDone to line) { (done, text) ->
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(

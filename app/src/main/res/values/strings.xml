@@ -862,4 +862,6 @@
     <string name="today_undo_done">%1$s: done</string>
     <string name="day_summary_done">%1$s of %2$s done</string>
     <string name="dose_sheet_done">Mark as done</string>
+    <string name="record_date">Date</string>
+    <string name="today_next_any">Next: %1$s at %2$s</string>
 </resources>

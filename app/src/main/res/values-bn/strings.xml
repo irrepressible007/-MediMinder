@@ -860,4 +860,6 @@
     <string name="today_undo_done">%1$s: হয়ে গেছে</string>
     <string name="day_summary_done">%2$sটির মধ্যে %1$sটি হয়ে গেছে</string>
     <string name="dose_sheet_done">হয়ে গেছে</string>
+    <string name="record_date">তারিখ</string>
+    <string name="today_next_any">পরেরটি: %1$s, %2$s</string>
 </resources>

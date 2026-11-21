@@ -132,7 +132,7 @@ object Readings {
                 value >= 180 || dia >= 120 -> ReadingLevel.VERY_HIGH
                 value >= 140 || dia >= 90 -> ReadingLevel.HIGH
                 value < 90 || (value2 != null && dia < 60) -> ReadingLevel.LOW
-                value >= 130 || dia >= 80 -> ReadingLevel.A_BIT_HIGH
+                value >= 130 || dia >= 85 -> ReadingLevel.A_BIT_HIGH
                 else -> ReadingLevel.NORMAL
             }
         }

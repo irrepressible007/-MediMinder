@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -228,7 +229,7 @@ private fun ReadingTypeCard(type: MeasureType, readings: List<Reading>, onClick:
             Column(Modifier.weight(1f)) {
                 Text(CareText.measureName(context, type), style = MaterialTheme.typography.titleLarge)
                 Text(
-                    Formats.digits(context, context.resources.getQuantityString(R.plurals.readings_count, readings.size, readings.size)),
+                    Formats.digits(context, LocalResources.current.getQuantityString(R.plurals.readings_count, readings.size, readings.size)),
                     style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }

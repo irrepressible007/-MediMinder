@@ -80,6 +80,12 @@ class MainActivity : AppCompatActivity() {
             uri == Notifier.DEEP_LINK_RELIABILITY -> DeepLink.Reliability
             uri.startsWith(Notifier.DEEP_LINK_MEDICINE) -> uri.removePrefix(Notifier.DEEP_LINK_MEDICINE).toLongOrNull()?.let(DeepLink::Medicine)
             uri.startsWith(Notifier.DEEP_LINK_RESTOCK) -> uri.removePrefix(Notifier.DEEP_LINK_RESTOCK).toLongOrNull()?.let(DeepLink::Restock)
+            uri.startsWith(Notifier.DEEP_LINK_RECORD) -> uri.removePrefix(Notifier.DEEP_LINK_RECORD).split('/').let { parts ->
+                val scheduleId = parts.getOrNull(0)?.toLongOrNull()
+                val day = parts.getOrNull(1)?.toLongOrNull()
+                if (scheduleId != null && day != null) DeepLink.Record(scheduleId, day) else null
+            }
+            uri.startsWith(Notifier.DEEP_LINK_READING) -> uri.removePrefix(Notifier.DEEP_LINK_READING).toLongOrNull()?.let(DeepLink::Reading)
             else -> null
         }
     }

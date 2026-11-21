@@ -1,5 +1,6 @@
 package com.example.mediminder.data.backup
 
+import com.example.mediminder.domain.CareKind
 import com.example.mediminder.data.local.entity.Reading
 import androidx.annotation.StringRes
 import com.example.mediminder.R
@@ -120,7 +121,11 @@ class BackupManager @Inject constructor(
             db.medicationDao().deleteAll()
             db.readingDao().deleteAll()
 
-            db.medicationDao().insertAll(backup.medications)
+            // Backups from before 1.0.8 have no kind: it follows the unit, as the upgrade did
+            db.medicationDao().insertAll(backup.medications.map { m ->
+                val fromUnit = CareKind.forUnit(m.unit)
+                if (m.kind == CareKind.PILL && fromUnit != CareKind.PILL) m.copy(kind = fromUnit) else m
+            })
             val medicationIds = backup.medications.map { it.id }.toSet()
             db.scheduleDao().insertAll(backup.schedules.filter { it.medicationId in medicationIds })
             db.doseLogDao().insertAll(backup.doseLogs.filter { it.medicationId in medicationIds })

@@ -1,5 +1,7 @@
 package com.example.mediminder.data
 
+import com.example.mediminder.data.local.entity.Reading
+import com.example.mediminder.domain.CareKind
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import androidx.room.Room
@@ -121,6 +123,38 @@ class MigrationTest {
             assertEquals("Seclo", seclo.name)
             assertNull("not deleted", seclo.deletedAt)
             assertEquals(1, db.medicationDao().observeAllWithSchedules().first().size)
+        } finally {
+            db.close()
+        }
+    }
+
+    @Test fun `upgrading to 5 gives each medicine its kind from its unit, and adds readings`() = runBlocking {
+        val file = context.getDatabasePath(name).apply { parentFile?.mkdirs() }
+        SQLiteDatabase.openOrCreateDatabase(file, null).use { old ->
+            (listOf(Schema3.MEDICATIONS, Schema3.SCHEDULES, Schema3.SCHEDULES_INDEX, Schema3.DOSE_LOGS) + Schema3.DOSE_LOGS_INDEXES +
+                listOf(Schema3.RESTOCKS, Schema3.RESTOCKS_INDEX, Schema3.DOCTORS, Schema3.APPOINTMENTS) + Schema3.APPOINTMENTS_INDEXES +
+                listOf(Schema3.ACTIVE_ALERTS, Schema3.ACTIVE_ALERTS_INDEX, Schema3.VAULT_ITEMS)).forEach(old::execSQL)
+            old.execSQL("ALTER TABLE medications ADD COLUMN deletedAt INTEGER")   // what 3 → 4 added
+            listOf(1 to "tablet", 2 to "drop", 3 to "application", 4 to "puff", 5 to "ml").forEach { (id, unit) ->
+                old.execSQL(
+                    "INSERT INTO medications (id, name, strength, form, shape, color, mealTiming, isAsNeeded, trackStock, stock, unit, " +
+                        "refillThresholdDays, refillReminders, archived, createdAt, updatedAt) " +
+                        "VALUES ($id, 'M$id', '', 'x', 'Round', '#3B82F6', 'ANY', 0, 0, 0, '$unit', 5, 1, 0, 0, 0)"
+                )
+            }
+            old.version = 4
+        }
+        val db = Room.databaseBuilder(context, MediMinderDatabase::class.java, name)
+            .addMigrations(*ALL_MIGRATIONS).allowMainThreadQueries().build()
+        try {
+            val kinds = db.medicationDao().getAll().associate { it.id to it.kind }
+            assertEquals(CareKind.PILL, kinds[1])
+            assertEquals(CareKind.DROPS, kinds[2])
+            assertEquals(CareKind.TOPICAL, kinds[3])
+            assertEquals(CareKind.INHALED, kinds[4])
+            assertEquals(CareKind.LIQUID, kinds[5])
+            db.readingDao().insert(Reading(type = "WEIGHT", value = 64.5))
+            assertEquals(64.5, db.readingDao().getAll().single().value, 0.0)
         } finally {
             db.close()
         }

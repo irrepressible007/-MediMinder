@@ -1,5 +1,17 @@
 package com.example.mediminder.ui.more
 
+import com.example.mediminder.data.HealthRepository
+import com.example.mediminder.data.local.entity.Reading
+import com.example.mediminder.domain.CareKind
+import com.example.mediminder.domain.MeasureType
+import com.example.mediminder.domain.MedicationAdherence
+import com.example.mediminder.domain.Readings
+import com.example.mediminder.domain.SugarTiming
+import com.example.mediminder.domain.toEpochMillis
+import com.example.mediminder.ui.health.LevelChip
+import com.example.mediminder.ui.health.averageOf
+import com.example.mediminder.util.CareText
+import kotlinx.coroutines.flow.map
 import com.example.mediminder.ui.components.AnimatedArt
 import com.example.mediminder.ui.components.Art
 import com.example.mediminder.ui.theme.Hue
@@ -39,6 +51,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -76,16 +89,32 @@ import javax.inject.Inject
 class StatsViewModel @Inject constructor(
     medicines: MedicineRepository,
     db: MediMinderDatabase,
+    health: HealthRepository,
     private val settings: SettingsRepository,
 ) : ViewModel() {
     val days = MutableStateFlow(7)
     private val today = LocalDate.now()
 
-    val summary: StateFlow<AdherenceSummary?> = days.flatMapLatest { n ->
-        combine(medicines.observeAll(), db.doseLogDao().observeRange(today.minusDays(n - 1L).toEpochDay(), today.toEpochDay())) { meds, logs ->
-            Adherence.summarise(meds, logs, today.minusDays(n - 1L), today, LocalDateTime.now())
+    private val all = days.flatMapLatest { n ->
+        val from = today.minusDays(n - 1L)
+        combine(
+            medicines.observeAll(),
+            db.doseLogDao().observeRange(from.toEpochDay(), today.toEpochDay()),
+            health.observeSince(from.atStartOfDay().toEpochMillis()),
+        ) { meds, logs, readings ->
+            val now = LocalDateTime.now()
+            // The percentage is about medicines; habits are counted on their own
+            val medicinesOnly = Adherence.summarise(meds.filter { it.medication.kind.isMedicine }, logs, from, today, now)
+            val habits = Adherence.summarise(meds.filter { it.medication.kind == CareKind.HABIT }, logs, from, today, now)
+            medicinesOnly to StatsExtra(
+                habits = habits.perMedication.filter { it.expected > 0 },
+                readings = MeasureType.entries.associateWith { t -> readings.filter { it.type == t.name } }.filterValues { it.isNotEmpty() },
+            )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    val summary: StateFlow<AdherenceSummary?> = all.map { it?.first }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+    val extra: StateFlow<StatsExtra?> = all.map { it?.second }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     /** Every dose ever taken earns points; shown here rather than on the busy Today screen. */
     val points: StateFlow<Int> = combine(db.doseLogDao().observeCount(DoseStatus.TAKEN), days) { taken, _ -> Adherence.points(taken) }
@@ -100,6 +129,7 @@ fun StatsScreen(onBack: () -> Unit, viewModel: StatsViewModel = hiltViewModel())
     val status = LocalStatusColors.current
     val days by viewModel.days.collectAsState()
     val summary by viewModel.summary.collectAsState()
+    val extra by viewModel.extra.collectAsState()
     val points by viewModel.points.collectAsState()
 
     Scaffold(
@@ -159,31 +189,35 @@ fun StatsScreen(onBack: () -> Unit, viewModel: StatsViewModel = hiltViewModel())
             }}
             if (s.perMedication.isNotEmpty()) {
                 item { Arrive(arrival, 4) { SectionTitle(stringResource(R.string.stats_by_medicine)) }}
-                items(s.perMedication, key = { it.medicationId }) { m ->
+                items(s.perMedication, key = { it.medicationId }) { m -> RateCard(m) }
+            }
+            val more = extra
+            if (more != null && more.habits.isNotEmpty()) {
+                item { SectionTitle(stringResource(R.string.health_habits)) }
+                items(more.habits, key = { "habit-${it.medicationId}" }) { m -> RateCard(m) }
+            }
+            if (more != null && more.readings.isNotEmpty()) {
+                item { SectionTitle(stringResource(R.string.stats_readings)) }
+                items(more.readings.entries.toList(), key = { "reading-${it.key}" }) { (type, list) ->
+                    val latest = list.first()
+                    val (avg, avg2) = averageOf(type, list)
                     MediCard {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(m.name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                            Text(m.rate?.let { Formats.number(context, it) + "%" } ?: "—", style = MaterialTheme.typography.titleMedium)
+                            Text(CareText.measureName(context, type), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                            LevelChip(Readings.level(type, latest.value, latest.value2, SugarTiming.entries.firstOrNull { it.name == latest.timing }))
                         }
                         Text(
-                            stringResource(R.string.stats_doses_of, Formats.number(context, m.taken), Formats.number(context, m.expected)),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            stringResource(R.string.stats_reading_line, CareText.value(context, latest), CareText.value(context, type, avg, avg2)),
+                            style = MaterialTheme.typography.bodyLarge,
                         )
-                        Spacer(Modifier.height(8.dp))
-                        LinearProgressIndicator(
-                            progress = { (m.rate ?: 0) / 100f },
-                            modifier = Modifier.fillMaxWidth().height(10.dp).clip(CircleShape),
-                            color = status.taken,
-                            trackColor = MaterialTheme.colorScheme.surfaceContainer,
-                            strokeCap = StrokeCap.Round,
-                            gapSize = 0.dp,
-                            drawStopIndicator = {},
+                        Text(
+                            Formats.digits(context, LocalResources.current.getQuantityString(R.plurals.readings_count, list.size, list.size)),
+                            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
             }
-            if (s.expected == 0) {
+            if (s.expected == 0 && more?.habits.isNullOrEmpty() && more?.readings.isNullOrEmpty()) {
                 item { Arrive(arrival, 5) {
                     androidx.compose.foundation.layout.Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                         AnimatedArt(Art.CHART, Hue.SKY, size = 140.dp)
@@ -195,13 +229,46 @@ fun StatsScreen(onBack: () -> Unit, viewModel: StatsViewModel = hiltViewModel())
                 SecondaryButton(
                     stringResource(R.string.stats_share),
                     onClick = {
-                        val text = reportText(context, s, days, viewModel.userName)
+                        val text = reportText(context, s, days, viewModel.userName, extra)
                         context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text), null))
                     },
                     icon = Icons.Default.Share,
                 )
             }}
         }
+    }
+}
+
+/** Habits, and medicines and the like that are counted for the report. */
+data class StatsExtra(
+    val habits: List<MedicationAdherence>,
+    /** Readings in the period, newest first, by kind. */
+    val readings: Map<MeasureType, List<Reading>>,
+)
+
+@Composable
+private fun RateCard(m: MedicationAdherence) {
+    val context = LocalContext.current
+    MediCard {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(m.name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            Text(m.rate?.let { Formats.number(context, it) + "%" } ?: "—", style = MaterialTheme.typography.titleMedium)
+        }
+        Text(
+            stringResource(R.string.stats_doses_of, Formats.number(context, m.taken), Formats.number(context, m.expected)),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(8.dp))
+        LinearProgressIndicator(
+            progress = { (m.rate ?: 0) / 100f },
+            modifier = Modifier.fillMaxWidth().height(10.dp).clip(CircleShape),
+            color = LocalStatusColors.current.taken,
+            trackColor = MaterialTheme.colorScheme.surfaceContainer,
+            strokeCap = StrokeCap.Round,
+            gapSize = 0.dp,
+            drawStopIndicator = {},
+        )
     }
 }
 
@@ -252,12 +319,33 @@ private fun DayBars(s: AdherenceSummary) {
 }
 
 /** A short report to send to a doctor or family member. */
-private fun reportText(context: android.content.Context, s: AdherenceSummary, days: Int, name: String): String = buildString {
+private fun reportText(context: android.content.Context, s: AdherenceSummary, days: Int, name: String, extra: StatsExtra?): String = buildString {
     appendLine(context.getString(R.string.stats_report_header, name.ifBlank { context.getString(R.string.app_name) }, Formats.number(context, days)))
     appendLine(context.getString(R.string.stats_report_rate, s.rate?.let { Formats.number(context, it) + "%" } ?: "—", Formats.number(context, s.taken), Formats.number(context, s.expected)))
     appendLine(context.getString(R.string.stats_report_missed, Formats.number(context, s.missed)))
     s.perMedication.forEach { m ->
         appendLine("• ${m.name}: " + (m.rate?.let { Formats.number(context, it) + "%" } ?: "—"))
+    }
+    if (extra != null && extra.readings.isNotEmpty()) {
+        appendLine()
+        appendLine(context.getString(R.string.stats_report_readings))
+        extra.readings.forEach { (type, list) ->
+            val (avg, avg2) = averageOf(type, list)
+            appendLine(
+                context.getString(
+                    R.string.stats_report_reading_line,
+                    CareText.measureName(context, type),
+                    CareText.value(context, list.first()),
+                    CareText.value(context, type, avg, avg2),
+                    Formats.number(context, list.size),
+                )
+            )
+        }
+    }
+    if (extra != null && extra.habits.isNotEmpty()) {
+        appendLine()
+        appendLine(context.getString(R.string.stats_report_habits))
+        extra.habits.forEach { m -> appendLine("• ${m.name}: " + (m.rate?.let { Formats.number(context, it) + "%" } ?: "—")) }
     }
     append(context.getString(R.string.stats_report_footer))
 }

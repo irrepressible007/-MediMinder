@@ -34,7 +34,8 @@ import kotlin.math.min
 
 /** The usual adult range, shaded behind the line so a high or low reading stands out. */
 internal fun usualRange(type: MeasureType): ClosedFloatingPointRange<Double>? = when (type) {
-    MeasureType.BLOOD_PRESSURE -> 90.0..130.0
+    // Two lines with different ranges: one band would make a high bottom number look fine
+    MeasureType.BLOOD_PRESSURE -> null
     MeasureType.BLOOD_SUGAR -> 3.9..7.8
     MeasureType.TEMPERATURE -> 95.0..99.5
     MeasureType.OXYGEN -> 95.0..100.0

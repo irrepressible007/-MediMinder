@@ -1,5 +1,10 @@
 package com.example.mediminder.ui
 
+import com.example.mediminder.domain.CareKind
+import com.example.mediminder.ui.health.CareEditorScreen
+import com.example.mediminder.ui.health.HealthScreen
+import com.example.mediminder.ui.health.ReadingsScreen
+import com.example.mediminder.ui.health.RecordReadingScreen
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
@@ -117,6 +122,12 @@ import javax.inject.Inject
 @Serializable data object Vault : NavKey
 /** medicationId 0 = every medicine */
 @Serializable data class HistoryKey(val medicationId: Long = 0) : NavKey
+@Serializable data object HealthKey : NavKey
+/** [kind] is "MEASURE" or "HABIT"; medicationId 0 = a new one. */
+@Serializable data class CareEditorKey(val kind: String, val medicationId: Long = 0) : NavKey
+/** Write down a reading: of a known [type], for a health check, or answering one reminder (scheduleId + day). */
+@Serializable data class RecordKey(val type: String = "", val medicationId: Long = 0, val scheduleId: Long = 0, val day: Long = -1) : NavKey
+@Serializable data class ReadingsKey(val type: String) : NavKey
 
 enum class HomeTab { TODAY, MEDICINES, APPOINTMENTS, MORE }
 
@@ -128,6 +139,10 @@ sealed class DeepLink {
     data class Medicine(val id: Long) : DeepLink()
     data class Restock(val id: Long) : DeepLink()
     data object Reliability : DeepLink()
+    /** A reminder to check: write the reading down (and mark that reminder done). */
+    data class Record(val scheduleId: Long, val day: Long) : DeepLink()
+    /** A health check answered from the alarm: write the reading down. */
+    data class Reading(val medicationId: Long) : DeepLink()
 }
 
 @HiltViewModel
@@ -159,6 +174,8 @@ fun MainNavigation(
                 is DeepLink.Medicine -> backStack += MedicineDetail(target.id)
                 is DeepLink.Restock -> backStack += MedicineDetail(target.id, openRestock = true)
                 DeepLink.Reliability -> backStack += ReliabilityKey
+                is DeepLink.Record -> backStack += RecordKey(scheduleId = target.scheduleId, day = target.day)
+                is DeepLink.Reading -> backStack += RecordKey(medicationId = target.medicationId)
             }
         }
         onDeepLinkHandled()
@@ -255,6 +272,24 @@ fun MainNavigation(
             entry<ReliabilityKey> { ReliabilityScreen(onBack = ::back) }
             entry<Vault> { MedicalVaultScreen(onBack = ::back) }
             entry<HistoryKey> { key -> HistoryScreen(medicationId = key.medicationId, onBack = ::back) }
+            entry<HealthKey> {
+                HealthScreen(
+                    onBack = ::back,
+                    onRecord = { open(RecordKey(type = it)) },
+                    onOpenReadings = { open(ReadingsKey(it)) },
+                    onAdd = { open(CareEditorKey(it.name)) },
+                    onEdit = { id -> open(CareEditorKey(CareKind.MEASURE.name, id)) },
+                )
+            }
+            entry<CareEditorKey> { key ->
+                CareEditorScreen(kind = CareKind.valueOf(key.kind), medicationId = key.medicationId, onBack = ::back)
+            }
+            entry<RecordKey> { key ->
+                RecordReadingScreen(type = key.type, medicationId = key.medicationId, scheduleId = key.scheduleId, day = key.day, onBack = ::back)
+            }
+            entry<ReadingsKey> { key ->
+                ReadingsScreen(type = key.type, onBack = ::back, onRecord = { open(RecordKey(type = it)) })
+            }
         },
     )
     // Below the top bar, so the banner never covers Back or Cancel (even with very large text)
@@ -297,6 +332,8 @@ private fun HomeScaffold(tab: HomeTab, onTab: (HomeTab) -> Unit, open: (NavKey) 
                             onOpenRefills = { open(RefillList) },
                             onOpenReliability = { open(ReliabilityKey) },
                             onOpenAppointments = { onTab(HomeTab.APPOINTMENTS) },
+                            onRecord = { scheduleId, day -> open(RecordKey(scheduleId = scheduleId, day = day)) },
+                            onOpenCare = { kind, id -> open(CareEditorKey(kind.name, id)) },
                         )
                         HomeTab.MEDICINES -> MedicinesScreen(
                             modifier = modifier,

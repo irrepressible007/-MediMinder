@@ -45,6 +45,24 @@ hard to make sure every alarm goes off.
   from the person's own meal times.
 - Full Bangla and English, including Bangla digits.
 
+**Creams, drops, inhalers and injections**
+- Each is handled the way it is used: where a cream goes (knees, hands…), which eye, ear or
+  nostril the drops are for, puffs for an inhaler, and insulin in units.
+- Injection places can rotate (belly, thighs, upper arms in turn), and every reminder says where.
+- Things that only last a few weeks once opened (eye drops, creams, syrups, inhalers) get a
+  gentle "time for a new one" reminder.
+- Reminders and buttons use the right words for each: a cream is *applied*, drops are *put in*;
+  in Bangla লাগিয়েছি, দিয়েছি or নিয়েছি, never খেয়েছি for something that isn't swallowed.
+
+**Health checks and habits**
+- Write down blood pressure, blood sugar (mmol/L or mg/dL), weight, temperature (°F or °C) and
+  oxygen. Each reading is labelled in plain words (normal, a bit high, high) using general adult
+  ranges, with a clear warning when a reading is far outside them.
+- Charts over time, with the usual range shaded, to show the doctor.
+- Reminders to check at set times; answering one opens the page to write the reading down.
+- Daily habits such as drinking water, walking, exercises, checking the feet (important with
+  diabetes) and bedtime, with today's progress.
+
 **Easy for older eyes and hands**
 - Large text with a Text size setting, big touch targets, plain words, and high-contrast colours
   (WCAG AA).
@@ -56,8 +74,8 @@ hard to make sure every alarm goes off.
   side rail on wide screens), in portrait or landscape, with text up to twice the normal size.
 
 **Everything around the medicines**
-- Medicine history, kept even after a medicine is deleted, and a report of doses taken to share
-  with a doctor or family.
+- Medicine history, kept even after a medicine is deleted, and a report to share with a doctor
+  or family: doses taken, habits kept, and health readings (latest and average).
 - Stock counting with refill warnings, and a shopping list with prices.
 - Doctor visits with reminders, a Medical ID (blood group, allergies, emergency contact) and a
   documents folder.
@@ -89,7 +107,7 @@ day. All motion stops when the phone's *Remove animations* setting is on.
 | Reminders | AlarmManager exact alarms, full-screen intents, WorkManager safety net |
 | Camera and scanning | CameraX and ML Kit on-device text recognition |
 | Images | Coil |
-| Testing | JUnit, Robolectric, Compose UI tests (87 tests) |
+| Testing | JUnit, Robolectric, Compose UI tests (110 tests) |
 | Delivery | GitHub Actions: build, signing with Android key rotation, release, update manifest |
 
 ## How it is built
@@ -97,7 +115,8 @@ day. All motion stops when the phone's *Remove animations* setting is on.
 ```
 app/src/main/java/com/example/mediminder/
 ├── data/        Room database, DAOs, repositories, backup, medicine catalogue, photos
-├── domain/      Plain Kotlin logic: dose planning, prescription patterns, stock, adherence, safety checks
+├── domain/      Plain Kotlin logic: dose planning, prescription patterns, stock, adherence, safety checks,
+│                care kinds, injection-site rotation, reading ranges
 ├── reminders/   The alarm engine, scheduler, notifications, full-screen alarm, system receivers
 ├── ui/          Compose screens, shared components, theme, motion and illustrations
 ├── updater/     In-app updates from GitHub Releases
@@ -118,6 +137,10 @@ A few decisions worth knowing:
   connections use up quickly. The APK is checked against its size and SHA-256 before installing.
 - **Signing uses Android key rotation (APK Signature Scheme v3).** No key is stored in this
   repository.
+- **One model for everything that reminds.** A tablet, a cream, a blood-pressure check and a
+  glass of water are all a `Medication` with a *kind*, so they share the alarm engine, history
+  and reliability work. The kind decides only what is asked, how it is worded and how it is
+  answered (a health check is answered by writing the reading down).
 - **The app keeps its own problem log**, with crashes and caught failures. People can share it
   from Settings.
 
@@ -152,11 +175,7 @@ installed apps use to offer the update.
 
 ## Roadmap
 
-- Creams, ointments, drops, sprays, inhalers and injections, each with its own amounts, body
-  areas and stock tracking. The catalogue already lists them.
 - Monthly catalogue updates delivered to the app without a new release.
-- Health measurements (blood pressure, blood sugar, weight) with charts for the doctor.
-- Daily healthy habits such as water, walking and exercises.
 
 ## Data and disclaimer
 

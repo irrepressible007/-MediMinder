@@ -1,5 +1,6 @@
 package com.example.mediminder.data.local.dao
 
+import com.example.mediminder.domain.CareKind
 import com.example.mediminder.data.local.entity.Medication
 import androidx.room.Embedded
 import androidx.room.Dao
@@ -46,7 +47,8 @@ interface DoseLogDao {
      */
     @Query(
         "SELECT dose_logs.*, medications.name AS name, medications.strength AS strength, medications.unit AS unit, " +
-            "medications.color AS color, medications.photoUri AS photoUri, medications.deletedAt AS deletedAt " +
+            "medications.color AS color, medications.photoUri AS photoUri, medications.deletedAt AS deletedAt, " +
+            "medications.kind AS kind, medications.subtype AS subtype " +
             "FROM dose_logs JOIN medications ON medications.id = dose_logs.medicationId " +
             "WHERE dose_logs.scheduledDay >= :fromDay AND dose_logs.status IN ('TAKEN', 'SKIPPED') " +
             "AND (:medicationId IS NULL OR dose_logs.medicationId = :medicationId) " +
@@ -89,4 +91,6 @@ data class HistoryEntry(
     val color: String,
     val photoUri: String?,
     val deletedAt: Long?,
+    val kind: CareKind = CareKind.PILL,
+    val subtype: String? = null,
 )
