@@ -1,5 +1,6 @@
 package com.example.mediminder.reminders
 
+import com.example.mediminder.util.LinkKey
 import com.example.mediminder.MainActivity
 import com.example.mediminder.domain.CareKind
 import com.example.mediminder.domain.CareSites
@@ -153,10 +154,13 @@ class AlarmActivity : AppCompatActivity() {
     )
 
     /** Opens the app at "write down a reading" for a health check that was just answered. */
-    private fun recordIntent(medicationId: Long) = Intent(this, MainActivity::class.java)
-        .setAction(Intent.ACTION_VIEW)
-        .setData(Uri.parse(Notifier.DEEP_LINK_READING + medicationId))
-        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+    private fun recordIntent(medicationId: Long) = LinkKey.sign(
+        this,
+        Intent(this, MainActivity::class.java)
+            .setAction(Intent.ACTION_VIEW)
+            .setData(Uri.parse(Notifier.DEEP_LINK_READING + medicationId))
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
+    )
 
     @Composable
     private fun DoseAlarm() {

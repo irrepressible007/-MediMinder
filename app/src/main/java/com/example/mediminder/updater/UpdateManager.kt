@@ -63,6 +63,19 @@ sealed interface UpdateState {
 
 object Updater {
     private const val REPO = "https://github.com/irrepressible007/-MediMinder"
+
+    /** An APK link from this app's own GitHub releases (https only). */
+    internal fun isOwnRelease(url: String): Boolean = url.startsWith("$REPO/releases/download/") && !url.contains("..")
+
+    /** The downloaded file is this app (same package) at the expected version; Android checks the signature. */
+    private fun checkPackage(context: Context, apk: File, versionCode: Int?) {
+        @Suppress("DEPRECATION")
+        val info = context.packageManager.getPackageArchiveInfo(apk.path, 0) ?: throw IOException("not an APK")
+        @Suppress("DEPRECATION")
+        val code = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) info.longVersionCode else info.versionCode.toLong()
+        if (info.packageName != context.packageName) throw IOException("another app: ${info.packageName}")
+        if (versionCode != null && code != versionCode.toLong()) throw IOException("version $code, expected $versionCode")
+    }
     /** The newest release's update.json via github.com's download links: no API, so no shared per-address limit. */
     private const val LATEST_META = "$REPO/releases/latest/download/update.json"
     /** Fallback for releases made before update.json. The API allows 60 anonymous checks an hour per internet
@@ -144,10 +157,14 @@ object Updater {
             val part = File(dir, "MediMinder-${info.versionName}.apk.part")
             val apk = File(dir, "MediMinder-${info.versionName}.apk")
             _state.value = try {
+                // only ever from this app's own GitHub releases
+                if (!isOwnRelease(info.apkUrl)) throw IOException("not a MediMinder release: ${info.apkUrl}")
                 val sha = downloadTo(info.apkUrl, part, info.apkSize) { p -> _state.value = UpdateState.Downloading(info, p) }
                 if (info.sha256 != null && !sha.equals(info.sha256, ignoreCase = true)) throw IOException("checksum mismatch")
                 if (info.apkSize > 0 && part.length() != info.apkSize) throw IOException("size mismatch")
                 if (!part.renameTo(apk)) throw IOException("rename failed")
+                // and it must be MediMinder itself, at the version the release announced
+                checkPackage(context, apk, info.versionCode)
                 _dialog.value = true
                 UpdateState.Ready(info, apk)
             } catch (e: Exception) {
@@ -321,7 +338,7 @@ internal fun parseMeta(json: String): UpdateMeta {
 internal fun UpdateMeta.toInfo(repo: String): UpdateInfo = UpdateInfo(
     versionName = versionName,
     versionCode = versionCode,
-    apkUrl = apk ?: "$repo/releases/download/v$versionName/app-release.apk",
+    apkUrl = apk ?: "$repo/releases/download/v$versionName/MediMinder-$versionName.apk",
     apkSize = size,
     sha256 = sha256,
     notes = cleanNotes(notes.joinToString(System.lineSeparator())),

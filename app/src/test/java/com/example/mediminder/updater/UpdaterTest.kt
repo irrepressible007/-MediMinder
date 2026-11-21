@@ -64,7 +64,7 @@ class UpdaterTest {
         assertEquals(listOf("Updates arrive reliably", "New pictures"), full.notes)
         // 1.0.3's update.json had neither: the APK is found under the release's tag
         val plain = parseMeta("""{"versionCode":26,"versionName":"1.0.3","size":5}""").toInfo("https://github.com/o/r")
-        assertEquals("https://github.com/o/r/releases/download/v1.0.3/app-release.apk", plain.apkUrl)
+        assertEquals("https://github.com/o/r/releases/download/v1.0.3/MediMinder-1.0.3.apk", plain.apkUrl)
         assertTrue(plain.notes.isEmpty())
         assertTrue(isUpdate(plain, currentCode = 25, currentName = "1.0.2"))
     }
@@ -79,5 +79,13 @@ class UpdaterTest {
         assertTrue(isNewer("v3.0", "v2.9.9"))
         assertFalse(isNewer("v1.0.10", "v2.0.0"))
         assertFalse(isNewer("v2.0.0", "v2.0.0"))
+    }
+
+    @Test fun `updates are only downloaded from this app's own GitHub releases`() {
+        assertTrue(Updater.isOwnRelease("https://github.com/irrepressible007/-MediMinder/releases/download/v1.0.8/MediMinder-1.0.8.apk"))
+        assertFalse(Updater.isOwnRelease("http://github.com/irrepressible007/-MediMinder/releases/download/v1.0.8/MediMinder-1.0.8.apk"))
+        assertFalse(Updater.isOwnRelease("https://github.com/someone/else/releases/download/v1/app.apk"))
+        assertFalse(Updater.isOwnRelease("https://evil.example/github.com/irrepressible007/-MediMinder/releases/download/x.apk"))
+        assertFalse(Updater.isOwnRelease("https://github.com/irrepressible007/-MediMinder/releases/download/../../other/x.apk"))
     }
 }

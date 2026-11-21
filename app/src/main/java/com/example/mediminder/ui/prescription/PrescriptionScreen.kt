@@ -1,5 +1,7 @@
 package com.example.mediminder.ui.prescription
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -103,8 +105,14 @@ class PrescriptionViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
-                val text = recognizer.process(InputImage.fromFilePath(context, uri)).await().text
-                recognizer.close()
+                val bitmap = withContext(Dispatchers.IO) { MedicinePhotos.decodeForReading(context, uri) }
+                    ?: throw java.io.IOException("could not read the picture")
+                val text = try {
+                    recognizer.process(InputImage.fromBitmap(bitmap, 0)).await().text
+                } finally {
+                    recognizer.close()
+                    bitmap.recycle()
+                }
                 val drafts = importer.read(text)
                 // the likely ones that say how to take them start ticked
                 _state.value = PrescriptionUi(drafts = drafts, chosen = drafts.indices.filter { drafts[it].ready && drafts[it].confident }.toSet())

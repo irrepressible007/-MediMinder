@@ -100,6 +100,9 @@ class CareRemindersTest {
         val intent = shadowOf(record.actionIntent)
         assertTrue("opens the app, not a background answer", intent.isActivityIntent)
         assertEquals(Notifier.DEEP_LINK_RECORD + "${schedule.id}/$day", intent.savedIntent.data.toString())
+        // the app's own links carry this install's key; links from other apps don't
+        assertTrue(com.example.mediminder.util.LinkKey.isOurs(context, intent.savedIntent))
+        assertFalse(com.example.mediminder.util.LinkKey.isOurs(context, android.content.Intent().setData(intent.savedIntent.data)))
 
         // writing it down answers the reminder
         health.record(Reading(medicationId = schedule.medicationId, type = MeasureType.BLOOD_PRESSURE.name, value = 128.0, value2 = 82.0), schedule.id, day)

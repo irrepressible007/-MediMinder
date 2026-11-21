@@ -1,5 +1,6 @@
 package com.example.mediminder.widget
 
+import com.example.mediminder.util.LinkKey
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
@@ -145,10 +146,13 @@ class NextDoseWidget : AppWidgetProvider() {
         private fun openApp(context: Context, link: String): PendingIntent =
             PendingIntent.getActivity(
                 context, 0,
-                Intent(context, MainActivity::class.java)
-                    .setAction(Intent.ACTION_VIEW)
-                    .setData(Uri.parse(link))
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+                LinkKey.sign(
+                    context,
+                    Intent(context, MainActivity::class.java)
+                        .setAction(Intent.ACTION_VIEW)
+                        .setData(Uri.parse(link))
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+                ),
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
     }

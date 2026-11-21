@@ -1,5 +1,6 @@
 package com.example.mediminder.reminders
 
+import com.example.mediminder.util.LinkKey
 import com.example.mediminder.domain.CareKind
 import com.example.mediminder.util.CareText
 import android.Manifest
@@ -440,10 +441,13 @@ class Notifier @Inject constructor(
     private fun openApp(deepLink: String): PendingIntent =
         PendingIntent.getActivity(
             appContext, 0,
-            Intent(appContext, MainActivity::class.java)
-                .setAction(Intent.ACTION_VIEW)
-                .setData(Uri.parse(deepLink))
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            LinkKey.sign(
+                appContext,
+                Intent(appContext, MainActivity::class.java)
+                    .setAction(Intent.ACTION_VIEW)
+                    .setData(Uri.parse(deepLink))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            ),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 

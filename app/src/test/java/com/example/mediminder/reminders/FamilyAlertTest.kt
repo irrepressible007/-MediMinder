@@ -16,6 +16,9 @@ import com.example.mediminder.data.settings.FamilyAlerts
 import com.example.mediminder.data.settings.SettingsRepository
 import com.example.mediminder.domain.CareKind
 import com.example.mediminder.domain.minuteOf
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -115,5 +118,22 @@ class FamilyAlertTest {
             alerter.sendMissed(listOf(FamilyAlerter.Missed(FamilyAlerter.key(100L + i, 1), "M$i", 8 * 60)))
         }
         assertEquals(FamilyAlerter.MAX_PER_DAY, alerter.sentToday())
+    }
+
+    @Test fun `two checks at the same moment send one text`() = runBlocking {
+        val (napa, day) = dose("Napa", minutesAgo = 70)
+        val (seclo, _) = dose("Seclo", minutesAgo = 70)
+        val sent = mutableListOf<String>()
+        coroutineScope {
+            listOf(napa.id, seclo.id).map { id -> async(Dispatchers.Default) { engine.onMissedCheck(id, day) } }.forEach { it.await() }
+        }
+        sms().lastSentMultipartTextMessageParams?.parts?.joinToString("")?.let(sent::add)
+        assertEquals(1, FamilyAlerter(context, settings).sentToday())
+        assertTrue(sent.single().contains("Napa") && sent.single().contains("Seclo"))
+    }
+
+    @Test fun `Bangla digits in the number are sent as plain digits`() {
+        assertEquals("01711000000", FamilyAlerter.dialable("০১৭১১ ০০০০০০"))
+        assertEquals("+8801711000000", FamilyAlerter.dialable("+880 1711-000000"))
     }
 }

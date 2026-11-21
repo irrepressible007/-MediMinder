@@ -217,7 +217,7 @@ fun AccountScreen(
             val u = user
             if (u == null) SignedOut(
                 busy = ui.busy,
-                onGoogle = { (context as? Activity)?.let(viewModel::google) },
+                onGoogle = { context.findActivity()?.let(viewModel::google) },
                 onEmail = viewModel::email,
                 onReset = viewModel::resetPassword,
                 onOpenLegal = onOpenLegal,
@@ -290,7 +290,7 @@ private fun SignedOut(
             PrimaryButton(stringResource(R.string.account_sign_in), onClick = { onEmail(email, password, false) }, enabled = ok)
             Spacer(Modifier.height(8.dp))
             SecondaryButton(stringResource(R.string.account_create), onClick = { onEmail(email, password, true) }, enabled = ok)
-            QuietButton(stringResource(R.string.account_forgot), onClick = { onReset(email) }, modifier = Modifier.align(Alignment.CenterHorizontally))
+            if (email.contains('@')) QuietButton(stringResource(R.string.account_forgot), onClick = { onReset(email) }, modifier = Modifier.align(Alignment.CenterHorizontally))
         }
         Text(stringResource(R.string.account_agree), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Row {
@@ -298,6 +298,13 @@ private fun SignedOut(
             QuietButton(stringResource(R.string.legal_privacy), onClick = { onOpenLegal("PRIVACY") }, modifier = Modifier.weight(1f))
         }
     }
+}
+
+/** The Activity behind a (possibly wrapped) context: Credential Manager needs it. */
+private tailrec fun android.content.Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is android.content.ContextWrapper -> baseContext.findActivity()
+    else -> null
 }
 
 @StringRes

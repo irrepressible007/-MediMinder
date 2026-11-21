@@ -223,15 +223,18 @@ class ReminderEngine @Inject constructor(
 
     private val family by lazy { FamilyAlerter(appContext, settings) }
 
+    /** Doses due together fire their checks together: one at a time, so they share one text. */
+    private val familyLock = Mutex()
+
     /**
      * A dose rang a while ago. If it (and any other medicine due that day by now) is still not
      * answered, one SMS tells the family member. Each dose is reported once.
      */
-    suspend fun onMissedCheck(scheduleId: Long, day: Long) {
+    suspend fun onMissedCheck(scheduleId: Long, day: Long) = familyLock.withLock {
         val f = settings.current.family
-        if (!f.on || f.phone.isBlank()) return
-        val schedule = scheduleDao.getById(scheduleId) ?: return
-        if (isAnswered(scheduleId, day) || family.alreadySent(scheduleId, day)) return
+        if (!f.on || f.phone.isBlank()) return@withLock
+        val schedule = scheduleDao.getById(scheduleId) ?: return@withLock
+        if (isAnswered(scheduleId, day) || family.alreadySent(scheduleId, day)) return@withLock
         val now = LocalDateTime.now()
         val date = LocalDate.ofEpochDay(day)
         val missed = DosePlanner.occurrencesOn(medicationDao.getActiveWithSchedules(), date)

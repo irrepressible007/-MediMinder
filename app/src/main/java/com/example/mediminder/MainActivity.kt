@@ -1,5 +1,6 @@
 package com.example.mediminder
 
+import com.example.mediminder.util.LinkKey
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
@@ -73,6 +74,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun parse(intent: Intent?): DeepLink? {
         val uri = intent?.data?.toString() ?: return null
+        // only the app's own links (notifications, alarm, widget); other apps can just open it
+        if (!LinkKey.isOurs(this, intent)) return null
         return when {
             uri == Notifier.DEEP_LINK_TODAY -> DeepLink.Today
             uri == Notifier.DEEP_LINK_REFILLS -> DeepLink.Refills

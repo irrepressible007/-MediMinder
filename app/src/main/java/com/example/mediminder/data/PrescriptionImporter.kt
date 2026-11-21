@@ -47,7 +47,8 @@ class PrescriptionImporter @Inject constructor(
         for (line in lines) {
             val found = find(line)
             val said = PrescriptionParser.read(line)
-            if (found != null && drafts.none { it.medicine.brandSearch == found.brandSearch }) {
+            val known = drafts.any { it.medicine.brandSearch == found?.brandSearch } || current?.medicine?.brandSearch == found?.brandSearch
+            if (found != null && !known) {
                 current?.let(drafts::add)
                 current = PrescriptionDraft(found, said, confident = PrescriptionParser.formOf(line) != null || !said.isEmpty, line = line)
             } else if (current != null && !said.isEmpty) {

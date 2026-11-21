@@ -72,6 +72,10 @@ object MedicinePhotos {
         }
     }
 
+    /** A picture to read text from (a prescription): upright, at most about [maxSide] px. */
+    fun decodeForReading(context: Context, uri: Uri, maxSide: Int = 2560): Bitmap? =
+        decode({ context.contentResolver.openInputStream(uri) }, maxSide)
+
     fun delete(context: Context, ref: String?) {
         file(context, ref)?.delete()
     }

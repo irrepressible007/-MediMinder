@@ -69,7 +69,7 @@ class FamilyAlerter(private val context: Context, private val settings: Settings
                 ?: @Suppress("DEPRECATION") SmsManager.getDefault()
             // Bangla needs Unicode SMS (70 characters a part); long messages go in parts
             val parts = runCatching { sms.divideMessage(text) }.getOrNull() ?: split(text)
-            sms.sendMultipartTextMessage(phone.trim(), null, parts, null, null)
+            sms.sendMultipartTextMessage(dialable(phone), null, parts, null, null)
             true
         } catch (e: Exception) {
             ErrorLog.record("Family alert", "Could not send SMS", e)
@@ -95,6 +95,12 @@ class FamilyAlerter(private val context: Context, private val settings: Settings
         const val MAX_PER_DAY = 5
 
         fun key(scheduleId: Long, day: Long) = "sent:$scheduleId:$day"
+
+        /** "০১৭১১ ০০০০০০" → "01711000000": an SMS needs plain digits (and an optional leading +). */
+        fun dialable(phone: String): String {
+            val ascii = phone.trim().map { c -> if (c in '০'..'৯') '0' + (c - '০') else c }
+            return ascii.filterIndexed { i, c -> c.isDigit() || (c == '+' && i == 0) }.joinToString("")
+        }
 
         /**
          * SMS parts when the phone can't work them out: 153 plain characters a part, or 67 when

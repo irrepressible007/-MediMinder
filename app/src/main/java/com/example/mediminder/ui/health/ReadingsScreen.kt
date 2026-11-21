@@ -1,5 +1,6 @@
 package com.example.mediminder.ui.health
 
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -89,7 +90,7 @@ fun ReadingsScreen(
     onRecord: (type: String) -> Unit,
     viewModel: ReadingsViewModel = hiltViewModel(),
 ) {
-    viewModel.load(type)
+    LaunchedEffect(type) { viewModel.load(type) }
     val context = LocalContext.current
     val measure = MeasureType.entries.firstOrNull { it.name == type } ?: return
     val list by viewModel.readings.collectAsState()
