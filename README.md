@@ -69,6 +69,13 @@ hard to make sure every alarm goes off.
 - Daily habits such as drinking water, walking, exercises, checking the feet (important with
   diabetes) and bedtime, with today's progress.
 
+<p align="center">
+<img src="docs/screenshots/health.png" width="180" alt="Health checks and habits">
+<img src="docs/screenshots/readings.png" width="180" alt="Blood pressure readings with a chart">
+<img src="docs/screenshots/record-reading.png" width="180" alt="Writing down a blood pressure reading, labelled High">
+<img src="docs/screenshots/cream-where.png" width="180" alt="Choosing where a cream goes">
+</p>
+
 **Easy for older eyes and hands**
 - Large text with a Text size setting, big touch targets, plain words, and high-contrast colours
   (WCAG AA).
@@ -90,6 +97,11 @@ hard to make sure every alarm goes off.
 - **Tell family about missed doses:** if a medicine is still not taken after 30 minutes to two
   hours, one SMS tells a son, daughter or anyone chosen (at most five a day).
 - **Home-screen widget:** the next dose, with a Taken button when it is time.
+
+<p align="center">
+<img src="docs/screenshots/ramadan.png" width="180" alt="Ramadan mode: Sehri, Iftar and after Taraweeh">
+<img src="docs/screenshots/doctor-report.png" width="260" alt="The doctor's PDF report">
+</p>
 - Backup and restore to a file, and in-app updates from GitHub Releases.
 - **Optional sign-in** (Google or email) keeps a copy of the data in the cloud, so it
   comes back after a reinstall or on a new phone. Without signing in, nothing leaves the phone.

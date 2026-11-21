@@ -62,8 +62,8 @@ android {
         applicationId = "com.example.mediminder"
         minSdk = 24
         targetSdk = 36
-        versionCode = 30
-        versionName = "1.0.7"
+        versionCode = 31
+        versionName = "1.0.8"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Real phones are ARM; the x86 copies of the scanner's native code (22 MB) only serve emulators
         ndk { abiFilters += listOf("armeabi-v7a", "arm64-v8a") }
