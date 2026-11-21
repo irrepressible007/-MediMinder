@@ -21,7 +21,7 @@ import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
@@ -242,7 +242,7 @@ fun AccountScreen(
                 PrimaryButton(stringResource(R.string.account_back_up_now), onClick = viewModel::backUpNow, icon = Icons.Default.CloudUpload, enabled = !ui.busy)
                 SecondaryButton(stringResource(R.string.account_restore), onClick = { confirmRestore = true }, icon = Icons.Default.CloudDownload, enabled = !ui.busy)
                 NoticeCard(stringResource(R.string.account_photos_stay), Icons.Default.Info, Tone.INFO)
-                QuietButton(stringResource(R.string.account_sign_out), onClick = viewModel::signOut, icon = Icons.Default.Logout, modifier = Modifier.align(Alignment.CenterHorizontally))
+                QuietButton(stringResource(R.string.account_sign_out), onClick = viewModel::signOut, icon = Icons.AutoMirrored.Filled.Logout, modifier = Modifier.align(Alignment.CenterHorizontally))
                 SecondaryButton(
                     stringResource(R.string.account_delete),
                     onClick = { confirmDelete = true },

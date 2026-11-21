@@ -14,7 +14,7 @@ Keys never live in this repository. They are read from, in order:
         storeFile, storePassword, keyAlias, keyPassword,
         newStoreFile, newStorePassword, newKeyAlias, lineageFile
 
-Usage:  python tools/sign_release.py [path/to/app-release.apk]
+Usage:  python tools/sign_release.py [path/to/MediMinder-<version>-release.apk]
 """
 
 import glob
@@ -25,7 +25,13 @@ import subprocess
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-DEFAULT_APK = ROOT / "app" / "build" / "outputs" / "apk" / "release" / "app-release.apk"
+RELEASE_DIR = ROOT / "app" / "build" / "outputs" / "apk" / "release"
+
+
+def default_apk() -> pathlib.Path:
+    """The newest MediMinder-<version>-release.apk Gradle made."""
+    found = sorted(RELEASE_DIR.glob("MediMinder-*-release.apk"), key=lambda p: p.stat().st_mtime)
+    return found[-1] if found else RELEASE_DIR / "app-release.apk"
 
 
 def properties() -> dict:
@@ -59,7 +65,7 @@ def apksigner() -> list:
 
 
 def main() -> None:
-    apk = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_APK
+    apk = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else default_apk()
     if not apk.exists():
         sys.exit(f"No APK at {apk}")
     p = properties()

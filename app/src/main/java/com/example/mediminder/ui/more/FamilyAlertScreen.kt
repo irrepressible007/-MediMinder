@@ -20,7 +20,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContactPhone
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -179,7 +179,7 @@ fun FamilyAlertScreen(onBack: () -> Unit, viewModel: FamilyAlertViewModel = hilt
                             }
                         }
                     },
-                    icon = Icons.Default.Send,
+                    icon = Icons.AutoMirrored.Filled.Send,
                 )
             }
             NoticeCard(stringResource(R.string.family_cost), Icons.Default.Info, Tone.INFO)

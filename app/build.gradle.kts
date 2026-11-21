@@ -129,6 +129,9 @@ kotlin {
     jvmToolchain(17)
 }
 
+// The APK is "MediMinder-<version>-release.apk", not "app-release.apk"
+base.archivesName = "MediMinder-${android.defaultConfig.versionName}"
+
 dependencies {
   coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
   // Reliable photo orientation on every Android version (the platform one has old bugs)

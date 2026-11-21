@@ -52,9 +52,16 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           
+      # People download "MediMinder-1.0.8.apk", not "app-release.apk"
+      - name: Name the APK
+        run: |
+          APK="MediMinder-${GITHUB_REF_NAME#v}.apk"
+          mv app/build/outputs/apk/release/MediMinder-*-release.apk "$APK"
+          echo "APK=$APK" >> "$GITHUB_ENV"
+
       # Android key rotation: the old key (Android 7-8, and the anchor) hands over to the new one
       - name: Sign with key rotation
-        run: python3 tools/sign_release.py app/build/outputs/apk/release/app-release.apk
+        run: python3 tools/sign_release.py "$APK"
         env:
           KEYSTORE_PATH: ${{ runner.temp }}/old.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -75,7 +82,7 @@ jobs:
           python3 - <<'PY'
           import hashlib, json, os, re
           gradle = open("app/build.gradle.kts", encoding="utf-8").read()
-          apk = "app/build/outputs/apk/release/app-release.apk"
+          apk = os.environ["APK"]
           data = open(apk, "rb").read()
           tag = os.environ["GITHUB_REF_NAME"]
           json.dump({
@@ -83,7 +90,7 @@ jobs:
               "versionName": re.search(r'versionName = "([^"]+)"', gradle).group(1),
               "sha256": hashlib.sha256(data).hexdigest(),
               "size": len(data),
-              "apk": f"https://github.com/{os.environ['GITHUB_REPOSITORY']}/releases/download/{tag}/app-release.apk",
+              "apk": f"https://github.com/{os.environ['GITHUB_REPOSITORY']}/releases/download/{tag}/{apk}",
               "notes": [l.strip() for l in open("release_notes.md", encoding="utf-8") if l.strip()],
           }, open("update.json", "w", encoding="utf-8"), ensure_ascii=False)
           PY
@@ -93,7 +100,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            app/build/outputs/apk/release/app-release.apk
+            ${{ env.APK }}
             update.json
           name: MediMinder ${{ github.ref_name }}
           body_path: release_notes.md

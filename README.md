@@ -178,7 +178,7 @@ for the keys it expects) or in environment variables. Then:
 
 ```bash
 ./gradlew assembleRelease
-python tools/sign_release.py   # adds the key rotation
+python tools/sign_release.py   # adds the key rotation; the APK is app/build/outputs/apk/release/MediMinder-<version>-release.apk
 ```
 
 **Sign-in and cloud backup (optional):** builds without Firebase settings simply hide sign-in.
