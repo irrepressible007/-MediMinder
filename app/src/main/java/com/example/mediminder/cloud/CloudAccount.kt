@@ -13,11 +13,9 @@ import com.example.mediminder.BuildConfig
 import com.example.mediminder.R
 import com.example.mediminder.util.ErrorLog
 import com.example.mediminder.util.await
-import com.facebook.login.LoginManager
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.FirebaseNetworkException
-import com.google.firebase.auth.FacebookAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
@@ -38,7 +36,7 @@ data class CloudUser(val uid: String, val name: String?, val email: String?, val
 class SignInException(@StringRes val reason: Int, cause: Throwable? = null) : Exception(cause)
 
 /**
- * Optional sign-in (Google, Facebook or email) through Firebase Authentication. Signing in only
+ * Optional sign-in (Google or email) through Firebase Authentication. Signing in only
  * adds the cloud copy of the data; the app works the same without it.
  */
 @Singleton
@@ -78,11 +76,6 @@ class CloudAccount @Inject constructor(
         FirebaseAuth.getInstance().signInWithCredential(GoogleAuthProvider.getCredential(token, null)).await()
     }
 
-    /** Facebook: [token] comes from Facebook's own login screen. */
-    suspend fun signInWithFacebook(token: String) = translate {
-        FirebaseAuth.getInstance().signInWithCredential(FacebookAuthProvider.getCredential(token)).await()
-    }
-
     suspend fun signInWithEmail(email: String, password: String) = translate {
         FirebaseAuth.getInstance().signInWithEmailAndPassword(email.trim(), password).await()
     }
@@ -98,7 +91,6 @@ class CloudAccount @Inject constructor(
     suspend fun signOut() {
         if (!CloudConfig.available) return
         FirebaseAuth.getInstance().signOut()
-        runCatching { LoginManager.getInstance().logOut() }
         runCatching { CredentialManager.create(context).clearCredentialState(ClearCredentialStateRequest()) }
     }
 

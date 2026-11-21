@@ -966,7 +966,6 @@
     <string name="account_intro">Signing in is optional. It keeps a copy of your MediMinder data in the cloud, so it comes back if you reinstall the app or change phones.</string>
     <string name="account_unavailable">Cloud backup is not available in this version of the app. You can still save a backup file from Settings.</string>
     <string name="account_google">Continue with Google</string>
-    <string name="account_facebook">Continue with Facebook</string>
     <string name="account_email">Continue with email</string>
     <string name="account_email_label">Email</string>
     <string name="account_password_label">Password</string>
@@ -977,7 +976,6 @@
     <string name="account_reset_sent">A link to set a new password was sent to your email.</string>
     <string name="account_agree">By signing in you agree to the Terms of use and the Privacy policy.</string>
     <string name="account_with_google">Signed in with Google</string>
-    <string name="account_with_facebook">Signed in with Facebook</string>
     <string name="account_with_email">Signed in with email</string>
     <string name="account_last_backup">Last saved to the cloud: %1$s</string>
     <string name="account_never_backed_up">Not saved to the cloud yet</string>
@@ -1008,4 +1006,9 @@
     <string name="account_error_wrong_password">The email or password is not right.</string>
     <string name="account_error_sign_in_again">For your safety, sign out and sign in again, then delete.</string>
     <string name="onboarding_restore">Used MediMinder before? Sign in to bring your data back</string>
+    <string name="report_problem">Report a problem</string>
+    <string name="report_problem_sub">Email the developer, with the problem log attached</string>
+    <string name="report_problem_subject">MediMinder %1$s: problem report</string>
+    <string name="report_problem_intro">What happened? (Please write a line or two; you can write in Bangla.)</string>
+    <string name="report_problem_log_heading">— Problem log (app version, phone, errors) —</string>
 </resources>

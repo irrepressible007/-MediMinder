@@ -1,7 +1,6 @@
 package com.example.mediminder.ui.account
 
 import android.app.Activity
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -33,7 +32,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -74,12 +72,6 @@ import com.example.mediminder.ui.components.SecondaryButton
 import com.example.mediminder.ui.components.Tone
 import com.example.mediminder.ui.health.whenText
 import com.example.mediminder.ui.theme.Hue
-import com.facebook.CallbackManager
-import com.facebook.FacebookCallback
-import com.facebook.FacebookException
-import com.facebook.FacebookSdk
-import com.facebook.login.LoginManager
-import com.facebook.login.LoginResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -126,7 +118,6 @@ class AccountViewModel @Inject constructor(
     }
 
     fun google(activity: Activity) = run { account.signInWithGoogle(activity); afterSignIn() }
-    fun facebook(token: String) = run { account.signInWithFacebook(token); afterSignIn() }
     fun email(email: String, password: String, create: Boolean) = run {
         if (create) account.createEmailAccount(email, password) else account.signInWithEmail(email, password)
         afterSignIn()
@@ -174,21 +165,6 @@ fun AccountScreen(
         if (!ui.restored) return@LaunchedEffect
         FeedbackBus.show(FeedbackKind.SAVED, R.string.account_restored)
         onRestored()
-    }
-
-    // Facebook's own login screen hands back a token
-    val callbackManager = remember { CallbackManager.Factory.create() }
-    val facebookLogin = rememberLauncherForActivityResult(LoginManager.getInstance().createLogInActivityResultContract(callbackManager, null)) { }
-    DisposableEffect(Unit) {
-        if (!CloudConfig.facebook) return@DisposableEffect onDispose { }
-        LoginManager.getInstance().registerCallback(callbackManager, object : FacebookCallback<LoginResult> {
-            override fun onSuccess(result: LoginResult) = viewModel.facebook(result.accessToken.token)
-            override fun onCancel() = Unit
-            override fun onError(error: FacebookException) {
-                com.example.mediminder.util.ErrorLog.record("Account", "Facebook login failed", error)
-            }
-        })
-        onDispose { LoginManager.getInstance().unregisterCallback(callbackManager) }
     }
 
     var confirmRestore by remember { mutableStateOf(false) }
@@ -242,11 +218,6 @@ fun AccountScreen(
             if (u == null) SignedOut(
                 busy = ui.busy,
                 onGoogle = { (context as? Activity)?.let(viewModel::google) },
-                onFacebook = {
-                    @Suppress("DEPRECATION")
-                    if (!FacebookSdk.isInitialized()) FacebookSdk.sdkInitialize(context.applicationContext)
-                    facebookLogin.launch(listOf("email", "public_profile"))
-                },
                 onEmail = viewModel::email,
                 onReset = viewModel::resetPassword,
                 onOpenLegal = onOpenLegal,
@@ -288,17 +259,15 @@ fun AccountScreen(
 private fun SignedOut(
     busy: Boolean,
     onGoogle: () -> Unit,
-    onFacebook: () -> Unit,
     onEmail: (email: String, password: String, create: Boolean) -> Unit,
     onReset: (email: String) -> Unit,
     onOpenLegal: (doc: String) -> Unit,
 ) {
-    var showEmail by rememberSaveable { mutableStateOf(!CloudConfig.google && !CloudConfig.facebook) }
+    var showEmail by rememberSaveable { mutableStateOf(!CloudConfig.google) }
     var email by rememberSaveable { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         if (CloudConfig.google) PrimaryButton(stringResource(R.string.account_google), onClick = onGoogle, enabled = !busy)
-        if (CloudConfig.facebook) PrimaryButton(stringResource(R.string.account_facebook), onClick = onFacebook, enabled = !busy)
         if (!showEmail) SecondaryButton(stringResource(R.string.account_email), onClick = { showEmail = true }, icon = Icons.Default.Email)
         else MediCard {
             OutlinedTextField(
@@ -334,6 +303,5 @@ private fun SignedOut(
 @StringRes
 private fun providerName(provider: String): Int = when (provider) {
     "google.com" -> R.string.account_with_google
-    "facebook.com" -> R.string.account_with_facebook
     else -> R.string.account_with_email
 }

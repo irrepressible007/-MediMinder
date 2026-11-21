@@ -30,7 +30,6 @@ import javax.inject.Singleton
 object CloudConfig {
     val available: Boolean get() = BuildConfig.FIREBASE_API_KEY.isNotBlank() && BuildConfig.FIREBASE_APP_ID.isNotBlank()
     val google: Boolean get() = available && BuildConfig.FIREBASE_WEB_CLIENT_ID.isNotBlank()
-    val facebook: Boolean get() = available && BuildConfig.FACEBOOK_SIGN_IN
 
     /** Starts Firebase from the build's settings (there is no google-services plugin). */
     fun init(context: Context) {

@@ -40,4 +40,4 @@ These terms may be updated; the new version will be published here with a new da
 
 ## Contact
 
-https://github.com/irrepressible007/-MediMinder/issues
+Email m.a.hamza362@gmail.com, or open an issue at https://github.com/irrepressible007/-MediMinder/issues

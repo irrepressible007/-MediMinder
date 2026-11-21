@@ -91,7 +91,7 @@ hard to make sure every alarm goes off.
   hours, one SMS tells a son, daughter or anyone chosen (at most five a day).
 - **Home-screen widget:** the next dose, with a Taken button when it is time.
 - Backup and restore to a file, and in-app updates from GitHub Releases.
-- **Optional sign-in** (Google, Facebook or email) keeps a copy of the data in the cloud, so it
+- **Optional sign-in** (Google or email) keeps a copy of the data in the cloud, so it
   comes back after a reinstall or on a new phone. Without signing in, nothing leaves the phone.
 
 **Friendly, alive interface**
@@ -120,7 +120,7 @@ day. All motion stops when the phone's *Remove animations* setting is on.
 | Reminders | AlarmManager exact alarms, full-screen intents, WorkManager safety net |
 | Camera and scanning | CameraX and ML Kit on-device text recognition |
 | Images | Coil |
-| Accounts and cloud | Firebase Authentication (Google via Credential Manager, Facebook, email), Cloud Firestore |
+| Accounts and cloud | Firebase Authentication (Google via Credential Manager, email), Cloud Firestore |
 | Reports and widget | Android PdfDocument, RemoteViews app widget |
 | Testing | JUnit, Robolectric, Compose UI tests (131 tests) |
 | Delivery | GitHub Actions: tests and lint on every push; build, signing with Android key rotation, release and update manifest on each version tag |
@@ -197,10 +197,7 @@ service cloud.firestore {
 }
 ```
 
-Facebook sign-in also needs `appId` and `clientToken` in a git-ignored `facebook.properties`
-(or the `FACEBOOK_APP_ID` / `FACEBOOK_CLIENT_TOKEN` environment variables). Release builds read
-these from the repository secrets `GOOGLE_SERVICES_JSON`, `FACEBOOK_APP_ID` and
-`FACEBOOK_CLIENT_TOKEN`.
+Release builds read it from the repository secret `GOOGLE_SERVICES_JSON`.
 
 **Medicine catalogue:** `python tools/build_catalogue.py` rebuilds
 `app/src/main/assets/database/catalogue.db` from the sources in `medsdatabase/`.

@@ -40,4 +40,4 @@
 
 ## যোগাযোগ
 
-https://github.com/irrepressible007/-MediMinder/issues
+m.a.hamza362@gmail.com ঠিকানায় ইমেইল করুন, অথবা https://github.com/irrepressible007/-MediMinder/issues ঠিকানায় একটি ইস্যু খুলুন

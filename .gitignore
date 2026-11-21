@@ -30,4 +30,3 @@ signing-lineage.bin
 # Firebase settings: kept out of the public repo (values reach builds via local files / CI secrets)
 google-services.json
 app/google-services.json
-facebook.properties

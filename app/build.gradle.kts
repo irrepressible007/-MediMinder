@@ -18,10 +18,9 @@ fun signingSetting(property: String, env: String): String? =
     System.getenv(env)?.takeIf { it.isNotBlank() } ?: signingProperties.getProperty(property)?.takeIf { it.isNotBlank() }
 
 /**
- * Sign-in and cloud backup settings. Firebase's come from google-services.json (kept out of
- * git; CI writes it from a secret), read here instead of by Google's plugin so that builds
- * without it still work, just without sign-in. Facebook's come from facebook.properties or
- * the environment.
+ * Sign-in and cloud backup settings come from google-services.json (kept out of git; CI
+ * writes it from a secret), read here instead of by Google's plugin so that builds without it
+ * still work, just without sign-in.
  */
 val firebase: Map<String, String> = run {
     // read through Gradle so that a new google-services.json is noticed (configuration cache)
@@ -48,22 +47,12 @@ val firebase: Map<String, String> = run {
         "WEB_CLIENT_ID" to (oauth.firstOrNull { it["client_type"].toString() == "3" }?.get("client_id")?.toString().orEmpty()),
     )
 }
-val facebookProperties = Properties().apply {
-    providers.fileContents(rootProject.layout.projectDirectory.file("facebook.properties")).asText.orNull?.let { load(it.reader()) }
-}
-fun facebookSetting(property: String, env: String): String =
-    System.getenv(env)?.takeIf { it.isNotBlank() } ?: facebookProperties.getProperty(property).orEmpty()
 
 android {
     defaultConfig {
         for (key in listOf("API_KEY", "APP_ID", "PROJECT_ID", "SENDER_ID", "STORAGE_BUCKET", "WEB_CLIENT_ID")) {
             buildConfigField("String", "FIREBASE_$key", "\"${firebase[key].orEmpty()}\"")
         }
-        val facebookId = facebookSetting("appId", "FACEBOOK_APP_ID")
-        resValue("string", "facebook_app_id", facebookId)
-        resValue("string", "facebook_client_token", facebookSetting("clientToken", "FACEBOOK_CLIENT_TOKEN"))
-        resValue("string", "fb_login_protocol_scheme", "fb$facebookId")
-        buildConfigField("boolean", "FACEBOOK_SIGN_IN", (facebookId.isNotBlank()).toString())
     }
     // The privacy policy and terms are written once, in docs/legal, and shipped inside the app too
     sourceSets.getByName("main").assets.srcDir("../docs/legal")
@@ -109,7 +98,6 @@ android {
       compose = true
       aidl = false
       buildConfig = true
-      resValues = true
       shaders = false
     }
 
@@ -231,7 +219,6 @@ dependencies {
   implementation("androidx.credentials:credentials:1.3.0")
   implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
   implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
-  implementation("com.facebook.android:facebook-login:17.0.0")
   // Firebase brings Guava at run time; CameraX needs its ListenableFuture when compiling too
   implementation("com.google.guava:guava:33.3.1-android")
 }

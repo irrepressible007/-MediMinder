@@ -1,5 +1,7 @@
 package com.example.mediminder.ui.more
 
+import com.example.mediminder.util.Support
+import androidx.compose.material.icons.filled.BugReport
 import com.example.mediminder.ui.AccountKey
 import com.example.mediminder.cloud.CloudConfig
 import androidx.compose.material.icons.filled.Cloud
@@ -129,6 +131,8 @@ fun MoreScreen(modifier: Modifier, onOpen: (NavKey) -> Unit) {
             )
         }
         MediCard(contentPadding = PaddingValues(vertical = 4.dp), modifier = Modifier.entrance(entrance, 2)) {
+            NavRow(Icons.Default.BugReport, stringResource(R.string.report_problem), { Support.reportProblem(context) }, subtitle = stringResource(R.string.report_problem_sub), hue = Hue.CORAL)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             NavRow(Icons.Default.Policy, stringResource(R.string.legal_privacy), { onOpen(LegalKey("PRIVACY")) }, subtitle = stringResource(R.string.legal_privacy_sub), hue = Hue.SLATE)
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             NavRow(Icons.Default.Gavel, stringResource(R.string.legal_terms), { onOpen(LegalKey("TERMS")) }, subtitle = stringResource(R.string.legal_terms_sub), hue = Hue.SLATE)

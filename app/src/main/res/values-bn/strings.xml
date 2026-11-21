@@ -964,7 +964,6 @@
     <string name="account_intro">সাইন ইন করা ঐচ্ছিক। এতে আপনার মেডিমাইন্ডারের তথ্যের একটি কপি ক্লাউডে থাকে, তাই অ্যাপ আবার ইনস্টল করলে বা ফোন বদলালে তথ্য ফিরে আসে।</string>
     <string name="account_unavailable">অ্যাপের এই সংস্করণে ক্লাউড ব্যাকআপ নেই। সেটিংস থেকে এখনো ব্যাকআপ ফাইল রাখতে পারেন।</string>
     <string name="account_google">গুগল দিয়ে চালিয়ে যান</string>
-    <string name="account_facebook">ফেসবুক দিয়ে চালিয়ে যান</string>
     <string name="account_email">ইমেইল দিয়ে চালিয়ে যান</string>
     <string name="account_email_label">ইমেইল</string>
     <string name="account_password_label">পাসওয়ার্ড</string>
@@ -975,7 +974,6 @@
     <string name="account_reset_sent">নতুন পাসওয়ার্ড দেওয়ার লিংক আপনার ইমেইলে পাঠানো হয়েছে।</string>
     <string name="account_agree">সাইন ইন করলে আপনি ব্যবহারের শর্তাবলি ও গোপনীয়তা নীতিতে রাজি হচ্ছেন।</string>
     <string name="account_with_google">গুগল দিয়ে সাইন ইন করা</string>
-    <string name="account_with_facebook">ফেসবুক দিয়ে সাইন ইন করা</string>
     <string name="account_with_email">ইমেইল দিয়ে সাইন ইন করা</string>
     <string name="account_last_backup">শেষ ক্লাউডে রাখা হয়েছে: %1$s</string>
     <string name="account_never_backed_up">এখনো ক্লাউডে রাখা হয়নি</string>
@@ -1006,4 +1004,9 @@
     <string name="account_error_wrong_password">ইমেইল বা পাসওয়ার্ড ঠিক নয়।</string>
     <string name="account_error_sign_in_again">নিরাপত্তার জন্য সাইন আউট করে আবার সাইন ইন করুন, তারপর মুছুন।</string>
     <string name="onboarding_restore">আগে মেডিমাইন্ডার ব্যবহার করেছেন? সাইন ইন করে তথ্য ফিরিয়ে আনুন</string>
+    <string name="report_problem">সমস্যা জানান</string>
+    <string name="report_problem_sub">ডেভেলপারকে ইমেইল করুন, সমস্যার তালিকাসহ</string>
+    <string name="report_problem_subject">মেডিমাইন্ডার %1$s: সমস্যার রিপোর্ট</string>
+    <string name="report_problem_intro">কী হয়েছিল? (এক-দুই লাইনে লিখুন; বাংলায় লিখতে পারেন।)</string>
+    <string name="report_problem_log_heading">— সমস্যার তালিকা (অ্যাপ সংস্করণ, ফোন, ত্রুটি) —</string>
 </resources>

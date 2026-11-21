@@ -18,8 +18,8 @@ This information is stored in the app's private storage on your phone. Nobody el
 
 Only when you do one of these:
 
-- **Cloud backup (optional).** If you sign in with Google, Facebook or email, a copy of your MediMinder data is kept in Google Firebase (Cloud Firestore, in the Mumbai region) so it can come back after you reinstall or change phones. It includes the same things as a backup file: medicines, history, readings, doctor visits, Medical ID and settings. Photos are not uploaded. Your copy can only be read by your own account. Google provides this service on our behalf.
-- **Signing in.** The sign-in service you choose (Google, Facebook, or Firebase for email) tells MediMinder your account ID, name and email address. MediMinder never posts anything on your behalf.
+- **Cloud backup (optional).** If you sign in with Google or email, a copy of your MediMinder data is kept in Google Firebase (Cloud Firestore, in the Mumbai region) so it can come back after you reinstall or change phones. It includes the same things as a backup file: medicines, history, readings, doctor visits, Medical ID and settings. Photos are not uploaded. Your copy can only be read by your own account. Google provides this service on our behalf.
+- **Signing in.** The sign-in service you choose (Google, or Firebase for email) tells MediMinder your account ID, name and email address. MediMinder never posts anything on your behalf.
 - **Text message to your family (optional).** If you turn this on, when a medicine dose is missed the app sends a normal SMS from your phone to the number you chose. It contains your name, the medicine names and their times. Your mobile operator delivers it and may charge for it.
 - **Sharing.** When you share a report, a PDF or a backup file, it goes wherever you send it.
 
@@ -58,4 +58,4 @@ If this policy changes, the new version will be published here with a new date, 
 
 ## Contact
 
-Questions or deletion requests: open an issue at https://github.com/irrepressible007/-MediMinder/issues
+Questions or deletion requests: email m.a.hamza362@gmail.com, or open an issue at https://github.com/irrepressible007/-MediMinder/issues

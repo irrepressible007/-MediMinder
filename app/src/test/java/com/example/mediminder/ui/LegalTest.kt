@@ -18,6 +18,7 @@ class LegalTest {
             val text = context.assets.open("$doc.$lang.md").bufferedReader().use { it.readText() }
             assertTrue("$doc.$lang starts with a title", text.startsWith("# "))
             assertTrue("$doc.$lang has a contact", text.contains("github.com/irrepressible007/-MediMinder/issues"))
+            assertTrue("$doc.$lang has the email", text.contains(com.example.mediminder.util.Support.EMAIL))
         }
     }
 }

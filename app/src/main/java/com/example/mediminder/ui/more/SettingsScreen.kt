@@ -1,5 +1,7 @@
 package com.example.mediminder.ui.more
 
+import com.example.mediminder.util.Support
+import androidx.compose.material.icons.filled.BugReport
 import com.example.mediminder.ui.components.NoticeCard
 import com.example.mediminder.ui.components.Tone
 import androidx.compose.material.icons.filled.NightsStay
@@ -322,6 +324,8 @@ fun SettingsScreen(onBack: () -> Unit, onOpenReliability: () -> Unit, onOpenRama
                 )
                 QuietButton(stringResource(R.string.problem_log_clear), onClick = { ErrorLog.clear(); problems = 0 }, icon = Icons.Default.Delete)
             }
+            // straight to the developer, whether or not anything was logged
+            SecondaryButton(stringResource(R.string.report_problem), onClick = { Support.reportProblem(context) }, icon = Icons.Default.BugReport)
 
             HorizontalDivider(Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
             Text(stringResource(R.string.settings_about, Formats.digits(context, BuildConfig.VERSION_NAME)), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
