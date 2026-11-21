@@ -957,4 +957,8 @@
         <item quantity="one">Found %d medicine</item>
         <item quantity="other">Found %d medicines</item>
     </plurals>
+    <string name="legal_privacy">Privacy policy</string>
+    <string name="legal_terms">Terms of use</string>
+    <string name="legal_privacy_sub">What the app keeps, and where</string>
+    <string name="legal_terms_sub">A reminder, not medical advice</string>
 </resources>

@@ -18,6 +18,8 @@ fun signingSetting(property: String, env: String): String? =
     System.getenv(env)?.takeIf { it.isNotBlank() } ?: signingProperties.getProperty(property)?.takeIf { it.isNotBlank() }
 
 android {
+    // The privacy policy and terms are written once, in docs/legal, and shipped inside the app too
+    sourceSets.getByName("main").assets.srcDir("../docs/legal")
     namespace = "com.example.mediminder"
     compileSdk = 36
     defaultConfig {

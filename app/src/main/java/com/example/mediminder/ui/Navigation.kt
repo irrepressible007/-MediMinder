@@ -1,5 +1,7 @@
 package com.example.mediminder.ui
 
+import com.example.mediminder.ui.more.LegalDoc
+import com.example.mediminder.ui.more.LegalScreen
 import com.example.mediminder.ui.prescription.PrescriptionScreen
 import com.example.mediminder.ui.more.FamilyAlertScreen
 import com.example.mediminder.ui.more.RamadanScreen
@@ -135,6 +137,8 @@ import javax.inject.Inject
 @Serializable data object FamilyAlertKey : NavKey
 @Serializable data object PrescriptionKey : NavKey
 @Serializable data object PrescriptionPhotoKey : NavKey
+/** "PRIVACY" or "TERMS" */
+@Serializable data class LegalKey(val doc: String) : NavKey
 
 enum class HomeTab { TODAY, MEDICINES, APPOINTMENTS, MORE }
 
@@ -304,6 +308,7 @@ fun MainNavigation(
                 )
             }
             entry<FamilyAlertKey> { FamilyAlertScreen(onBack = ::back) }
+            entry<LegalKey> { key -> LegalScreen(doc = LegalDoc.valueOf(key.doc), onBack = ::back) }
             entry<PrescriptionKey> {
                 PrescriptionScreen(
                     capturedPhoto = prescriptionPhoto,

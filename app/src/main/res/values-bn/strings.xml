@@ -955,4 +955,8 @@
         <item quantity="one">%dটি ওষুধ পাওয়া গেছে</item>
         <item quantity="other">%dটি ওষুধ পাওয়া গেছে</item>
     </plurals>
+    <string name="legal_privacy">গোপনীয়তা নীতি</string>
+    <string name="legal_terms">ব্যবহারের শর্তাবলি</string>
+    <string name="legal_privacy_sub">অ্যাপ কী রাখে, কোথায় রাখে</string>
+    <string name="legal_terms_sub">মনে করায়, চিকিৎসা পরামর্শ দেয় না</string>
 </resources>

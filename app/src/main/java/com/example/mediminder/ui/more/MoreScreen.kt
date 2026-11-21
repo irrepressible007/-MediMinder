@@ -1,5 +1,8 @@
 package com.example.mediminder.ui.more
 
+import com.example.mediminder.ui.LegalKey
+import androidx.compose.material.icons.filled.Policy
+import androidx.compose.material.icons.filled.Gavel
 import com.example.mediminder.ui.FamilyAlertKey
 import androidx.compose.material.icons.filled.Sms
 import com.example.mediminder.ui.RamadanKey
@@ -118,6 +121,11 @@ fun MoreScreen(modifier: Modifier, onOpen: (NavKey) -> Unit) {
                 },
                 hue = Hue.NIGHT,
             )
+        }
+        MediCard(contentPadding = PaddingValues(vertical = 4.dp), modifier = Modifier.entrance(entrance, 2)) {
+            NavRow(Icons.Default.Policy, stringResource(R.string.legal_privacy), { onOpen(LegalKey("PRIVACY")) }, subtitle = stringResource(R.string.legal_privacy_sub), hue = Hue.SLATE)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            NavRow(Icons.Default.Gavel, stringResource(R.string.legal_terms), { onOpen(LegalKey("TERMS")) }, subtitle = stringResource(R.string.legal_terms_sub), hue = Hue.SLATE)
         }
     }
 }
