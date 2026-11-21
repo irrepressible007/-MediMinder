@@ -99,6 +99,11 @@ class Notifier @Inject constructor(
                 lockscreenVisibility = Notification.VISIBILITY_PUBLIC
             }
         )
+        system.createNotificationChannel(
+            NotificationChannel(CHANNEL_SETUP, ctx.getString(R.string.channel_setup), NotificationManager.IMPORTANCE_LOW).apply {
+                description = ctx.getString(R.string.channel_setup_desc)
+            }
+        )
         // Channel from version 1.x, replaced by the ones above
         system.deleteNotificationChannel("mediminder_alarms")
     }
@@ -246,6 +251,26 @@ class Notifier @Inject constructor(
         post(ID_REFILL_SUMMARY, notification)
     }
 
+    // ── Setup ───────────────────────────────────────────────────────────────
+
+    /** A quiet, occasional nudge: a phone setting still keeps reminders from ringing on time. */
+    fun showSetupNudge(@androidx.annotation.StringRes why: Int, count: Int) {
+        val ctx = context
+        val title = if (count == 1) ctx.getString(R.string.setup_nudge_title)
+        else ctx.getString(R.string.setup_card_title_many, Formats.number(ctx, count))
+        val notification = NotificationCompat.Builder(ctx, CHANNEL_SETUP)
+            .setSmallIcon(R.drawable.ic_stat_pill)
+            .setColor(ContextCompat.getColor(appContext, R.color.brand))
+            .setContentTitle(title)
+            .setContentText(ctx.getString(why))
+            .setStyle(NotificationCompat.BigTextStyle().bigText(ctx.getString(why)))
+            .setAutoCancel(true)
+            .setContentIntent(openApp(DEEP_LINK_RELIABILITY))
+            .addAction(0, ctx.getString(R.string.setup_nudge_action), openApp(DEEP_LINK_RELIABILITY))
+            .build()
+        post(ID_SETUP, notification)
+    }
+
     // ── Appointments ────────────────────────────────────────────────────────
 
     fun showAppointment(appointment: Appointment, evening: Boolean) {
@@ -377,17 +402,20 @@ class Notifier @Inject constructor(
         const val CHANNEL_ALARMS = "dose_alarms"
         const val CHANNEL_REFILLS = "refills"
         const val CHANNEL_APPOINTMENTS = "appointments"
+        const val CHANNEL_SETUP = "setup_tips"
 
         private const val GROUP_DOSES = "doses"
         private const val ID_ALARM = 1001
         private const val ID_TEST = 1002
         private const val ID_REFILL_SUMMARY = 1003
+        private const val ID_SETUP = 1004
 
         const val DEEP_LINK_TODAY = "mediminder://open/today"
         const val DEEP_LINK_REFILLS = "mediminder://open/refills"
         const val DEEP_LINK_APPOINTMENTS = "mediminder://open/appointments"
         const val DEEP_LINK_MEDICINE = "mediminder://open/medicine/"
         const val DEEP_LINK_RESTOCK = "mediminder://open/restock/"
+        const val DEEP_LINK_RELIABILITY = "mediminder://open/reliability"
 
         fun doseNotificationId(scheduleId: Long, day: Long) = "dose:$scheduleId:$day".hashCode()
     }

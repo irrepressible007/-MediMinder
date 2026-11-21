@@ -1,5 +1,6 @@
 package com.example.mediminder.ui.medicines
 
+import com.example.mediminder.ui.components.AlarmPermissionNote
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.runtime.remember
 import com.example.mediminder.ui.components.DiscardDialog
@@ -572,6 +573,7 @@ private fun ColumnScope.TimesStep(s: EditorState, vm: MedicineEditorViewModel) {
             onClick = { vm.onAlertTypeForAll(type) },
         )
     }
+    if (s.times.any { it.alertType == AlertType.ALARM }) AlarmPermissionNote()
 }
 
 // ── 4. Optional extras ──────────────────────────────────────────────────────

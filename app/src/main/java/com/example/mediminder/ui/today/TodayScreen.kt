@@ -1,5 +1,11 @@
 package com.example.mediminder.ui.today
 
+import com.example.mediminder.reminders.CheckResult
+import com.example.mediminder.reminders.SetupNudge
+import com.example.mediminder.ui.components.FeedbackBus
+import com.example.mediminder.ui.components.FeedbackKind
+import com.example.mediminder.ui.components.SetupCard
+import com.example.mediminder.ui.components.rememberSetupFixer
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -166,8 +172,18 @@ fun TodayScreen(
     val context = LocalContext.current
     val resources = LocalResources.current
     val ui by viewModel.state.collectAsState()
-    var reliabilityOk by remember { mutableStateOf(true) }
-    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { reliabilityOk = Reliability.allCriticalOk(context) }
+    // Phone settings that stop reminders: a friendly card until fixed ("later" hides it for a day)
+    var setupProblems by remember { mutableStateOf(emptyList<CheckResult>()) }
+    var setupLater by remember { mutableStateOf(false) }
+    var hadSetupProblems by remember { mutableStateOf(false) }
+    fun recheckSetup() {
+        setupProblems = Reliability.criticalProblems(context)
+        setupLater = SetupNudge.isSnoozed(context)
+        if (setupProblems.isEmpty() && hadSetupProblems) FeedbackBus.show(FeedbackKind.SAVED, R.string.setup_all_set)
+        hadSetupProblems = setupProblems.isNotEmpty()
+    }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { recheckSetup() }
+    val setupFixer = rememberSetupFixer { recheckSetup() }
 
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -239,6 +255,16 @@ fun TodayScreen(
         ) {
             item { Header(state, onPrev = viewModel::previousDay, onNext = viewModel::nextDay, onToday = viewModel::goToToday) }
 
+            // shown even before any medicine is added, so the first one works properly
+            if (setupProblems.isNotEmpty() && !setupLater) item(key = "setup") {
+                SetupCard(
+                    problems = setupProblems,
+                    onFix = setupFixer,
+                    onLater = { SetupNudge.snooze(context); setupLater = true },
+                    onDetails = onOpenReliability,
+                    modifier = Modifier.animateItem(),
+                )
+            }
             if (!state.hasMedicines) {
                 item {
                     EmptyState(
@@ -252,15 +278,6 @@ fun TodayScreen(
                 return@LazyColumn
             }
 
-            if (!reliabilityOk) item {
-                NoticeCard(
-                    text = stringResource(R.string.today_reliability_banner),
-                    icon = Icons.Default.NotificationsOff,
-                    tone = Tone.DANGER,
-                    actionLabel = stringResource(R.string.action_fix),
-                    onClick = onOpenReliability,
-                )
-            }
 
             if (state.rows.isNotEmpty()) item { SummaryCard(state, Modifier.entrance(entrance, 0)) }
 

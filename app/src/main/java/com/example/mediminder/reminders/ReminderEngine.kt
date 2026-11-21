@@ -258,6 +258,8 @@ class ReminderEngine @Inject constructor(
 
     suspend fun ringingAlerts(): List<ActiveAlert> = activeAlertDao.getAll()
 
+    suspend fun hasActiveMedicines(): Boolean = medicationDao.getActiveWithSchedules().isNotEmpty()
+
     fun doseInfo(medication: Medication, schedule: Schedule, day: Long) = DoseInfo(
         scheduleId = schedule.id,
         day = day,

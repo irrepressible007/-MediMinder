@@ -33,6 +33,10 @@ hard to make sure every alarm goes off.
 - Re-armed after reboot, app update, time or time-zone change, plus a 6-hourly safety net for
   phones that drop alarms.
 - A *Reminder check* screen walks people through the phone's battery and permission settings.
+- If a setting that reminders need is switched off, MediMinder says so in plain words and opens the
+  exact settings page in one tap. It reminds gently and never blocks the app: a card on Today that
+  can wait until tomorrow, a quiet notification at most every three days, and a note at the moment
+  it matters, such as when choosing an alarm.
 
 **Built for Bangladesh**
 - An offline catalogue of **54,652 medicines** sold in Bangladesh (brand, generic, strength, form,
@@ -85,7 +89,7 @@ day. All motion stops when the phone's *Remove animations* setting is on.
 | Reminders | AlarmManager exact alarms, full-screen intents, WorkManager safety net |
 | Camera and scanning | CameraX and ML Kit on-device text recognition |
 | Images | Coil |
-| Testing | JUnit, Robolectric, Compose UI tests (82 tests) |
+| Testing | JUnit, Robolectric, Compose UI tests (87 tests) |
 | Delivery | GitHub Actions: build, signing with Android key rotation, release, update manifest |
 
 ## How it is built

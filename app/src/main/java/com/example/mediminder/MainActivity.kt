@@ -77,6 +77,7 @@ class MainActivity : AppCompatActivity() {
             uri == Notifier.DEEP_LINK_TODAY -> DeepLink.Today
             uri == Notifier.DEEP_LINK_REFILLS -> DeepLink.Refills
             uri == Notifier.DEEP_LINK_APPOINTMENTS -> DeepLink.Appointments
+            uri == Notifier.DEEP_LINK_RELIABILITY -> DeepLink.Reliability
             uri.startsWith(Notifier.DEEP_LINK_MEDICINE) -> uri.removePrefix(Notifier.DEEP_LINK_MEDICINE).toLongOrNull()?.let(DeepLink::Medicine)
             uri.startsWith(Notifier.DEEP_LINK_RESTOCK) -> uri.removePrefix(Notifier.DEEP_LINK_RESTOCK).toLongOrNull()?.let(DeepLink::Restock)
             else -> null

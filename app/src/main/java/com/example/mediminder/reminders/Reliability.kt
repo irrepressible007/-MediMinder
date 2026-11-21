@@ -79,10 +79,29 @@ object Reliability {
         return list
     }
 
-    fun allCriticalOk(context: Context): Boolean =
-        checks(context).filter { it.check != ReliabilityCheck.AUTOSTART && it.check != ReliabilityCheck.BATTERY }.all { it.ok != false }
+    fun allCriticalOk(context: Context): Boolean = criticalProblems(context).isEmpty()
 
-    private fun appNotificationSettings(context: Context): Intent =
+    /** What still stops reminders, in the order worth fixing (without notifications nothing shows). */
+    fun criticalProblems(context: Context): List<CheckResult> =
+        checks(context).filter { it.check in CRITICAL && it.ok == false }.sortedBy { CRITICAL.indexOf(it.check) }
+
+    private val CRITICAL = listOf(
+        ReliabilityCheck.NOTIFICATIONS, ReliabilityCheck.EXACT_ALARMS, ReliabilityCheck.ALARM_CHANNEL, ReliabilityCheck.FULL_SCREEN,
+    )
+
+    /** Opens a settings page; if this phone does not have it, the app's own details page. */
+    fun open(context: Context, intent: Intent?) {
+        val target = intent ?: appDetails(context)
+        try {
+            context.startActivity(target)
+        } catch (_: android.content.ActivityNotFoundException) {
+            runCatching { context.startActivity(appDetails(context)) }
+        } catch (_: SecurityException) {
+            runCatching { context.startActivity(appDetails(context)) }
+        }
+    }
+
+    fun appNotificationSettings(context: Context): Intent =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
         } else appDetails(context)
@@ -135,4 +154,15 @@ object Reliability {
             .firstOrNull { it.resolveActivity(pm) != null }
             ?: appDetails(context)
     }
+}
+
+/** In plain words: what goes wrong while this setting is off. */
+@androidx.annotation.StringRes
+fun ReliabilityCheck.whyItMatters(): Int = when (this) {
+    ReliabilityCheck.NOTIFICATIONS -> com.example.mediminder.R.string.setup_why_notifications
+    ReliabilityCheck.EXACT_ALARMS -> com.example.mediminder.R.string.setup_why_exact
+    ReliabilityCheck.FULL_SCREEN -> com.example.mediminder.R.string.setup_why_full_screen
+    ReliabilityCheck.ALARM_CHANNEL -> com.example.mediminder.R.string.setup_why_channel
+    ReliabilityCheck.BATTERY -> com.example.mediminder.R.string.setup_why_battery
+    ReliabilityCheck.AUTOSTART -> com.example.mediminder.R.string.setup_why_battery
 }

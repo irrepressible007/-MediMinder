@@ -127,6 +127,7 @@ sealed class DeepLink {
     data object Appointments : DeepLink()
     data class Medicine(val id: Long) : DeepLink()
     data class Restock(val id: Long) : DeepLink()
+    data object Reliability : DeepLink()
 }
 
 @HiltViewModel
@@ -157,6 +158,7 @@ fun MainNavigation(
                 DeepLink.Refills -> backStack += RefillList
                 is DeepLink.Medicine -> backStack += MedicineDetail(target.id)
                 is DeepLink.Restock -> backStack += MedicineDetail(target.id, openRestock = true)
+                DeepLink.Reliability -> backStack += ReliabilityKey
             }
         }
         onDeepLinkHandled()

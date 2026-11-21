@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit
 interface ReminderEntryPoint {
     fun engine(): ReminderEngine
     fun doseActions(): DoseActions
+    fun notifier(): Notifier
 }
 
 internal fun Context.reminders(): ReminderEntryPoint =
@@ -134,7 +135,9 @@ class SystemEventsReceiver : BroadcastReceiver() {
  */
 class SafetyNetWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
-        applicationContext.reminders().engine().rescheduleAll()
+        val reminders = applicationContext.reminders()
+        reminders.engine().rescheduleAll()
+        SetupNudge.maybeNotify(applicationContext, reminders.notifier(), reminders.engine().hasActiveMedicines())
         return Result.success()
     }
 
