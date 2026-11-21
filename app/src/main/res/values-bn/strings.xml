@@ -993,7 +993,7 @@
     <string name="vault_saved">কাগজ রাখা হয়েছে</string>
     <string name="vault_failed">ছবিটি রাখা যায়নি। আরেকটি দিয়ে চেষ্টা করুন।</string>
     <string name="fsi_lost_title">পূর্ণ-স্ক্রিন অ্যালার্ম বন্ধ হয়ে গেছে</string>
-    <string name="fsi_lost_text">মেডিমাইন্ডারের পূর্ণ-স্ক্রিন অ্যালার্ম বন্ধ আছে, তাই লক স্ক্রিনের ওপর অ্যালার্ম দেখাবে না, শব্দও নাও হতে পারে। আবার চালু করতে চাপুন।</string>
+    <string name="fsi_lost_text">মেডিমাইন্ডারের পূর্ণ-স্ক্রিন অ্যালার্ম বন্ধ আছে, তাই অ্যালার্মের সময় স্ক্রিন জ্বলবে না, লক স্ক্রিনের ওপরও দেখাবে না। ডাউনলোড করা ফাইল থেকে আপডেট ইনস্টল করলে এটি বন্ধ হয়ে যায়। আবার চালু করতে চাপুন।</string>
     <string name="fsi_lost_action">চালু করুন</string>
     <string name="channel_alarm_setup">অ্যালার্মের সমস্যা</string>
     <string name="channel_alarm_setup_desc">যখন ফোন অ্যালার্মের দরকারি কিছু বন্ধ করে দেয়</string>

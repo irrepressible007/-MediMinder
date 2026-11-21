@@ -33,12 +33,13 @@ object SetupNudge {
             now - clockStartedAt >= NUDGE_EVERY && now - lastNudge >= NUDGE_EVERY
 
     /**
-     * "Full-screen alarm" can end up switched off (what turns it off on some phones isn't known
-     * yet). Without it alarms can't show over the lock screen, and on a Pixel 6 they didn't ring
-     * either, so this is said straight away, not after days: at most once a day, and only while
-     * there are alarm-type doses.
+     * "Full-screen alarm" gets switched off whenever an update is installed through Android's
+     * installer app (seen on a Pixel 6, Android 17: a file from the browser or the Files app).
+     * Alarms then still ring but can't light up the screen, so this is said straight away:
+     * right after an update, otherwise at most once a day, and only while there are alarm-type
+     * doses.
      */
-    fun checkFullScreen(context: Context, notifier: Notifier, hasAlarmDoses: Boolean) {
+    fun checkFullScreen(context: Context, notifier: Notifier, hasAlarmDoses: Boolean, afterUpdate: Boolean = false) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return
         val prefs = prefs(context)
         val allowed = context.getSystemService(NotificationManager::class.java).canUseFullScreenIntent()
@@ -47,7 +48,8 @@ object SetupNudge {
             return
         }
         val now = System.currentTimeMillis()
-        if (now - prefs.getLong("fsiNotified", 0) < DAY) return
+        // installing an update from a file is what switches it off: say so at once after one
+        if (!afterUpdate && now - prefs.getLong("fsiNotified", 0) < DAY) return
         notifier.showFullScreenLost()
         prefs.edit().putLong("fsiNotified", now).apply()
     }

@@ -128,10 +128,11 @@ class SystemEventsReceiver : BroadcastReceiver() {
             -> {
                 val reminders = context.reminders()
                 val engine = reminders.engine()
+                val updated = intent.action == Intent.ACTION_MY_PACKAGE_REPLACED
                 runAsync {
                     engine.rescheduleAll()
-                    // an update or restart can be when Android switches full-screen alarms off
-                    SetupNudge.checkFullScreen(context, reminders.notifier(), engine.hasAlarmDoses())
+                    // installing an update from a file switches full-screen alarms off
+                    SetupNudge.checkFullScreen(context, reminders.notifier(), engine.hasAlarmDoses(), afterUpdate = updated)
                 }
                 SafetyNetWorker.ensureScheduled(context)
             }

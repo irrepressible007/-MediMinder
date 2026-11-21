@@ -75,6 +75,8 @@
 
         <receiver android:name=".reminders.ReminderReceiver" android:exported="false" />
         <receiver android:name=".reminders.DoseActionReceiver" android:exported="false" />
+        <!-- results of in-app updates (Android's PackageInstaller) -->
+        <receiver android:name=".updater.InstallResultReceiver" android:exported="false" />
 
         <!-- Home-screen widget: the next dose with a Taken button -->
         <receiver android:name=".widget.NextDoseWidget" android:exported="false" android:label="@string/widget_name">

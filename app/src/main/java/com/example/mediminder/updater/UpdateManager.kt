@@ -1,5 +1,8 @@
 package com.example.mediminder.updater
 
+import android.app.PendingIntent
+import android.content.pm.PackageInstaller
+import android.content.pm.PackageManager
 import com.example.mediminder.util.ErrorLog
 import android.content.Context
 import android.content.Intent
@@ -36,8 +39,12 @@ import kotlin.coroutines.coroutineContext
  *  • Newer means a higher versionCode, read from the release's update.json (written by the
  *    release workflow) — never the version name, so renumbering can't hide an update.
  *  • The APK is downloaded inside the app with a progress bar, checked against its size and
- *    SHA-256, then handed to Android's installer. If Android needs the one-time "install
- *    unknown apps" permission, the dialog explains it and opens the right settings page.
+ *    SHA-256, then installed by the app itself through Android's PackageInstaller; Android
+ *    still asks the person to confirm. If Android needs the one-time "install unknown apps"
+ *    permission, the dialog explains it and opens the right settings page.
+ *  • Why not hand the file to Android's installer app: on a Pixel 6 (Android 17) every update
+ *    installed that way switched MediMinder's full-screen alarm permission off. Installs
+ *    through PackageInstaller kept it.
  */
 
 /** The newest release on GitHub. */
@@ -176,8 +183,9 @@ object Updater {
     }
 
     /**
-     * Hands the APK to Android's installer, or — when Android needs the one-time permission —
-     * asks for it first. Call again after the person comes back from settings.
+     * Installs the APK (Android shows its "Update this app?" confirmation), or — when Android
+     * needs the one-time permission — asks for it first. Call again after the person comes back
+     * from settings. Answers arrive in [InstallResultReceiver].
      */
     fun install(context: Context) {
         val ready = _state.value as? UpdateState.Ready ?: return
@@ -185,6 +193,65 @@ object Updater {
             _state.value = ready.copy(needsPermission = true)
             return
         }
+        _state.value = ready.copy(needsPermission = false)
+        val app = context.applicationContext
+        scope.launch {
+            try {
+                commitSession(app, ready.file)
+            } catch (e: Exception) {
+                // the older way still installs; it just goes through Android's installer app
+                ErrorLog.record("Update", "Could not start the install, opening Android's installer instead", e)
+                withContext(Dispatchers.Main) { openInstallerApp(app, ready) }
+            }
+        }
+    }
+
+    /** Copies the APK into an install session and commits it. */
+    private fun commitSession(context: Context, apk: File) {
+        val installer = context.packageManager.packageInstaller
+        val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL).apply {
+            setAppPackageName(context.packageName)
+            setSize(apk.length())
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) setInstallReason(PackageManager.INSTALL_REASON_USER)
+        }
+        val id = installer.createSession(params)
+        try {
+            installer.openSession(id).use { session ->
+                session.openWrite("base.apk", 0, apk.length()).use { out ->
+                    apk.inputStream().use { it.copyTo(out) }
+                    session.fsync(out)
+                }
+                // Android fills in the result, so the PendingIntent has to be mutable; it is
+                // explicit, aimed at a receiver nothing else can reach
+                val flags = PendingIntent.FLAG_UPDATE_CURRENT or
+                    (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0)
+                val result = PendingIntent.getBroadcast(context, id, Intent(context, InstallResultReceiver::class.java), flags)
+                session.commit(result.intentSender)
+            }
+        } catch (e: Exception) {
+            runCatching { installer.abandonSession(id) }
+            throw e
+        }
+    }
+
+    /** Android refused the update, or something broke on the way: say so, and log why. */
+    internal fun installFailed(why: String, error: Throwable? = null) {
+        ErrorLog.record("Update", "Install failed: $why", error)
+        _state.value = UpdateState.Failed((_state.value as? UpdateState.Ready)?.info, R.string.update_install_failed)
+        _dialog.value = true
+    }
+
+    /** Tests start from a downloaded, checked update. */
+    @androidx.annotation.VisibleForTesting
+    internal fun readyForTest(info: UpdateInfo, file: File) { _state.value = UpdateState.Ready(info, file) }
+
+    /** The person tapped Cancel on Android's confirmation: still ready to install. */
+    internal fun installCancelled() {
+        _dialog.value = true
+    }
+
+    /** The older route: Android's installer app opens the file. */
+    private fun openInstallerApp(context: Context, ready: UpdateState.Ready) {
         try {
             val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", ready.file)
             context.startActivity(
