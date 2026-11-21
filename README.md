@@ -105,6 +105,10 @@ hard to make sure every alarm goes off.
   in the cloud and updates it by itself a few minutes after each change, so it comes back after a
   reinstall or on a new phone. Without signing in, nothing leaves the phone.
 
+<p align="center">
+<img src="docs/screenshots/sign-in.png" width="180" alt="Setup offers sign-in: Continue with Google, or with email, or Skip for now">
+</p>
+
 **Friendly, alive interface**
 
 <img src="docs/illustrations.gif" width="480" alt="Illustrations drawing themselves, then moving">
@@ -164,6 +168,10 @@ A few decisions worth knowing:
 - **Updates avoid GitHub's API.** The app reads `releases/latest/download/update.json`. GitHub's
   API allows only 60 anonymous requests an hour per internet address, which shared mobile
   connections use up quickly. The APK is checked against its size and SHA-256 before installing.
+- **The app installs its own updates** through Android's `PackageInstaller` (Android still asks
+  to confirm). On a Pixel 6 with Android 17, every update opened in Android's installer app
+  switched the app's full-screen alarm permission off; installing through `PackageInstaller`
+  keeps it. If it is ever off, the app says so at once, with a button to the right setting.
 - **Signing uses Android key rotation (APK Signature Scheme v3).** No key is stored in this
   repository.
 - **One model for everything that reminds.** A tablet, a cream, a blood-pressure check and a

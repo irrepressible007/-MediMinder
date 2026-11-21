@@ -207,7 +207,8 @@ object Updater {
     }
 
     /** Copies the APK into an install session and commits it. */
-    private fun commitSession(context: Context, apk: File) {
+    @androidx.annotation.VisibleForTesting
+    internal fun commitSession(context: Context, apk: File) {
         val installer = context.packageManager.packageInstaller
         val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL).apply {
             setAppPackageName(context.packageName)

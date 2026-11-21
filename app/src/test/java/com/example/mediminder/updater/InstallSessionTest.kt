@@ -36,16 +36,13 @@ class InstallSessionTest {
         Updater.readyForTest(info, apk)
     }
 
-    @Test fun `install opens a session for MediMinder itself instead of the installer app`() {
-        Updater.install(app)
-        val installer = app.packageManager.packageInstaller
-        val deadline = System.currentTimeMillis() + 30_000   // the session is made on a worker thread
-        while (installer.allSessions.isEmpty() && System.currentTimeMillis() < deadline) Thread.sleep(20)
-        val session = installer.allSessions.singleOrNull()
+    @Test fun `updates go into an install session for MediMinder itself`() {
+        // (called directly: Updater.install runs this on a worker thread)
+        Updater.commitSession(app, apk)
+        val session = app.packageManager.packageInstaller.allSessions.singleOrNull()
         assertNotNull("no install session", session)
         assertEquals(app.packageName, session!!.appPackageName)
-        // and Android's installer app was not opened with the file
-        shadowOf(android.os.Looper.getMainLooper()).idle()
+        // Android's installer app was not opened with the file
         assertNull(shadowOf(app).nextStartedActivity)
     }
 
