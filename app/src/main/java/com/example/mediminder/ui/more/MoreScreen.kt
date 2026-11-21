@@ -1,5 +1,8 @@
 package com.example.mediminder.ui.more
 
+import com.example.mediminder.ui.AccountKey
+import com.example.mediminder.cloud.CloudConfig
+import androidx.compose.material.icons.filled.Cloud
 import com.example.mediminder.ui.LegalKey
 import androidx.compose.material.icons.filled.Policy
 import androidx.compose.material.icons.filled.Gavel
@@ -81,6 +84,9 @@ fun MoreScreen(modifier: Modifier, onOpen: (NavKey) -> Unit) {
     ) {
         ScreenHeader(stringResource(R.string.tab_more), icon = Icons.Default.Apps, hue = Hue.VIOLET)
         val entrance = rememberEntranceState()
+        if (CloudConfig.available) MediCard(contentPadding = PaddingValues(vertical = 4.dp), modifier = Modifier.entrance(entrance, 0)) {
+            NavRow(Icons.Default.Cloud, stringResource(R.string.account_title), { onOpen(AccountKey) }, subtitle = stringResource(R.string.account_more_sub), hue = Hue.SKY)
+        }
         MediCard(contentPadding = PaddingValues(vertical = 4.dp), modifier = Modifier.entrance(entrance, 0)) {
             NavRow(Icons.Default.MonitorHeart, stringResource(R.string.health_title), { onOpen(HealthKey) }, subtitle = stringResource(R.string.more_health_sub), hue = Hue.CORAL)
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)

@@ -1,5 +1,7 @@
 package com.example.mediminder.ui.more
 
+import com.example.mediminder.cloud.CloudConfig
+import androidx.compose.material.icons.filled.Cloud
 import com.example.mediminder.ui.components.AnimatedArt
 import com.example.mediminder.ui.components.Art
 import androidx.compose.material.icons.filled.NotificationsActive
@@ -77,7 +79,7 @@ import kotlinx.coroutines.launch
 
 /** First run: language & text size → meal times → permissions that make alarms reliable. */
 @Composable
-fun OnboardingScreen(onFinished: () -> Unit, viewModel: SettingsViewModel = hiltViewModel()) {
+fun OnboardingScreen(onFinished: () -> Unit, onOpenAccount: () -> Unit = {}, viewModel: SettingsViewModel = hiltViewModel()) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val s by viewModel.state.collectAsState()
@@ -121,6 +123,14 @@ fun OnboardingScreen(onFinished: () -> Unit, viewModel: SettingsViewModel = hilt
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
+                    // a reinstall or a new phone: the data can come straight back
+                    if (CloudConfig.available) {
+                        com.example.mediminder.ui.components.SecondaryButton(
+                            stringResource(R.string.onboarding_restore),
+                            onClick = onOpenAccount,
+                            icon = androidx.compose.material.icons.Icons.Default.Cloud,
+                        )
+                    }
                 }
                 1 -> {
                     AnimatedArt(Art.MEAL, Hue.SUNRISE, Modifier.align(Alignment.CenterHorizontally), size = 150.dp)

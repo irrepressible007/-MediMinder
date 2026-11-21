@@ -32,6 +32,7 @@ interface ReminderEntryPoint {
     fun notifier(): Notifier
     fun ramadan(): com.example.mediminder.data.RamadanManager
     fun database(): com.example.mediminder.data.local.MediMinderDatabase
+    fun cloudBackup(): com.example.mediminder.cloud.CloudBackup
 }
 
 internal fun Context.reminders(): ReminderEntryPoint =

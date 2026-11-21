@@ -1,5 +1,7 @@
 package com.example.mediminder
 
+import com.example.mediminder.cloud.CloudConfig
+import com.example.mediminder.cloud.CloudBackupWorker
 import androidx.room.InvalidationTracker
 import com.example.mediminder.data.local.MediMinderDatabase
 import com.example.mediminder.widget.NextDoseWidget
@@ -23,12 +25,17 @@ class MediMinderApp : Application() {
     override fun onCreate() {
         super.onCreate()
         ErrorLog.init(this)
+        CloudConfig.init(this)
         syncLanguage()
         notifier.ensureChannels()
         SafetyNetWorker.ensureScheduled(this)
         // The home-screen widget redraws whenever a dose is answered or a medicine changes
-        db.invalidationTracker.addObserver(object : InvalidationTracker.Observer(arrayOf("dose_logs", "medications", "schedules")) {
-            override fun onInvalidated(tables: Set<String>) = NextDoseWidget.refresh(this@MediMinderApp)
+        db.invalidationTracker.addObserver(object : InvalidationTracker.Observer(arrayOf("dose_logs", "medications", "schedules", "readings", "appointments", "doctors", "restocks")) {
+            override fun onInvalidated(tables: Set<String>) {
+                NextDoseWidget.refresh(this@MediMinderApp)
+                // signed in: the cloud copy follows a little later
+                CloudBackupWorker.soon(this@MediMinderApp)
+            }
         })
     }
 

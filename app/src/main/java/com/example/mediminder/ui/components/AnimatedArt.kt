@@ -118,6 +118,8 @@ enum class Art(internal val periodMillis: Int, internal val still: Float) {
     MESSAGE(2800, 0.2f),
     /** A prescription whose lines write themselves under a scanning beam. */
     PRESCRIPTION(3400, 0.7f),
+    /** A cloud over a phone, a copy travelling up and back. */
+    CLOUD(3200, 0.25f),
 }
 
 private const val DRAW_IN_MILLIS = 1900
@@ -252,6 +254,7 @@ private fun DrawScope.scene(art: Art, g: Grid, t: Float, c: ArtColors, tracer: T
     Art.CRESCENT -> crescent(g, t, c, tracer)
     Art.MESSAGE -> message(g, t, c, tracer)
     Art.PRESCRIPTION -> prescription(g, t, c, tracer)
+    Art.CLOUD -> cloudScene(g, t, c, tracer)
 }
 
 /** Grid units → pixels, and the shapes the scenes are made of. */
@@ -1358,4 +1361,34 @@ private fun DrawScope.prescription(g: Grid, t: Float, c: ArtColors, tr: Tracer?)
         drawRect(c.accent.copy(alpha = 0.16f), topLeft = g.o(26f, beam - 5f), size = g.s(48f, 5f))
         drawLine(c.accent.copy(alpha = 0.8f), g.o(26f, beam), g.o(74f, beam), strokeWidth = 1.4f * u)
     }
+}
+
+
+/** A cloud over a phone; a copy rises into the cloud and comes back down. */
+private fun DrawScope.cloudScene(g: Grid, t: Float, c: ArtColors, tr: Tracer?) {
+    val u = g.u
+    val cloud = Path().apply {
+        addOval(Rect(g.x(22f), g.y(26f), g.x(48f), g.y(50f)))
+        addOval(Rect(g.x(36f), g.y(16f), g.x(66f), g.y(46f)))
+        addOval(Rect(g.x(54f), g.y(26f), g.x(80f), g.y(50f)))
+        addRoundRect(RoundRect(g.x(26f), g.y(36f), g.x(76f), g.y(50f), CornerRadius(7f * u)))
+    }
+    part(tr, cloud, c.main)
+    val phone = g.roundRect(41f, 60f, 18f, 28f, 3.5f)
+    part(tr, phone, c.paper)
+    if (tr != null) return
+    drawPath(phone, c.ink.copy(alpha = 0.35f), style = Stroke(1.4f * u))
+    drawRoundRect(c.main.copy(alpha = 0.25f), topLeft = g.o(44f, 64f), size = g.s(12f, 17f), cornerRadius = g.r(1.5f))
+    // up, then down: the copy travels between the phone and the cloud
+    val up = (t * 2f) % 1f
+    val goingUp = t < 0.5f
+    val y = if (goingUp) 58f - 14f * smooth(up) else 44f + 14f * smooth(up)
+    val alpha = sin(PI.toFloat() * up)
+    val arrow = Path().apply {
+        if (goingUp) { moveTo(g.x(46f), g.y(y + 3f)); lineTo(g.x(50f), g.y(y - 1f)); lineTo(g.x(54f), g.y(y + 3f)) }
+        else { moveTo(g.x(46f), g.y(y - 3f)); lineTo(g.x(50f), g.y(y + 1f)); lineTo(g.x(54f), g.y(y - 3f)) }
+    }
+    drawPath(arrow, c.accent.copy(alpha = alpha), style = Stroke(2.6f * u, cap = StrokeCap.Round, join = StrokeJoin.Round))
+    drawCircle(c.onMain.copy(alpha = 0.5f), radius = 2.2f * u, center = g.o(40f, 38f))
+    sparkle(g.o(84f, 20f), 3f * u, c.main.copy(alpha = twinkle(t, 0.3f)))
 }

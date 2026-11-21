@@ -1,5 +1,6 @@
 package com.example.mediminder.ui
 
+import com.example.mediminder.ui.account.AccountScreen
 import com.example.mediminder.ui.more.LegalDoc
 import com.example.mediminder.ui.more.LegalScreen
 import com.example.mediminder.ui.prescription.PrescriptionScreen
@@ -139,6 +140,7 @@ import javax.inject.Inject
 @Serializable data object PrescriptionPhotoKey : NavKey
 /** "PRIVACY" or "TERMS" */
 @Serializable data class LegalKey(val doc: String) : NavKey
+@Serializable data object AccountKey : NavKey
 
 enum class HomeTab { TODAY, MEDICINES, APPOINTMENTS, MORE }
 
@@ -226,7 +228,7 @@ fun MainNavigation(
         ),
         entryProvider = entryProvider {
             entry<Onboarding> {
-                OnboardingScreen(onFinished = {
+                OnboardingScreen(onOpenAccount = { open(AccountKey) }, onFinished = {
                     backStack.add(Home)
                     backStack.remove(Onboarding)
                 })
@@ -309,6 +311,14 @@ fun MainNavigation(
             }
             entry<FamilyAlertKey> { FamilyAlertScreen(onBack = ::back) }
             entry<LegalKey> { key -> LegalScreen(doc = LegalDoc.valueOf(key.doc), onBack = ::back) }
+            entry<AccountKey> {
+                AccountScreen(
+                    onBack = ::back,
+                    onOpenLegal = { open(LegalKey(it)) },
+                    // the data came back (perhaps on a fresh install): start at Today
+                    onRestored = { backStack.clear(); backStack.add(Home); tab = HomeTab.TODAY },
+                )
+            }
             entry<PrescriptionKey> {
                 PrescriptionScreen(
                     capturedPhoto = prescriptionPhoto,

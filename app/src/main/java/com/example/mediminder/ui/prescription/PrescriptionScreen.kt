@@ -62,7 +62,7 @@ import com.example.mediminder.ui.components.Tone
 import com.example.mediminder.ui.theme.Hue
 import com.example.mediminder.util.ErrorLog
 import com.example.mediminder.util.Formats
-import com.google.android.gms.tasks.Task
+import com.example.mediminder.util.await
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
@@ -72,10 +72,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
 import javax.inject.Inject
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 data class PrescriptionUi(
     val reading: Boolean = false,
@@ -135,11 +132,6 @@ class PrescriptionViewModel @Inject constructor(
     }
 }
 
-private suspend fun <T> Task<T>.await(): T = suspendCancellableCoroutine { cont ->
-    addOnSuccessListener { cont.resume(it) }
-    addOnFailureListener { cont.resumeWithException(it) }
-    addOnCanceledListener { cont.cancel() }
-}
 
 /**
  * Adding medicines from a photo of a prescription: the phone reads it (on the device), finds
