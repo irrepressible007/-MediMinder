@@ -1,5 +1,6 @@
 package com.example.mediminder.ui.today
 
+import androidx.compose.material.icons.filled.NightsStay
 import com.example.mediminder.domain.CareKind
 import com.example.mediminder.util.CareText
 import androidx.compose.material.icons.filled.Autorenew
@@ -172,6 +173,7 @@ fun TodayScreen(
     onOpenAppointments: () -> Unit,
     onRecord: (scheduleId: Long, day: Long) -> Unit = { _, _ -> },
     onOpenCare: (kind: CareKind, id: Long) -> Unit = { _, _ -> },
+    onOpenRamadan: () -> Unit = {},
     viewModel: TodayViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
@@ -307,6 +309,35 @@ fun TodayScreen(
                     icon = Icons.Default.ShoppingCart,
                     tone = Tone.WARNING,
                     onClick = onOpenRefills,
+                )
+            }
+            // Ramadan: offered shortly before it starts, then a quiet reminder of the times while on
+            state.ramadanStart?.takeIf { state.isToday && state.hasMedicines }?.let { start ->
+                item(key = "ramadan-suggest") {
+                    MediCard(modifier = Modifier.animateItem()) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            AnimatedArt(Art.CRESCENT, Hue.NIGHT, size = 64.dp)
+                            Spacer(Modifier.width(12.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(stringResource(R.string.ramadan_suggest_title, Formats.date(context, start)), style = MaterialTheme.typography.titleMedium)
+                                Text(stringResource(R.string.ramadan_suggest_body), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                        Spacer(Modifier.height(10.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            QuietButton(stringResource(R.string.ramadan_suggest_no), onClick = { viewModel.dismissRamadan(start.year) }, modifier = Modifier.weight(1f))
+                            PrimaryButton(stringResource(R.string.ramadan_suggest_yes), onClick = onOpenRamadan, modifier = Modifier.weight(1f))
+                        }
+                    }
+                }
+            }
+            if (state.ramadan.on && state.isToday) item(key = "ramadan-on") {
+                NoticeCard(
+                    text = stringResource(R.string.ramadan_today, Formats.time(context, state.ramadan.sehri), Formats.time(context, state.ramadan.iftar)),
+                    icon = Icons.Default.NightsStay,
+                    tone = Tone.INFO,
+                    onClick = onOpenRamadan,
+                    modifier = Modifier.animateItem(),
                 )
             }
             if (state.isToday) items(state.replace, key = { "replace-${it.id}" }) { m ->

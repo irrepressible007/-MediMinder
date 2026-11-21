@@ -1,5 +1,8 @@
 package com.example.mediminder.ui.more
 
+import com.example.mediminder.ui.components.NoticeCard
+import com.example.mediminder.ui.components.Tone
+import androidx.compose.material.icons.filled.NightsStay
 import android.content.Intent
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Share
@@ -128,7 +131,7 @@ fun TextSizeChooser(current: Float, onPick: (Float) -> Unit) {
 }
 
 @Composable
-fun SettingsScreen(onBack: () -> Unit, onOpenReliability: () -> Unit, viewModel: SettingsViewModel = hiltViewModel()) {
+fun SettingsScreen(onBack: () -> Unit, onOpenReliability: () -> Unit, onOpenRamadan: () -> Unit = {}, viewModel: SettingsViewModel = hiltViewModel()) {
     val context = LocalContext.current
     val resources = LocalResources.current
     val scope = rememberCoroutineScope()
@@ -208,7 +211,9 @@ fun SettingsScreen(onBack: () -> Unit, onOpenReliability: () -> Unit, viewModel:
             // ── Meal times ──
             SectionTitle(stringResource(R.string.settings_meal_times))
             Text(stringResource(R.string.settings_meal_times_hint), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            MediCard(contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)) {
+            // In Ramadan the meal times are Sehri and Iftar; the usual ones are kept for after
+            if (s.ramadan.on) NoticeCard(stringResource(R.string.settings_ramadan_on), Icons.Default.NightsStay, Tone.INFO, onClick = onOpenRamadan)
+            else MediCard(contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)) {
                 MealRow(stringResource(R.string.meal_breakfast), s.mealTimes.breakfast) { m -> updateMeals { it.copy(breakfast = m) } }
                 MealRow(stringResource(R.string.meal_lunch), s.mealTimes.lunch) { m -> updateMeals { it.copy(lunch = m) } }
                 MealRow(stringResource(R.string.meal_evening), s.mealTimes.evening) { m -> updateMeals { it.copy(evening = m) } }

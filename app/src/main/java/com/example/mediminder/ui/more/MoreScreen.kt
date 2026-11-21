@@ -1,5 +1,7 @@
 package com.example.mediminder.ui.more
 
+import com.example.mediminder.ui.RamadanKey
+import androidx.compose.material.icons.filled.NightsStay
 import com.example.mediminder.ui.HealthKey
 import androidx.compose.material.icons.filled.MonitorHeart
 import androidx.compose.runtime.collectAsState
@@ -76,6 +78,8 @@ fun MoreScreen(modifier: Modifier, onOpen: (NavKey) -> Unit) {
         val entrance = rememberEntranceState()
         MediCard(contentPadding = PaddingValues(vertical = 4.dp), modifier = Modifier.entrance(entrance, 0)) {
             NavRow(Icons.Default.MonitorHeart, stringResource(R.string.health_title), { onOpen(HealthKey) }, subtitle = stringResource(R.string.more_health_sub), hue = Hue.CORAL)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            NavRow(Icons.Default.NightsStay, stringResource(R.string.ramadan_title), { onOpen(RamadanKey) }, subtitle = stringResource(R.string.ramadan_more_sub), hue = Hue.NIGHT)
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             NavRow(Icons.Default.History, stringResource(R.string.history_title), { onOpen(HistoryKey()) }, subtitle = stringResource(R.string.more_history_sub), hue = Hue.VIOLET)
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)

@@ -20,6 +20,34 @@ data class MealTimes(
     val bedtime: Int = 22 * 60 + 30,    // 10:30 PM
 )
 
+/**
+ * Ramadan mode: while on, the meal times become Sehri, after Taraweeh and Iftar, so every
+ * meal-based dose moves with them. The usual meal times are kept and come back after.
+ */
+@kotlinx.serialization.Serializable
+data class RamadanSettings(
+    val on: Boolean = false,
+    val sehri: Int = 4 * 60 + 30,       // 4:30 AM, the pre-dawn meal
+    val iftar: Int = 18 * 60,           // 6:00 PM, breaking the fast
+    val lateNight: Int = 22 * 60,       // 10:00 PM, after Taraweeh
+    /** Last day of Ramadan mode (epoch day); it turns itself off after. */
+    val until: Long? = null,
+    /** The usual meal times, kept while Ramadan mode is on. */
+    val usualMeals: MealTimes? = null,
+    /** The year the "Ramadan is coming" card was put away. */
+    val dismissedYear: Int = 0,
+)
+
+/** A text message to a family member when a medicine dose is missed. */
+@kotlinx.serialization.Serializable
+data class FamilyAlerts(
+    val on: Boolean = false,
+    val name: String = "",
+    val phone: String = "",
+    /** How long after a dose's time, still unanswered, before the message goes. */
+    val afterMinutes: Int = 60,
+)
+
 /** Health details shown on the Medical ID screen and used for allergy warnings. */
 @kotlinx.serialization.Serializable
 data class MedicalProfile(
@@ -58,6 +86,8 @@ data class AppSettings(
     val lastBackupAt: Long = 0,
     /** In-app text size on top of the phone's: 1.0 normal, 1.15 large, 1.3 extra large. */
     val textScale: Float = 1f,
+    val ramadan: RamadanSettings = RamadanSettings(),
+    val family: FamilyAlerts = FamilyAlerts(),
 )
 
 /**
@@ -117,6 +147,27 @@ class SettingsRepository @Inject constructor(
             ),
             lastBackupAt = getLong("lastBackupAt", 0),
             textScale = getFloat("textScale", defaults.textScale).coerceIn(1f, 1.3f),
+            ramadan = RamadanSettings(
+                on = getBoolean("ramadan.on", false),
+                sehri = getInt("ramadan.sehri", defaults.ramadan.sehri),
+                iftar = getInt("ramadan.iftar", defaults.ramadan.iftar),
+                lateNight = getInt("ramadan.lateNight", defaults.ramadan.lateNight),
+                until = getLong("ramadan.until", -1L).takeIf { it >= 0 },
+                usualMeals = if (!getBoolean("ramadan.usual.set", false)) null else MealTimes(
+                    breakfast = getInt("ramadan.usual.breakfast", meals.breakfast),
+                    lunch = getInt("ramadan.usual.lunch", meals.lunch),
+                    evening = getInt("ramadan.usual.evening", meals.evening),
+                    dinner = getInt("ramadan.usual.dinner", meals.dinner),
+                    bedtime = getInt("ramadan.usual.bedtime", meals.bedtime),
+                ),
+                dismissedYear = getInt("ramadan.dismissedYear", 0),
+            ),
+            family = FamilyAlerts(
+                on = getBoolean("family.on", false),
+                name = getString("family.name", "") ?: "",
+                phone = getString("family.phone", "") ?: "",
+                afterMinutes = getInt("family.after", defaults.family.afterMinutes),
+            ),
         )
     }
 
@@ -148,6 +199,22 @@ class SettingsRepository @Inject constructor(
             .putInt("profile.birthYear", s.profile.birthYear ?: 0)
             .putLong("lastBackupAt", s.lastBackupAt)
             .putFloat("textScale", s.textScale)
+            .putBoolean("ramadan.on", s.ramadan.on)
+            .putInt("ramadan.sehri", s.ramadan.sehri)
+            .putInt("ramadan.iftar", s.ramadan.iftar)
+            .putInt("ramadan.lateNight", s.ramadan.lateNight)
+            .putLong("ramadan.until", s.ramadan.until ?: -1L)
+            .putBoolean("ramadan.usual.set", s.ramadan.usualMeals != null)
+            .putInt("ramadan.usual.breakfast", s.ramadan.usualMeals?.breakfast ?: 0)
+            .putInt("ramadan.usual.lunch", s.ramadan.usualMeals?.lunch ?: 0)
+            .putInt("ramadan.usual.evening", s.ramadan.usualMeals?.evening ?: 0)
+            .putInt("ramadan.usual.dinner", s.ramadan.usualMeals?.dinner ?: 0)
+            .putInt("ramadan.usual.bedtime", s.ramadan.usualMeals?.bedtime ?: 0)
+            .putInt("ramadan.dismissedYear", s.ramadan.dismissedYear)
+            .putBoolean("family.on", s.family.on)
+            .putString("family.name", s.family.name)
+            .putString("family.phone", s.family.phone)
+            .putInt("family.after", s.family.afterMinutes)
             .apply()
     }
 

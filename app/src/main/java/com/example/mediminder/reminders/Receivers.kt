@@ -30,6 +30,7 @@ interface ReminderEntryPoint {
     fun engine(): ReminderEngine
     fun doseActions(): DoseActions
     fun notifier(): Notifier
+    fun ramadan(): com.example.mediminder.data.RamadanManager
 }
 
 internal fun Context.reminders(): ReminderEntryPoint =
@@ -136,6 +137,8 @@ class SystemEventsReceiver : BroadcastReceiver() {
 class SafetyNetWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
         val reminders = applicationContext.reminders()
+        // the day after Ramadan, the usual dose times come back by themselves
+        reminders.ramadan().endIfOver()
         reminders.engine().rescheduleAll()
         SetupNudge.maybeNotify(applicationContext, reminders.notifier(), reminders.engine().hasActiveMedicines())
         return Result.success()

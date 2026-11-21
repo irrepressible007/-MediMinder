@@ -183,7 +183,7 @@ class ReminderEngineTest {
         try {
             val (schedule, day) = addMedicine(minutesFromNow = -2, alert = AlertType.REMINDER)
             actions.take(schedule.id, day)
-            val today = TodayViewModel(medicines, AppointmentRepository(db, engine), db, settings, actions)
+            val today = TodayViewModel(medicines, AppointmentRepository(db, engine), db, settings, actions, com.example.mediminder.data.RamadanManager(settings, medicines, Notifier(context)))
             today.selectedDate.value = java.time.LocalDate.ofEpochDay(day)
             assertEquals(1, today.state.filterNotNull().first { it.date.toEpochDay() == day }.taken)
 

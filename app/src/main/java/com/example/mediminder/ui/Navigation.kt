@@ -1,5 +1,6 @@
 package com.example.mediminder.ui
 
+import com.example.mediminder.ui.more.RamadanScreen
 import com.example.mediminder.domain.CareKind
 import com.example.mediminder.ui.health.CareEditorScreen
 import com.example.mediminder.ui.health.HealthScreen
@@ -128,6 +129,7 @@ import javax.inject.Inject
 /** Write down a reading: of a known [type], for a health check, or answering one reminder (scheduleId + day). */
 @Serializable data class RecordKey(val type: String = "", val medicationId: Long = 0, val scheduleId: Long = 0, val day: Long = -1) : NavKey
 @Serializable data class ReadingsKey(val type: String) : NavKey
+@Serializable data object RamadanKey : NavKey
 
 enum class HomeTab { TODAY, MEDICINES, APPOINTMENTS, MORE }
 
@@ -268,7 +270,7 @@ fun MainNavigation(
             }
             entry<Stats> { StatsScreen(onBack = ::back) }
             entry<MedicalId> { MedicalIdScreen(onBack = ::back) }
-            entry<SettingsKey> { SettingsScreen(onBack = ::back, onOpenReliability = { open(ReliabilityKey) }) }
+            entry<SettingsKey> { SettingsScreen(onBack = ::back, onOpenReliability = { open(ReliabilityKey) }, onOpenRamadan = { open(RamadanKey) }) }
             entry<ReliabilityKey> { ReliabilityScreen(onBack = ::back) }
             entry<Vault> { MedicalVaultScreen(onBack = ::back) }
             entry<HistoryKey> { key -> HistoryScreen(medicationId = key.medicationId, onBack = ::back) }
@@ -286,6 +288,12 @@ fun MainNavigation(
             }
             entry<RecordKey> { key ->
                 RecordReadingScreen(type = key.type, medicationId = key.medicationId, scheduleId = key.scheduleId, day = key.day, onBack = ::back)
+            }
+            entry<RamadanKey> {
+                RamadanScreen(
+                    onBack = ::back,
+                    onOpenItem = { kind, id -> open(if (kind.isMedicine) MedicineDetail(id) else CareEditorKey(kind.name, id)) },
+                )
             }
             entry<ReadingsKey> { key ->
                 ReadingsScreen(type = key.type, onBack = ::back, onRecord = { open(RecordKey(type = it)) })
@@ -334,6 +342,7 @@ private fun HomeScaffold(tab: HomeTab, onTab: (HomeTab) -> Unit, open: (NavKey) 
                             onOpenAppointments = { onTab(HomeTab.APPOINTMENTS) },
                             onRecord = { scheduleId, day -> open(RecordKey(scheduleId = scheduleId, day = day)) },
                             onOpenCare = { kind, id -> open(CareEditorKey(kind.name, id)) },
+                            onOpenRamadan = { open(RamadanKey) },
                         )
                         HomeTab.MEDICINES -> MedicinesScreen(
                             modifier = modifier,

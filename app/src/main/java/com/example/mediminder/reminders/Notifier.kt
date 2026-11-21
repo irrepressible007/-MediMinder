@@ -296,6 +296,22 @@ class Notifier @Inject constructor(
         post(ID_SETUP, notification)
     }
 
+    /** Ramadan mode ended by itself: the usual times are back. */
+    fun showRamadanOver() {
+        val ctx = context
+        val text = ctx.getString(R.string.ramadan_over_text)
+        val notification = NotificationCompat.Builder(ctx, CHANNEL_SETUP)
+            .setSmallIcon(R.drawable.ic_stat_pill)
+            .setColor(ContextCompat.getColor(appContext, R.color.brand))
+            .setContentTitle(ctx.getString(R.string.ramadan_over_title))
+            .setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+            .setAutoCancel(true)
+            .setContentIntent(openApp(DEEP_LINK_TODAY))
+            .build()
+        post(ID_RAMADAN, notification)
+    }
+
     // ── Appointments ────────────────────────────────────────────────────────
 
     fun showAppointment(appointment: Appointment, evening: Boolean) {
@@ -443,6 +459,7 @@ class Notifier @Inject constructor(
         private const val ID_TEST = 1002
         private const val ID_REFILL_SUMMARY = 1003
         private const val ID_SETUP = 1004
+        private const val ID_RAMADAN = 1005
 
         const val DEEP_LINK_TODAY = "mediminder://open/today"
         const val DEEP_LINK_REFILLS = "mediminder://open/refills"

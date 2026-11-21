@@ -1,5 +1,8 @@
 package com.example.mediminder.ui.today
 
+import com.example.mediminder.data.RamadanManager
+import com.example.mediminder.data.settings.RamadanSettings
+import com.example.mediminder.domain.Ramadan
 import com.example.mediminder.domain.CareKind
 import com.example.mediminder.domain.CareSites
 import com.example.mediminder.domain.OpenedItems
@@ -81,6 +84,9 @@ data class TodayUi(
     val snoozeMinutes: Int,
     /** Opened too long ago: time for a new one. */
     val replace: List<Medication> = emptyList(),
+    val ramadan: RamadanSettings = RamadanSettings(),
+    /** Ramadan is near and the mode is off: the expected first day, to suggest it. */
+    val ramadanStart: LocalDate? = null,
 )
 
 sealed class TodayEvent {
@@ -96,7 +102,15 @@ class TodayViewModel @Inject constructor(
     db: MediMinderDatabase,
     settings: SettingsRepository,
     private val doseActions: DoseActions,
+    private val ramadanManager: RamadanManager,
 ) : ViewModel() {
+
+    init {
+        // the day after Ramadan, the usual times come back even if the phone's daily check was missed
+        viewModelScope.launch { ramadanManager.endIfOver() }
+    }
+
+    fun dismissRamadan(year: Int) = ramadanManager.dismissSuggestion(year)
 
     val selectedDate = MutableStateFlow(LocalDate.now())
 
@@ -124,13 +138,14 @@ class TodayViewModel @Inject constructor(
         appointments.observeAppointments(),
         db.activeAlertDao().observeAll(),
         settings.settings,
-    ) { appts, alerts, prefs -> Extras(appts, alerts.map { it.scheduleId to it.scheduledDay }.toSet(), prefs.userName, prefs.snoozeMinutes) }
+    ) { appts, alerts, prefs -> Extras(appts, alerts.map { it.scheduleId to it.scheduledDay }.toSet(), prefs.userName, prefs.snoozeMinutes, prefs.ramadan) }
 
     private data class Extras(
         val appointments: List<Appointment>,
         val ringing: Set<Pair<Long, Long>>,
         val userName: String,
         val snoozeMinutes: Int,
+        val ramadan: RamadanSettings,
     )
 
     val state: StateFlow<TodayUi?> = combine(dayLogs, medications, clock, extras) { (date, logs), meds, now, extra ->
@@ -181,6 +196,11 @@ class TodayViewModel @Inject constructor(
             hasMedicines = meds.any { !it.medication.archived },
             nowMinute = minuteOf(now.toLocalTime()),
             replace = meds.map { it.medication }.filter { !it.archived && OpenedItems.needsReplacing(it, todayEpoch) },
+            ramadan = extra.ramadan,
+            ramadanStart = now.toLocalDate().let { today ->
+                if (extra.ramadan.on || !Ramadan.isNear(today)) null
+                else Ramadan.estimatedStart(today)?.takeIf { it.year != extra.ramadan.dismissedYear }
+            },
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 

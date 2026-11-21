@@ -112,6 +112,8 @@ enum class Art(internal val periodMillis: Int, internal val still: Float) {
     THERMO(3600, 0.55f),
     /** A glass of water with drops falling in. */
     GLASS(3000, 0.3f),
+    /** A crescent moon and star, with a lantern swinging gently. */
+    CRESCENT(4000, 0.25f),
 }
 
 private const val DRAW_IN_MILLIS = 1900
@@ -243,6 +245,7 @@ private fun DrawScope.scene(art: Art, g: Grid, t: Float, c: ArtColors, tracer: T
     Art.CUFF -> cuff(g, t, c, tracer)
     Art.THERMO -> thermo(g, t, c, tracer)
     Art.GLASS -> glass(g, t, c, tracer)
+    Art.CRESCENT -> crescent(g, t, c, tracer)
 }
 
 /** Grid units → pixels, and the shapes the scenes are made of. */
@@ -1264,3 +1267,36 @@ private fun DrawScope.drop(center: Offset, r: Float, color: Color) {
 
 /** Slow at both ends, for something that falls and lands. */
 private fun easeOutIn(v: Float) = v * v
+
+
+/** A crescent moon and star; a lantern swings gently below and stars twinkle. */
+private fun DrawScope.crescent(g: Grid, t: Float, c: ArtColors, tr: Tracer?) {
+    val u = g.u
+    val moon = Path().apply {
+        op(Path().apply { addOval(Rect(g.o(40f, 34f), 22f * u)) }, Path().apply { addOval(Rect(g.o(50f, 28f), 19f * u)) }, PathOperation.Difference)
+    }
+    part(tr, moon, c.accent)
+    // the lantern hangs from a cord and swings a little
+    val swing = sin(t * TAU) * 7f
+    rotate(swing, pivot = g.o(70f, 40f)) {
+        val cord = g.line(70f, 40f, 70f, 56f)
+        if (tr != null) tr.trace(this, cord) else drawPath(cord, c.ink.copy(alpha = 0.5f), style = Stroke(1.4f * u))
+        val cap = Path().apply { moveTo(g.x(64f), g.y(61f)); lineTo(g.x(70f), g.y(55f)); lineTo(g.x(76f), g.y(61f)); close() }
+        part(tr, cap, c.main)
+        val body = g.roundRect(63f, 61f, 14f, 19f, 3f)
+        part(tr, body, c.main)
+        if (tr == null) {
+            val glow = 0.55f + 0.25f * sin(t * TAU * 2f)
+            drawCircle(c.accent.copy(alpha = 0.25f * glow), radius = 13f * u, center = g.o(70f, 70.5f))
+            drawRoundRect(c.accent.copy(alpha = glow), topLeft = g.o(66f, 64f), size = g.s(8f, 13f), cornerRadius = g.r(2f))
+            drawLine(c.onMain.copy(alpha = 0.6f), g.o(70f, 64f), g.o(70f, 77f), strokeWidth = 1.2f * u)
+            drawRoundRect(c.main, topLeft = g.o(65f, 80f), size = g.s(10f, 3f), cornerRadius = g.r(1.5f))
+        }
+    }
+    if (tr != null) return
+    // the star beside the moon, and the night's small stars
+    star(g.o(55f, 27f), 4.6f * u * (0.9f + 0.1f * sin(t * TAU)), c.accent)
+    listOf(Triple(22f, 70f, 0f), Triple(30f, 84f, 0.35f), Triple(86f, 22f, 0.7f), Triple(16f, 46f, 0.5f)).forEach { (x, y, ph) ->
+        sparkle(g.o(x, y), 3f * u, c.main.copy(alpha = twinkle(t, ph)))
+    }
+}
