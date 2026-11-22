@@ -1,5 +1,8 @@
 package com.example.mediminder.ui.account
 
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import kotlinx.coroutines.delay
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -292,6 +295,12 @@ fun SignInPanel(viewModel: AccountViewModel, onOpenLegal: (doc: String) -> Unit)
         )
     }
     var showEmail by rememberSaveable { mutableStateOf(!CloudConfig.google) }
+    // opening the email form scrolls its Sign in button into view (it can sit below the fold)
+    val signInButton = remember { BringIntoViewRequester() }
+    var opened by remember { mutableStateOf(false) }
+    LaunchedEffect(showEmail, opened) {
+        if (showEmail && opened) { delay(150); signInButton.bringIntoView() }
+    }
     var email by rememberSaveable { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -310,7 +319,7 @@ fun SignInPanel(viewModel: AccountViewModel, onOpenLegal: (doc: String) -> Unit)
             }
         }
         if (!showEmail) {
-            ProviderButton(text = stringResource(R.string.account_email), onClick = { showEmail = true }, enabled = !ui.busy) {
+            ProviderButton(text = stringResource(R.string.account_email), onClick = { showEmail = true; opened = true }, enabled = !ui.busy) {
                 Icon(Icons.Default.Email, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
             }
         } else {
@@ -331,7 +340,12 @@ fun SignInPanel(viewModel: AccountViewModel, onOpenLegal: (doc: String) -> Unit)
                 singleLine = true, modifier = Modifier.fillMaxWidth(),
             )
             val ok = email.contains('@') && password.length >= 6 && !ui.busy
-            PrimaryButton(stringResource(R.string.account_sign_in), onClick = { viewModel.email(email, password, false) }, enabled = ok)
+            PrimaryButton(
+                stringResource(R.string.account_sign_in),
+                onClick = { viewModel.email(email, password, false) },
+                enabled = ok,
+                modifier = Modifier.bringIntoViewRequester(signInButton),
+            )
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (email.contains('@')) TextButton(onClick = { viewModel.resetPassword(email) }) { Text(stringResource(R.string.account_forgot)) }
                 Spacer(Modifier.weight(1f))

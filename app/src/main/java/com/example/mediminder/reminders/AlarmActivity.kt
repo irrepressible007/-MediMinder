@@ -1,5 +1,6 @@
 package com.example.mediminder.reminders
 
+import androidx.compose.foundation.layout.heightIn
 import com.example.mediminder.util.LinkKey
 import com.example.mediminder.MainActivity
 import com.example.mediminder.domain.CareKind
@@ -243,14 +244,14 @@ class AlarmActivity : AppCompatActivity() {
                 Button(
                     onClick = { lifecycleScope.launch { doseActions.takeAllRinging() } },
                     colors = ButtonDefaults.buttonColors(containerColor = AlarmTakenButton, contentColor = Color.White),
-                    modifier = Modifier.fillMaxWidth().height(64.dp),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp),
                     shape = MaterialTheme.shapes.medium,
                 ) { Text(stringResource(if (allOral) R.string.action_take_all else R.string.care_all_done), style = MaterialTheme.typography.titleLarge) }
                 Spacer(Modifier.height(8.dp))
             }
             OutlinedButton(
                 onClick = { lifecycleScope.launch { doseActions.snoozeAllRinging(); finish() } },
-                modifier = Modifier.fillMaxWidth().height(64.dp),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp),
                 shape = MaterialTheme.shapes.medium,
                 border = BorderStroke(2.dp, Color.White),
             ) {
@@ -285,7 +286,7 @@ class AlarmActivity : AppCompatActivity() {
             appointment?.phone?.takeIf { it.isNotBlank() }?.let { phone ->
                 OutlinedButton(
                     onClick = { unlockThen { startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone"))) } },
-                    modifier = Modifier.fillMaxWidth().height(64.dp),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp),
                     shape = MaterialTheme.shapes.medium,
                     border = BorderStroke(2.dp, Color.White),
                 ) {
@@ -297,7 +298,7 @@ class AlarmActivity : AppCompatActivity() {
             }
             Button(
                 onClick = { notifier.cancelAppointment(appointmentId); finish() },
-                modifier = Modifier.fillMaxWidth().height(64.dp),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp),
                 shape = MaterialTheme.shapes.medium,
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = AlarmBackgroundBottom),
             ) { Text(stringResource(R.string.action_dismiss), style = MaterialTheme.typography.titleLarge) }
@@ -314,7 +315,7 @@ class AlarmActivity : AppCompatActivity() {
             )
             Button(
                 onClick = onDone,
-                modifier = Modifier.fillMaxWidth().height(64.dp),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp),
                 shape = MaterialTheme.shapes.medium,
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = AlarmBackgroundBottom),
             ) { Text(stringResource(R.string.action_dismiss), style = MaterialTheme.typography.titleLarge) }
