@@ -75,6 +75,7 @@ class ReminderEngine @Inject constructor(
 
         for (appointment in appointmentDao.upcoming(now.minusDays(1).toEpochMillis())) armAppointment(appointment, now)
         armRefillCheck(now)
+        saveLockedCopyLocked(now)
     }
 
     /** Re-arms one medicine after it was added, edited, archived or deleted. */
@@ -86,10 +87,36 @@ class ReminderEngine @Inject constructor(
             item?.schedules?.forEach { clearScheduleLocked(it.id, today) }
             activeAlertDao.deleteForMedication(medicationId)
             refreshAlarmLocked()
+            saveLockedCopyLocked(LocalDateTime.now())
             return@withLock
         }
         val now = LocalDateTime.now()
         item.schedules.forEach { armDose(item.medication, it, now, catchUp = false) }
+        saveLockedCopyLocked(now)
+    }
+
+    /**
+     * The next [LOCKED_COPY_HOURS] hours of doses, kept where Android lets the app read them
+     * before the first unlock after a restart (see [LockedAlarms]). Answered doses are left out.
+     */
+    private suspend fun saveLockedCopyLocked(now: LocalDateTime) {
+        val until = now.plusHours(LOCKED_COPY_HOURS)
+        val entries = mutableListOf<LockedAlarms.Entry>()
+        for (item in medicationDao.getActiveWithSchedules()) {
+            for (schedule in item.schedules) {
+                val answered = answeredDaysAround(schedule.id, now)
+                var after = now
+                while (true) {
+                    val next = DosePlanner.nextOccurrence(item.medication, schedule, after) { d -> d in answered } ?: break
+                    if (next.isAfter(until)) break
+                    val day = next.toLocalDate().toEpochDay()
+                    val (title, detail) = notifier.lockedText(doseInfo(item.medication, schedule, day))
+                    entries += LockedAlarms.Entry(next.toEpochMillis(), schedule.id, day, title, detail, schedule.alertType == AlertType.ALARM)
+                    after = next
+                }
+            }
+        }
+        LockedAlarms.save(appContext, entries.sortedBy { it.at }.take(LOCKED_COPY_MAX), settings.current.alarmRingMinutes)
     }
 
     /**
@@ -223,6 +250,7 @@ class ReminderEngine @Inject constructor(
         val medication = medicationDao.getById(schedule.medicationId) ?: return@withLock
         armDose(medication, schedule, LocalDateTime.now(), catchUp = false)
         refreshAlarmLocked()
+        saveLockedCopyLocked(LocalDateTime.now())
     }
 
     /** Snoozed: stop alerting now and ring again at [until]. */
@@ -238,6 +266,7 @@ class ReminderEngine @Inject constructor(
         val schedule = scheduleDao.getById(scheduleId) ?: return@withLock
         val medication = medicationDao.getById(schedule.medicationId) ?: return@withLock
         armDose(medication, schedule, LocalDateTime.now(), catchUp = false)
+        saveLockedCopyLocked(LocalDateTime.now())
     }
 
     private suspend fun clearAlertLocked(scheduleId: Long, day: Long) {
@@ -379,5 +408,9 @@ class ReminderEngine @Inject constructor(
     companion object {
         /** A dose missed by at most this much while the phone was off still alerts on boot. */
         const val CATCH_UP_MINUTES = 30L
+
+        /** How far ahead the before-unlock copy reaches, and its size limit. */
+        const val LOCKED_COPY_HOURS = 48L
+        const val LOCKED_COPY_MAX = 80
     }
 }

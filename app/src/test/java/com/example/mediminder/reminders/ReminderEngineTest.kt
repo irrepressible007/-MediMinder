@@ -30,6 +30,11 @@ import com.example.mediminder.data.settings.SettingsRepository
 import com.example.mediminder.domain.minuteOf
 import com.example.mediminder.domain.toEpochMillis
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -128,6 +133,48 @@ class ReminderEngineTest {
         assertNull("repeat cancelled", alarmFor("dose-repeat/${schedule.id}/$day"))
         assertEquals(DoseStatus.TAKEN, db.doseLogDao().forOccurrence(schedule.id, day)!!.status)
         assertEquals(19.0, db.medicationDao().getById(schedule.medicationId)!!.stock, 0.0)
+    }
+
+    @Test fun `the next doses are kept where they can be read before the first unlock`() = runBlocking {
+        val (schedule, _) = addMedicine(minutesFromNow = 60, alert = AlertType.ALARM)
+        engine.rescheduleAll()
+        val saved = LockedAlarms.load(context).filter { it.scheduleId == schedule.id }
+        assertTrue("today's and tomorrow's dose", saved.size >= 2)
+        assertTrue(saved.all { it.alarm && it.title.isNotBlank() && it.detail.isNotBlank() })
+        assertEquals(alarmFor("dose/${schedule.id}")!!.triggerAtTime, saved.first().at)
+
+        // answered doses drop out
+        actions.take(schedule.id, saved.first().day)
+        assertTrue(LockedAlarms.load(context).none { it.scheduleId == schedule.id && it.day == saved.first().day })
+    }
+
+    /**
+     * The alarm page answers in a job tied to the page, and the page closes itself as soon as
+     * nothing is ringing, which cancels that job. The answer must still finish: on a Redmi the
+     * alarm notification stayed after Skip until its 3-minute timeout.
+     */
+    @Test fun `an answer finishes even when the screen that started it closes`() = runBlocking {
+        for (answer in listOf("skip", "take", "snooze")) {
+            val (schedule, day) = addMedicine(minutesFromNow = -2, alert = AlertType.ALARM)
+            engine.onDoseAlarm(schedule.id, day, ReminderScheduler.KIND_REGULAR)
+            assertEquals(1, shownNotifications().size)
+
+            val page = CoroutineScope(Dispatchers.Default)
+            page.launch(start = CoroutineStart.UNDISPATCHED) {
+                when (answer) {
+                    "skip" -> actions.skip(schedule.id, day)
+                    "take" -> actions.take(schedule.id, day)
+                    else -> actions.snoozeAllRinging()
+                }
+            }
+            page.cancel()   // the page closed straight away
+            withTimeout(10_000) { while (shownNotifications().isNotEmpty() || db.activeAlertDao().getAll().isNotEmpty()) delay(20) }
+
+            assertTrue("$answer: alarm notification removed", shownNotifications().isEmpty())
+            val logged = db.doseLogDao().forOccurrence(schedule.id, day)!!.status
+            assertEquals(answer, when (answer) { "skip" -> DoseStatus.SKIPPED; "take" -> DoseStatus.TAKEN; else -> DoseStatus.SNOOZED }, logged)
+            if (answer == "snooze") assertNotNull("snooze: rings again later", alarmFor("dose-repeat/${schedule.id}/$day"))
+        }
     }
 
     @Test fun `the medicine's photo shows beside the reminder and in full when expanded`() = runBlocking {

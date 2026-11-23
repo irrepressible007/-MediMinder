@@ -1008,4 +1008,8 @@
     <string name="account_signed_in_as">%1$s হিসেবে সাইন ইন করা আছে। আপনার তথ্য নিজে থেকেই রাখা হবে।</string>
     <string name="document_capture_title">কাগজের ছবি</string>
     <string name="document_photo_hint">পুরো পাতাটি ফ্রেমের ভেতরে রাখুন, ভালো আলোতে।</string>
+    <string name="locked_alarm_title">ওষুধের সময় হয়েছে</string>
+    <string name="locked_unlock_hint">উত্তর দিতে ফোন আনলক করুন। মেডিমাইন্ডার আবার জিজ্ঞেস করবে।</string>
+    <string name="locked_unlock">আনলক করে উত্তর দিন</string>
+    <string name="locked_stop">শব্দ বন্ধ করুন</string>
 </resources>

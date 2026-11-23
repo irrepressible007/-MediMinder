@@ -168,6 +168,10 @@ A few decisions worth knowing:
 - **Updates avoid GitHub's API.** The app reads `releases/latest/download/update.json`. GitHub's
   API allows only 60 anonymous requests an hour per internet address, which shared mobile
   connections use up quickly. The APK is checked against its size and SHA-256 before installing.
+- **Alarms survive a restart before the phone is unlocked.** Android forgets alarms on restart,
+  and until the first unlock an app can't read its own database. The next two days of doses are
+  also kept in Android's device-protected storage, so after a night-time power cut the morning
+  dose still rings; once unlocked, the app's own alarm takes over.
 - **The app installs its own updates** through Android's `PackageInstaller` (Android still asks
   to confirm). On a Pixel 6 with Android 17, every update opened in Android's installer app
   switched the app's full-screen alarm permission off; installing through `PackageInstaller`

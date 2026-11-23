@@ -126,6 +126,8 @@ class SystemEventsReceiver : BroadcastReceiver() {
             AlarmManager.ACTION_SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED,
             "android.intent.action.QUICKBOOT_POWERON", // some Xiaomi / HTC builds
             -> {
+                // unlocked after a restart: the before-unlock alarms make way for the app's own
+                LockedAlarms.disarm(context)
                 val reminders = context.reminders()
                 val engine = reminders.engine()
                 val updated = intent.action == Intent.ACTION_MY_PACKAGE_REPLACED

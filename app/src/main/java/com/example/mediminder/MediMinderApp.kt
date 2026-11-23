@@ -1,5 +1,12 @@
 package com.example.mediminder
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import androidx.core.content.ContextCompat
+import androidx.core.os.UserManagerCompat
+import dagger.Lazy
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -25,20 +32,37 @@ import javax.inject.Inject
 
 @HiltAndroidApp
 class MediMinderApp : Application() {
-    @Inject lateinit var settings: SettingsRepository
-    @Inject lateinit var notifier: Notifier
-    @Inject lateinit var db: MediMinderDatabase
+    // Lazy: the app can start before the phone's first unlock (a dose alarm after a restart),
+    // when its database and settings can't be read yet; nothing is created until needed.
+    @Inject lateinit var settingsRef: Lazy<SettingsRepository>
+    @Inject lateinit var notifierRef: Lazy<Notifier>
+    @Inject lateinit var dbRef: Lazy<MediMinderDatabase>
+    private val settings get() = settingsRef.get()
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     override fun onCreate() {
         super.onCreate()
+        if (UserManagerCompat.isUserUnlocked(this)) {
+            startUp()
+        } else {
+            // started for a before-unlock alarm: the rest waits for the unlock
+            ContextCompat.registerReceiver(this, object : BroadcastReceiver() {
+                override fun onReceive(context: Context, intent: Intent) {
+                    runCatching { unregisterReceiver(this) }
+                    startUp()
+                }
+            }, IntentFilter(Intent.ACTION_USER_UNLOCKED), ContextCompat.RECEIVER_NOT_EXPORTED)
+        }
+    }
+
+    private fun startUp() {
         ErrorLog.init(this)
         CloudConfig.init(this)
         syncLanguage()
-        notifier.ensureChannels()
+        notifierRef.get().ensureChannels()
         SafetyNetWorker.ensureScheduled(this)
         // The home-screen widget redraws whenever a dose is answered or a medicine changes
-        db.invalidationTracker.addObserver(object : InvalidationTracker.Observer(arrayOf("dose_logs", "medications", "schedules", "readings", "appointments", "doctors", "restocks")) {
+        dbRef.get().invalidationTracker.addObserver(object : InvalidationTracker.Observer(arrayOf("dose_logs", "medications", "schedules", "readings", "appointments", "doctors", "restocks")) {
             override fun onInvalidated(tables: Set<String>) {
                 NextDoseWidget.refresh(this@MediMinderApp)
                 // signed in: the cloud copy follows a little later

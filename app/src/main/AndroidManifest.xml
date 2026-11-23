@@ -74,6 +74,30 @@
             android:turnScreenOn="true" />
 
         <receiver android:name=".reminders.ReminderReceiver" android:exported="false" />
+        <!-- After a restart, before the first unlock: doses saved in device-protected storage
+             still ring (reminders/LockedAlarms.kt). These run before unlock, so they read
+             nothing else. -->
+        <receiver
+            android:name=".reminders.LockedBootReceiver"
+            android:directBootAware="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+        <receiver
+            android:name=".reminders.LockedAlarmReceiver"
+            android:directBootAware="true"
+            android:exported="false" />
+        <activity
+            android:name=".reminders.LockedAlarmActivity"
+            android:directBootAware="true"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTask"
+            android:showWhenLocked="true"
+            android:taskAffinity="com.example.mediminder.lockedalarm"
+            android:turnScreenOn="true" />
         <receiver android:name=".reminders.DoseActionReceiver" android:exported="false" />
         <!-- results of in-app updates (Android's PackageInstaller) -->
         <receiver android:name=".updater.InstallResultReceiver" android:exported="false" />

@@ -1010,4 +1010,8 @@
     <string name="account_signed_in_as">Signed in as %1$s. Your data is saved automatically.</string>
     <string name="document_capture_title">Photo of a document</string>
     <string name="document_photo_hint">Fit the whole page in the frame, in good light.</string>
+    <string name="locked_alarm_title">Time for your medicine</string>
+    <string name="locked_unlock_hint">Unlock your phone to answer. MediMinder will ask again.</string>
+    <string name="locked_unlock">Unlock to answer</string>
+    <string name="locked_stop">Stop the sound</string>
 </resources>

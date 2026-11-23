@@ -434,6 +434,14 @@ class Notifier @Inject constructor(
         }
     }
 
+    /** Title and line for the before-unlock copy, worded as the alarm words them. */
+    fun lockedText(dose: DoseInfo): Pair<String, String> {
+        val ctx = context
+        val title = CareText.title(ctx, dose.kind, dose.subtype, doseName(dose))
+        val line = listOf(doseLine(ctx, dose), Formats.time(ctx, dose.minuteOfDay)).filter { it.isNotBlank() }.joinToString(" · ")
+        return title to line
+    }
+
     private fun doseName(dose: DoseInfo) =
         listOf(CareText.name(context, dose.kind, dose.subtype, dose.name), dose.strength).filter { it.isNotBlank() }.joinToString(" ")
 
