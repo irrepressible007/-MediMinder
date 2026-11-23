@@ -271,6 +271,29 @@ fun TodayScreen(
 
     // Moving to another day lets that day's doses arrive afresh
     val entrance = rememberEntranceState(state.date)
+    if (state.simple) {
+        Box(modifier.fillMaxSize()) {
+            SimpleToday(
+                state = state,
+                setupCard = {
+                    if (setupProblems.isNotEmpty() && !setupLater) SetupCard(
+                        problems = setupProblems,
+                        onFix = setupFixer,
+                        onLater = { SetupNudge.snooze(context); setupLater = true },
+                        onDetails = onOpenReliability,
+                    )
+                },
+                onTake = { answer(it) },
+                onOptions = { sheetFor = it },
+                onAddMedicine = onAddMedicine,
+                onOpenRefills = onOpenRefills,
+                onTakeAsNeeded = { viewModel.takeAsNeeded(it) },
+                onOpenMedicine = onOpenMedicine,
+            )
+            SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter)) { data -> UndoBar(data) }
+        }
+        return
+    }
     Box(modifier.fillMaxSize()) {
         LazyColumn(
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 32.dp),
@@ -429,7 +452,7 @@ fun TodayScreen(
     }
 }
 
-private val ACTIONABLE = setOf(DoseState.DUE, DoseState.SNOOZED, DoseState.MISSED)
+internal val ACTIONABLE = setOf(DoseState.DUE, DoseState.SNOOZED, DoseState.MISSED)
 
 @Composable
 private fun Header(state: TodayUi, onPrev: () -> Unit, onNext: () -> Unit, onToday: () -> Unit) {
@@ -630,7 +653,7 @@ private fun DayPartHeader(part: DayPart) {
 }
 
 @Composable
-private fun doseDetail(row: DoseRow): String {
+internal fun doseDetail(row: DoseRow): String {
     val context = LocalContext.current
     return buildList {
         add(CareText.line(context, row.kind, row.quantity, row.unit, row.site))
@@ -640,7 +663,7 @@ private fun doseDetail(row: DoseRow): String {
 
 /** "Napa 500 mg", or a health check or habit in the app's language. */
 @Composable
-private fun rowName(row: DoseRow): String {
+internal fun rowName(row: DoseRow): String {
     val context = LocalContext.current
     return listOf(CareText.name(context, row.kind, row.subtype, row.name), row.strength).filter { it.isNotBlank() }.joinToString(" ")
 }

@@ -1,5 +1,6 @@
 package com.example.mediminder.ui.more
 
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material3.Text
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -76,7 +77,7 @@ import com.example.mediminder.util.Formats
 import kotlinx.coroutines.launch
 
 @Composable
-fun MoreScreen(modifier: Modifier, onOpen: (NavKey) -> Unit) {
+fun MoreScreen(modifier: Modifier, onOpen: (NavKey) -> Unit, onOpenAppointments: (() -> Unit)? = null) {
     val context = LocalContext.current
     val resources = LocalResources.current
     val scope = rememberCoroutineScope()
@@ -92,6 +93,11 @@ fun MoreScreen(modifier: Modifier, onOpen: (NavKey) -> Unit) {
         val entrance = rememberEntranceState()
         if (CloudConfig.available) MediCard(contentPadding = PaddingValues(vertical = 4.dp), modifier = Modifier.entrance(entrance, 0)) {
             NavRow(Icons.Default.Cloud, stringResource(R.string.account_title), { onOpen(AccountKey) }, subtitle = stringResource(R.string.account_more_sub), hue = Hue.SKY)
+        }
+        onOpenAppointments?.let { openVisits ->
+            MediCard(contentPadding = PaddingValues(vertical = 4.dp), modifier = Modifier.entrance(entrance, 0)) {
+                NavRow(Icons.Default.CalendarMonth, stringResource(R.string.tab_appointments), openVisits, subtitle = stringResource(R.string.more_appointments_sub), hue = Hue.TEAL)
+            }
         }
         MediCard(contentPadding = PaddingValues(vertical = 4.dp), modifier = Modifier.entrance(entrance, 0)) {
             NavRow(Icons.Default.MonitorHeart, stringResource(R.string.health_title), { onOpen(HealthKey) }, subtitle = stringResource(R.string.more_health_sub), hue = Hue.CORAL)

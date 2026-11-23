@@ -76,6 +76,8 @@ data class AppSettings(
     val lastBackupAt: Long = 0,
     /** In-app text size on top of the phone's: 1.0 normal, 1.15 large, 1.3 extra large. */
     val textScale: Float = 1f,
+    /** Simple view: a plainer Today with big buttons, and three tabs. */
+    val simpleView: Boolean = false,
     val ramadan: RamadanSettings = RamadanSettings(),
 )
 
@@ -136,6 +138,7 @@ class SettingsRepository @Inject constructor(
             ),
             lastBackupAt = getLong("lastBackupAt", 0),
             textScale = getFloat("textScale", defaults.textScale).coerceIn(1f, 1.3f),
+            simpleView = getBoolean("simpleView", defaults.simpleView),
             ramadan = RamadanSettings(
                 on = getBoolean("ramadan.on", false),
                 sehri = getInt("ramadan.sehri", defaults.ramadan.sehri),
@@ -182,6 +185,7 @@ class SettingsRepository @Inject constructor(
             .putInt("profile.birthYear", s.profile.birthYear ?: 0)
             .putLong("lastBackupAt", s.lastBackupAt)
             .putFloat("textScale", s.textScale)
+            .putBoolean("simpleView", s.simpleView)
             .putBoolean("ramadan.on", s.ramadan.on)
             .putInt("ramadan.sehri", s.ramadan.sehri)
             .putInt("ramadan.iftar", s.ramadan.iftar)
