@@ -1006,4 +1006,6 @@
     <string name="onboarding_account_body">সাইন ইন করলে মেডিমাইন্ডার নিজে থেকেই আপনার ওষুধ ও ইতিহাসের একটি কপি ক্লাউডে রাখবে, তাই ফোন বদলালেও কিছু হারাবে না। পরেও করতে পারেন।</string>
     <string name="onboarding_skip">এখন না</string>
     <string name="account_signed_in_as">%1$s হিসেবে সাইন ইন করা আছে। আপনার তথ্য নিজে থেকেই রাখা হবে।</string>
+    <string name="document_capture_title">কাগজের ছবি</string>
+    <string name="document_photo_hint">পুরো পাতাটি ফ্রেমের ভেতরে রাখুন, ভালো আলোতে।</string>
 </resources>

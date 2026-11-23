@@ -297,10 +297,16 @@ fun MainNavigation(
             }
             entry<DocumentPhotoKey> {
                 // documents keep more detail than medicine photos, so the writing stays readable
-                PhotoCaptureScreen(onBack = ::back, maxSide = 2400, onCaptured = { ref ->
-                    documentPhoto = ref
-                    back()
-                })
+                PhotoCaptureScreen(
+                    onBack = ::back,
+                    maxSide = 2400,
+                    title = R.string.document_capture_title,
+                    hint = R.string.document_photo_hint,
+                    onCaptured = { ref ->
+                        documentPhoto = ref
+                        back()
+                    },
+                )
             }
             entry<HistoryKey> { key -> HistoryScreen(medicationId = key.medicationId, onBack = ::back) }
             entry<HealthKey> {

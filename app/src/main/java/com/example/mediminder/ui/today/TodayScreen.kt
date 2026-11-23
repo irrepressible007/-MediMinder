@@ -1,5 +1,6 @@
 package com.example.mediminder.ui.today
 
+import androidx.compose.ui.layout.Layout
 import androidx.compose.material.icons.filled.NightsStay
 import com.example.mediminder.domain.CareKind
 import com.example.mediminder.util.CareText
@@ -644,6 +645,35 @@ private fun rowName(row: DoseRow): String {
     return listOf(CareText.name(context, row.kind, row.subtype, row.name), row.strength).filter { it.isNotBlank() }.joinToString(" ")
 }
 
+/**
+ * The dose's time with its status beside it, at the far end; when both don't fit (longer
+ * Bangla labels, large text) the status goes on its own line under the time, so the time
+ * never breaks in the middle of a word.
+ */
+@Composable
+private fun TimeAndStatus(time: @Composable () -> Unit, status: @Composable () -> Unit) {
+    Layout(contents = listOf(time, status)) { (timeParts, statusParts), constraints ->
+        val loose = constraints.copy(minWidth = 0, minHeight = 0)
+        val t = timeParts.map { it.measure(loose) }
+        val s = statusParts.map { it.measure(loose) }
+        val tw = t.maxOfOrNull { it.width } ?: 0
+        val th = t.maxOfOrNull { it.height } ?: 0
+        val sw = s.maxOfOrNull { it.width } ?: 0
+        val sh = s.maxOfOrNull { it.height } ?: 0
+        val gap = 8.dp.roundToPx()
+        val width = if (constraints.hasBoundedWidth) constraints.maxWidth else tw + gap + sw
+        val sideBySide = tw + gap + sw <= width
+        val height = if (sideBySide) maxOf(th, sh) else th + 6.dp.roundToPx() + sh
+        layout(width, height) {
+            t.forEach { it.placeRelative(0, if (sideBySide) (height - it.height) / 2 else 0) }
+            s.forEach {
+                if (sideBySide) it.placeRelative(width - it.width, (height - it.height) / 2)
+                else it.placeRelative(0, th + 6.dp.roundToPx())
+            }
+        }
+    }
+}
+
 @Composable
 private fun DoseCard(row: DoseRow, actionable: Boolean, onTake: () -> Unit, onOptions: () -> Unit, modifier: Modifier = Modifier) {
     val context = LocalContext.current
@@ -696,19 +726,24 @@ private fun DoseCard(row: DoseRow, actionable: Boolean, onTake: () -> Unit, onOp
         borderColor = if (accent != null) border.copy(alpha = 0.45f + 0.55f * pulse) else border,
         borderWidth = if (accent != null) 2.dp else 1.dp,
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            if (row.alertType == AlertType.ALARM) {
-                Icon(Icons.Default.Alarm, contentDescription = stringResource(R.string.cd_alarm), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
-                Spacer(Modifier.width(6.dp))
-            }
-            Text(
-                Formats.time(context, row.minuteOfDay),
-                style = MaterialTheme.typography.titleLarge,
-                color = if (answered) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.weight(1f),
-            )
-            StatusChip(row.state, chipLabel)
-        }
+        TimeAndStatus(
+            time = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (row.alertType == AlertType.ALARM) {
+                        Icon(Icons.Default.Alarm, contentDescription = stringResource(R.string.cd_alarm), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
+                        Spacer(Modifier.width(6.dp))
+                    }
+                    Text(
+                        Formats.time(context, row.minuteOfDay),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = if (answered) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        softWrap = false,
+                    )
+                }
+            },
+            status = { StatusChip(row.state, chipLabel) },
+        )
         Spacer(Modifier.height(10.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box {

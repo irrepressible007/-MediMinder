@@ -1,5 +1,6 @@
 package com.example.mediminder.ui.photos
 
+import androidx.annotation.StringRes
 import com.example.mediminder.util.ErrorLog
 import android.Manifest
 import android.content.Context
@@ -166,7 +167,13 @@ suspend fun ImageCapture.takeUprightPhoto(context: Context): Bitmap? = suspendCa
 /** "Take a photo of the box or strip": one big shutter, then keep it or take it again. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PhotoCaptureScreen(onBack: () -> Unit, onCaptured: (photoRef: String) -> Unit, maxSide: Int = 1280) {
+fun PhotoCaptureScreen(
+    onBack: () -> Unit,
+    onCaptured: (photoRef: String) -> Unit,
+    maxSide: Int = 1280,
+    @StringRes title: Int = R.string.photo_capture_title,
+    @StringRes hint: Int = R.string.photo_hint,
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val hasPermission = rememberCameraPermission()
@@ -178,7 +185,7 @@ fun PhotoCaptureScreen(onBack: () -> Unit, onCaptured: (photoRef: String) -> Uni
         containerColor = Color.Black,
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.photo_capture_title), style = MaterialTheme.typography.titleLarge) },
+                title = { Text(stringResource(title), style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
                     IconButton(onClick = onBack, modifier = Modifier.size(56.dp)) {
                         Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_close), modifier = Modifier.size(28.dp))
@@ -215,7 +222,7 @@ fun PhotoCaptureScreen(onBack: () -> Unit, onCaptured: (photoRef: String) -> Uni
             ) {
                 val photo = taken
                 if (photo == null) {
-                    Text(stringResource(R.string.photo_hint), color = Color.White, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
+                    Text(stringResource(hint), color = Color.White, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center)
                     FilledIconButton(
                         onClick = {
                             if (busy) return@FilledIconButton
