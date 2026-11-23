@@ -194,6 +194,10 @@ class Notifier @Inject constructor(
             .setFullScreenIntent(fullScreen, true)
             .setContentIntent(fullScreen)
             .setTimeoutAfter(ringMinutes * 60_000L)
+            // Already ringing (another dose joined, or one was answered): only update the list.
+            // A second alert a moment later is suppressed by Android, and that also stopped the
+            // sound already playing; found on a Redmi with three doses due at 3:15.
+            .setOnlyAlertOnce(isShowing(ID_ALARM))
             .addAction(0, allDoneLabel(ctx, doses), answerAll(DoseActionReceiver.ACTION_TAKE_ALL))
             .addAction(0, ctx.getString(R.string.action_snooze, Formats.number(ctx, snoozeMinutes)), answerAll(DoseActionReceiver.ACTION_SNOOZE_ALL))
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
@@ -227,6 +231,16 @@ class Notifier @Inject constructor(
     fun cancelDose(scheduleId: Long, day: Long) = manager.cancel(doseNotificationId(scheduleId, day))
 
     fun cancelAlarm() = manager.cancel(ID_ALARM)
+
+    /** Whether the ringing alarm notification is on screen now. */
+    fun isAlarmShowing(): Boolean = isShowing(ID_ALARM)
+
+    /** Whether a dose's reminder is on screen now. */
+    fun isDoseShowing(scheduleId: Long, day: Long): Boolean = isShowing(doseNotificationId(scheduleId, day))
+
+    /** Whether one of this app's notifications is on screen now. */
+    private fun isShowing(id: Int): Boolean =
+        runCatching { appContext.getSystemService(NotificationManager::class.java).activeNotifications.any { it.id == id } }.getOrDefault(false)
 
     // ── Stock ───────────────────────────────────────────────────────────────
 

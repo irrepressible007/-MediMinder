@@ -42,6 +42,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -131,9 +132,14 @@ class AlarmStressTest {
     @Test fun `six doses in the same minute ring as one alarm plus reminders, and clear one by one`() = runBlocking {
         val alarmDoses = (1..4).map { add("Alarm $it", -1, AlertType.ALARM) }
         val reminderDoses = (1..2).map { add("Reminder $it", -1, AlertType.REMINDER) }
-        (alarmDoses + reminderDoses).forEach { (s, day) -> engine.onDoseAlarm(s.id, day, ReminderScheduler.KIND_REGULAR) }
+        val first = alarmDoses.first()
+        engine.onDoseAlarm(first.first.id, first.second, ReminderScheduler.KIND_REGULAR)
+        val posted = shown().single()
+        (alarmDoses.drop(1) + reminderDoses).forEach { (s, day) -> engine.onDoseAlarm(s.id, day, ReminderScheduler.KIND_REGULAR) }
 
         val alarm = shown().single { it.channelId == Notifier.CHANNEL_ALARMS }
+        // posted once, already listing all four: a re-post while ringing stops the sound on Android 16
+        assertSame("not re-posted as the others arrived", posted, alarm)
         assertEquals("one alarm lists all four", 4, (alarm.extras.getCharSequenceArray(Notification.EXTRA_TEXT_LINES) ?: emptyArray()).size)
         assertEquals(2, shown().count { it.channelId == Notifier.CHANNEL_DOSES })
 
@@ -223,5 +229,53 @@ class AlarmStressTest {
         }
         val doses = booked("dose/")
         assertEquals(1, doses.size)
+    }
+
+    /** A restart or an update: Android drops the app's alarms and its notifications. */
+    private fun restart() {
+        val manager = context.getSystemService(AlarmManager::class.java)
+        alarms.scheduledAlarms.toList().forEach { a -> a.operation?.let { manager.cancel(it) } }
+        notifications.cancelAll()
+    }
+
+    @Test fun `a snooze survives a restart`() = runBlocking {
+        val (s, day) = add("Napa", -1, AlertType.ALARM)
+        engine.onDoseAlarm(s.id, day, ReminderScheduler.KIND_REGULAR)
+        actions.snoozeAllRinging()
+        val until = db.doseLogDao().forOccurrence(s.id, day)!!.snoozedUntil!!
+        restart()
+        engine.rescheduleAll()
+        val repeat = alarms.scheduledAlarms.single { shadowOf(it.operation).savedIntent.data.toString() == "mediminder://dose-repeat/${s.id}/$day" }
+        assertEquals("rings at its snooze time", until, repeat.triggerAtTime)
+    }
+
+    @Test fun `an alarm that was ringing when the app was stopped rings again`() = runBlocking {
+        val (s, day) = add("Napa", -1, AlertType.ALARM)
+        engine.onDoseAlarm(s.id, day, ReminderScheduler.KIND_REGULAR)
+        restart()
+        engine.rescheduleAll()
+        val alarm = shown().single { it.channelId == Notifier.CHANNEL_ALARMS }
+        assertEquals("a fresh alert, so it sounds", 0, alarm.flags and Notification.FLAG_ONLY_ALERT_ONCE)
+        assertEquals(1, booked("dose-repeat/${s.id}/$day").size)
+    }
+
+    @Test fun `an old unanswered dose keeps its repeat but doesn't suddenly ring`() = runBlocking {
+        val (s, day) = add("Napa", -30, AlertType.ALARM)
+        engine.onDoseAlarm(s.id, day, ReminderScheduler.KIND_REGULAR)
+        val alert = db.activeAlertDao().get(s.id, day)!!
+        db.activeAlertDao().update(alert.copy(firedAt = System.currentTimeMillis() - 20 * 60_000L))
+        restart()
+        engine.rescheduleAll()
+        assertTrue("not ringing now", shown().none { it.channelId == Notifier.CHANNEL_ALARMS })
+        assertEquals("its next repeat is booked", 1, booked("dose-repeat/${s.id}/$day").size)
+    }
+
+    @Test fun `re-booking while an alarm rings doesn't make it ring twice`() = runBlocking {
+        val (s, day) = add("Napa", -1, AlertType.ALARM)
+        engine.onDoseAlarm(s.id, day, ReminderScheduler.KIND_REGULAR)
+        val posted = shown().single()
+        engine.rescheduleAll()   // e.g. the 6-hourly safety check while it rings
+        assertSame("left alone while it rings", posted, shown().single { it.channelId == Notifier.CHANNEL_ALARMS })
+        assertEquals(1, db.activeAlertDao().getAll().size)
     }
 }

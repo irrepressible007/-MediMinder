@@ -75,7 +75,47 @@ class ReminderEngine @Inject constructor(
 
         for (appointment in appointmentDao.upcoming(now.minusDays(1).toEpochMillis())) armAppointment(appointment, now)
         armRefillCheck(now)
+        restoreInFlightLocked(now)
         saveLockedCopyLocked(now)
+    }
+
+    /**
+     * What was in progress when the app was stopped (a restart, an update): Android dropped
+     * those alarms and the app's notifications, so book and show them again.
+     *  • A snoozed dose rings at its snooze time (straight away if that passed meanwhile).
+     *  • A dose still waiting for an answer keeps its next repeat.
+     *  • A dose that was still ringing rings again. A notification already on screen is only
+     *    refreshed, so calling this any number of times changes nothing.
+     */
+    private suspend fun restoreInFlightLocked(now: LocalDateTime) {
+        val nowMs = now.toEpochMillis()
+        val s = settings.current
+        val today = now.toLocalDate().toEpochDay()
+        for (log in doseLogDao.getRange(today - 1, today)) {
+            if (log.status != DoseStatus.SNOOZED) continue
+            val scheduleId = log.scheduleId ?: continue
+            val until = log.snoozedUntil ?: continue
+            if (until < nowMs - CATCH_UP_MINUTES * 60_000L) continue
+            if (activeAlertDao.get(scheduleId, log.scheduledDay) != null) continue   // already ringing again
+            val schedule = scheduleDao.getById(scheduleId) ?: continue
+            scheduler.scheduleDoseRepeat(scheduleId, log.scheduledDay, maxOf(until, nowMs + 3_000L), schedule.alertType, ReminderScheduler.KIND_SNOOZE)
+        }
+        var alarmRinging = false
+        for (alert in activeAlertDao.getAll()) {
+            val schedule = scheduleDao.getById(alert.scheduleId) ?: continue
+            val medication = medicationDao.getById(schedule.medicationId) ?: continue
+            if (s.repeatReminders && alert.repeatCount < s.maxRepeats) {
+                val at = maxOf(alert.firedAt + s.repeatIntervalMinutes * 60_000L, nowMs + 3_000L)
+                scheduler.scheduleDoseRepeat(alert.scheduleId, alert.scheduledDay, at, alert.alertType, ReminderScheduler.KIND_REPEAT)
+            }
+            val stillRinging = nowMs - alert.firedAt < s.alarmRingMinutes * 60_000L
+            if (!stillRinging) continue
+            if (alert.alertType == AlertType.ALARM) alarmRinging = true
+            else if (!notifier.isDoseShowing(alert.scheduleId, alert.scheduledDay)) {
+                notifier.showDoseReminder(doseInfo(medication, schedule, alert.scheduledDay), s.snoozeMinutes, alert.repeatCount)
+            }
+        }
+        if (alarmRinging) refreshAlarmLocked(updateIfRinging = false)
     }
 
     /** Re-arms one medicine after it was added, edited, archived or deleted. */
@@ -227,7 +267,7 @@ class ReminderEngine @Inject constructor(
 
         val s = settings.current
         if (schedule.alertType == AlertType.ALARM) {
-            refreshAlarmLocked()
+            refreshAlarmLocked(updateIfRinging = false)
         } else {
             notifier.showDoseReminder(doseInfo(medication, schedule, day), s.snoozeMinutes, repeatCount)
         }
@@ -275,20 +315,52 @@ class ReminderEngine @Inject constructor(
         notifier.cancelDose(scheduleId, day)
     }
 
-    /** Re-posts (or removes) the ringing alarm notification for every alarm-type dose still waiting. */
-    private suspend fun refreshAlarmLocked() {
+    /**
+     * Posts (or removes) the ringing alarm notification for every alarm-type dose still waiting.
+     *
+     * While it rings, a dose that joins (several due in the same minute arrive a few ms apart)
+     * or a routine refresh must not re-post it: on Android 16 (a Redmi, three doses at 3:15)
+     * any update to a ringing notification stopped its sound. So the first post already lists
+     * every alarm dose due at that minute, the alarm page shows the live list, and only an
+     * answer or a deletion (someone is at the phone) updates a ringing notification.
+     */
+    private suspend fun refreshAlarmLocked(updateIfRinging: Boolean = true) {
         val ringing = activeAlertDao.getAll().filter { it.alertType == AlertType.ALARM }
         val doses = ringing.mapNotNull { alert ->
             val schedule = scheduleDao.getById(alert.scheduleId) ?: return@mapNotNull null
             val medication = medicationDao.getById(schedule.medicationId) ?: return@mapNotNull null
             doseInfo(medication, schedule, alert.scheduledDay)
         }
-        val s = settings.current
-        if (doses.isEmpty()) notifier.cancelAlarm() else {
-            notifier.showAlarm(doses, s.snoozeMinutes, s.alarmRingMinutes)
-            // ringing without its full-screen page: say so now
-            SetupNudge.checkFullScreen(appContext, notifier, hasAlarmDoses = true)
+        if (doses.isEmpty()) {
+            notifier.cancelAlarm()
+            return
         }
+        val showing = notifier.isAlarmShowing()
+        if (showing && !updateIfRinging) return
+        val all = if (showing) doses else doses + dueTogetherWith(ringing, doses)
+        val s = settings.current
+        notifier.showAlarm(all, s.snoozeMinutes, s.alarmRingMinutes)
+        // ringing without its full-screen page: say so now
+        if (!showing) SetupNudge.checkFullScreen(appContext, notifier, hasAlarmDoses = true)
+    }
+
+    /** Other alarm doses due at the same minute as those ringing, whose own alarm is a moment behind. */
+    private suspend fun dueTogetherWith(ringing: List<ActiveAlert>, listed: List<DoseInfo>): List<DoseInfo> {
+        val moments = ringing.map { it.scheduledDay to it.scheduledMinute }.toSet()
+        val already = listed.map { it.scheduleId to it.day }.toSet()
+        val extra = mutableListOf<DoseInfo>()
+        for (item in medicationDao.getActiveWithSchedules()) {
+            for (schedule in item.schedules) {
+                if (schedule.alertType != AlertType.ALARM) continue
+                for ((day, minute) in moments) {
+                    if (schedule.minuteOfDay != minute || (schedule.id to day) in already) continue
+                    if (!DosePlanner.occursOn(item.medication, schedule, LocalDate.ofEpochDay(day))) continue
+                    if (isAnswered(schedule.id, day)) continue
+                    extra += doseInfo(item.medication, schedule, day)
+                }
+            }
+        }
+        return extra
     }
 
     suspend fun ringingAlerts(): List<ActiveAlert> = activeAlertDao.getAll()
