@@ -1012,19 +1012,4 @@
     <string name="locked_unlock_hint">উত্তর দিতে ফোন আনলক করুন। মেডিমাইন্ডার আবার জিজ্ঞেস করবে।</string>
     <string name="locked_unlock">আনলক করে উত্তর দিন</string>
     <string name="locked_stop">শব্দ বন্ধ করুন</string>
-    <string name="simple_today">আজ</string>
-    <string name="simple_take_now">এখন খাওয়ার সময়</string>
-    <string name="simple_not_taken">এখনো খাওয়া হয়নি</string>
-    <string name="simple_snoozed">একটু পরে আবার মনে করাবে</string>
-    <string name="simple_next">পরের ওষুধ</string>
-    <string name="simple_all_done">আজকের সব শেষ</string>
-    <string name="simple_todays_list">আজকের ওষুধ</string>
-    <string name="simple_other_choices">বাদ দিন, বা পরে মনে করান</string>
-    <string name="simple_later">পরে</string>
-    <string name="settings_simple_view">সহজ দেখা</string>
-    <string name="settings_simple_view_sub">স্ক্রিনে কম জিনিস: বড় বোতামসহ আজকের ওষুধ, তিনটি ট্যাব।</string>
-    <string name="more_appointments_sub">সামনের সাক্ষাৎ ও আপনার ডাক্তার</string>
-    <string name="simple_took_it">খেয়েছি</string>
-    <string name="simple_now">এখন</string>
-    <string name="simple_took_all">সবগুলো খেয়েছি</string>
 </resources>

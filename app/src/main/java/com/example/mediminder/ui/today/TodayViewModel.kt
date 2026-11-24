@@ -87,7 +87,6 @@ data class TodayUi(
     val ramadan: RamadanSettings = RamadanSettings(),
     /** Ramadan is near and the mode is off: the expected first day, to suggest it. */
     val ramadanStart: LocalDate? = null,
-    val simple: Boolean = false,
 )
 
 sealed class TodayEvent {
@@ -139,7 +138,7 @@ class TodayViewModel @Inject constructor(
         appointments.observeAppointments(),
         db.activeAlertDao().observeAll(),
         settings.settings,
-    ) { appts, alerts, prefs -> Extras(appts, alerts.map { it.scheduleId to it.scheduledDay }.toSet(), prefs.userName, prefs.snoozeMinutes, prefs.ramadan, prefs.simpleView) }
+    ) { appts, alerts, prefs -> Extras(appts, alerts.map { it.scheduleId to it.scheduledDay }.toSet(), prefs.userName, prefs.snoozeMinutes, prefs.ramadan) }
 
     private data class Extras(
         val appointments: List<Appointment>,
@@ -147,7 +146,6 @@ class TodayViewModel @Inject constructor(
         val userName: String,
         val snoozeMinutes: Int,
         val ramadan: RamadanSettings,
-        val simple: Boolean,
     )
 
     val state: StateFlow<TodayUi?> = combine(dayLogs, medications, clock, extras) { (date, logs), meds, now, extra ->
@@ -195,7 +193,6 @@ class TodayViewModel @Inject constructor(
                 .minByOrNull { it.dateTime },
             userName = extra.userName,
             snoozeMinutes = extra.snoozeMinutes,
-            simple = extra.simple,
             hasMedicines = meds.any { !it.medication.archived },
             nowMinute = minuteOf(now.toLocalTime()),
             replace = meds.map { it.medication }.filter { !it.archived && OpenedItems.needsReplacing(it, todayEpoch) },

@@ -1014,19 +1014,4 @@
     <string name="locked_unlock_hint">Unlock your phone to answer. MediMinder will ask again.</string>
     <string name="locked_unlock">Unlock to answer</string>
     <string name="locked_stop">Stop the sound</string>
-    <string name="simple_today">Today</string>
-    <string name="simple_take_now">Time to take</string>
-    <string name="simple_not_taken">Not taken yet</string>
-    <string name="simple_snoozed">Reminding you again soon</string>
-    <string name="simple_next">Next</string>
-    <string name="simple_all_done">All done for today</string>
-    <string name="simple_todays_list">Today\'s medicines</string>
-    <string name="simple_other_choices">Skip, or remind me later</string>
-    <string name="simple_later">Later</string>
-    <string name="settings_simple_view">Simple view</string>
-    <string name="settings_simple_view_sub">Fewer things on screen: today\'s medicines with big buttons, three tabs.</string>
-    <string name="more_appointments_sub">Upcoming visits and your doctors</string>
-    <string name="simple_took_it">I took it</string>
-    <string name="simple_now">Now</string>
-    <string name="simple_took_all">I\'ve taken them all</string>
 </resources>

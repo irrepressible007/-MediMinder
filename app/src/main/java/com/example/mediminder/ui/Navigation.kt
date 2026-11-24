@@ -1,10 +1,5 @@
 package com.example.mediminder.ui
 
-import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import com.example.mediminder.ui.account.AccountScreen
 import com.example.mediminder.ui.more.LegalDoc
 import com.example.mediminder.ui.more.LegalScreen
@@ -165,9 +160,6 @@ sealed class DeepLink {
 @HiltViewModel
 class RootViewModel @Inject constructor(settings: SettingsRepository) : ViewModel() {
     val onboardingDone: Boolean = settings.current.onboardingDone
-    /** Simple view: no Doctor tab (it opens from More). */
-    val simple: StateFlow<Boolean> = settings.settings.map { it.simpleView }.distinctUntilChanged()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, settings.current.simpleView)
 }
 
 @Composable
@@ -178,7 +170,6 @@ fun MainNavigation(
 ) {
     val backStack = rememberNavBackStack(if (root.onboardingDone) Home else Onboarding)
     var tab by rememberSaveable { mutableStateOf(HomeTab.TODAY) }
-    val simple by root.simple.collectAsState()
     // Handed back to the medicine editor: the brand read by the scanner and/or a photo of the box
     var scannedCatalogueId by rememberSaveable { mutableStateOf<Long?>(null) }
     var capturedPhoto by rememberSaveable { mutableStateOf<String?>(null) }
@@ -244,7 +235,7 @@ fun MainNavigation(
                 })
             }
             entry<Home> {
-                HomeScaffold(tab = tab, onTab = { tab = it }, open = ::open, simple = simple)
+                HomeScaffold(tab = tab, onTab = { tab = it }, open = ::open)
             }
             entry<MedicineEditor> { key ->
                 MedicineEditorScreen(
@@ -377,9 +368,7 @@ fun MainNavigation(
 }
 
 @Composable
-private fun HomeScaffold(tab: HomeTab, onTab: (HomeTab) -> Unit, open: (NavKey) -> Unit, simple: Boolean = false) {
-    // Simple view: no Doctor tab (it opens from More)
-    val tabs = if (simple) HomeTab.entries.filter { it != HomeTab.APPOINTMENTS } else HomeTab.entries
+private fun HomeScaffold(tab: HomeTab, onTab: (HomeTab) -> Unit, open: (NavKey) -> Unit) {
     val reduceMotion = rememberReduceMotion()
     val appContext = LocalContext.current.applicationContext
     // A newer version on GitHub is recommended automatically (at most every 12 hours)
@@ -387,9 +376,9 @@ private fun HomeScaffold(tab: HomeTab, onTab: (HomeTab) -> Unit, open: (NavKey) 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         // Phones: tabs along the bottom. Wide screens (tablets, foldables, landscape): a side rail.
         val wide = maxWidth >= 600.dp
-        Scaffold(bottomBar = { if (!wide) BottomTabs(tabs, tab, onTab) }) { padding ->
+        Scaffold(bottomBar = { if (!wide) BottomTabs(tab, onTab) }) { padding ->
             Row(Modifier.fillMaxSize().padding(padding)) {
-                if (wide) SideTabs(tabs, tab, onTab)
+                if (wide) SideTabs(tab, onTab)
                 AnimatedContent(
                     targetState = tab,
                     modifier = Modifier.weight(1f).fillMaxHeight(),
@@ -430,8 +419,6 @@ private fun HomeScaffold(tab: HomeTab, onTab: (HomeTab) -> Unit, open: (NavKey) 
                         HomeTab.MORE -> MoreScreen(
                             modifier = modifier,
                             onOpen = { open(it) },
-                            // Simple view has no Doctor tab: visits open from here
-                            onOpenAppointments = if (simple) ({ onTab(HomeTab.APPOINTMENTS) }) else null,
                         )
                     }
                 }
@@ -470,9 +457,9 @@ private fun TabLabel(@StringRes label: Int) {
 }
 
 @Composable
-private fun BottomTabs(tabs: List<HomeTab>, tab: HomeTab, onTab: (HomeTab) -> Unit) {
+private fun BottomTabs(tab: HomeTab, onTab: (HomeTab) -> Unit) {
     NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) {
-        tabs.forEach { t ->
+        HomeTab.entries.forEach { t ->
             val spec = tabSpec(t)
             NavigationBarItem(
                 selected = tab == t,
@@ -492,10 +479,10 @@ private fun BottomTabs(tabs: List<HomeTab>, tab: HomeTab, onTab: (HomeTab) -> Un
 }
 
 @Composable
-private fun SideTabs(tabs: List<HomeTab>, tab: HomeTab, onTab: (HomeTab) -> Unit) {
+private fun SideTabs(tab: HomeTab, onTab: (HomeTab) -> Unit) {
     NavigationRail(containerColor = MaterialTheme.colorScheme.surface, windowInsets = WindowInsets(0)) {
         Spacer(Modifier.weight(1f))
-        tabs.forEach { t ->
+        HomeTab.entries.forEach { t ->
             val spec = tabSpec(t)
             NavigationRailItem(
                 selected = tab == t,

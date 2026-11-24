@@ -197,12 +197,6 @@ fun SettingsScreen(onBack: () -> Unit, onOpenReliability: () -> Unit, onOpenRama
             SectionTitle(stringResource(R.string.settings_text_size))
             TextSizeChooser(s.textScale) { scale -> viewModel.update { it.copy(textScale = scale) } }
             Text(stringResource(R.string.text_size_preview), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            SwitchRow(
-                title = stringResource(R.string.settings_simple_view),
-                subtitle = stringResource(R.string.settings_simple_view_sub),
-                checked = s.simpleView,
-                onChange = { on -> viewModel.update { it.copy(simpleView = on) } },
-            )
 
             SectionTitle(stringResource(R.string.settings_language))
             ChoiceChips(listOf("", "bn", "en"), s.language, { lang ->
